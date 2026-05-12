@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "trials": [
+        {
+          "startAngleDeg": 60,
+          "initialAngularVelocityDegPerS": 0,
+          "lengthPx": 200,
+          "visibleMs": 1500,
+          "invisibleMs": 800
+        },
+        {
+          "startAngleDeg": 0,
+          "initialAngularVelocityDegPerS": 600,
+          "lengthPx": 200,
+          "visibleMs": 1500,
+          "invisibleMs": 800
+        }
+      ]
+    }
+  ]
+}
