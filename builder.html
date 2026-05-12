@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>单摆实验 · 配置导出</title>
+    <link rel="stylesheet" href="./css/common.css" />
+  </head>
+  <body>
+    <main class="page">
+      <nav class="site-nav">
+        <a href="./index.html">首页</a>
+        <a href="./experiment.html">正式实验</a>
+      </nav>
+      <h1>实验配置（Block / 试次）</h1>
+      <p class="hint">
+        竖直向下为 0°，向右摆动为正角，向左为负角。导出 JSON 后在正式实验页导入。
+      </p>
+
+      <div id="error-banner" class="error-banner" role="alert"></div>
+
+      <div class="toolbar">
+        <button type="button" id="btn-add-block" class="primary">添加 Block</button>
+        <button type="button" id="btn-export" class="primary">导出 JSON</button>
+        <button type="button" id="btn-import">导入 JSON</button>
+        <input type="file" id="import-file" accept=".json,application/json" hidden />
+      </div>
+
+      <div id="blocks-root"></div>
+    </main>
+    <script src="./js/builder.js"></script>
+  </body>
+</html>
