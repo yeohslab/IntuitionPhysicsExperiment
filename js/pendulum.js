@@ -182,38 +182,29 @@
     timelineEl.innerHTML =
       '<div class="pendulum-timeline-head">' +
       '<span class="pendulum-timeline-title">试次时间轴（自动播放）</span>' +
-      '<span class="pendulum-timeline-readout" aria-live="polite"></span>' +
+      '<span class="pendulum-timeline-phase" aria-live="polite"></span>' +
       '</div>' +
-      '<div class="pendulum-timeline-track-wrap">' +
-      '<div class="pendulum-timeline-track" role="progressbar" aria-valuemin="0" aria-valuemax="' +
-      Math.round(totalMs) +
-      '" aria-label="试次播放进度">' +
-      '<div class="pendulum-timeline-segments">' +
-      '<div class="pendulum-timeline-seg pendulum-timeline-visible"></div>' +
-      '<div class="pendulum-timeline-seg pendulum-timeline-invisible"></div>' +
+      '<div class="pendulum-timer-grid" aria-label="试次播放计时器">' +
+      '<div class="pendulum-timer-card">' +
+      '<span class="pendulum-timer-label">已播放</span>' +
+      '<span class="pendulum-timer-value pendulum-timer-elapsed">00:00.000</span>' +
       '</div>' +
-      '<div class="pendulum-timeline-progress"></div>' +
-      '<div class="pendulum-timeline-thumb" aria-hidden="true"></div>' +
+      '<div class="pendulum-timer-card">' +
+      '<span class="pendulum-timer-label">剩余</span>' +
+      '<span class="pendulum-timer-value pendulum-timer-remaining">00:00.000</span>' +
       '</div>' +
       '</div>' +
-      '<div class="pendulum-timeline-legend">' +
-      '<span class="pendulum-legend-vis"><i></i>可视阶段</span>' +
-      '<span class="pendulum-legend-inv"><i></i>不可视阶段</span>' +
+      '<div class="pendulum-timeline-readout">' +
+      '<span class="pendulum-timeline-total"></span>' +
+      '<span class="pendulum-timeline-divider" aria-hidden="true">/</span>' +
+      '<span class="pendulum-timeline-note">前段可视，后段不可视</span>' +
       '</div>';
 
-    var segVis = timelineEl.querySelector('.pendulum-timeline-visible');
-    var segInv = timelineEl.querySelector('.pendulum-timeline-invisible');
-    var track = timelineEl.querySelector('.pendulum-timeline-track');
-    var thumb = timelineEl.querySelector('.pendulum-timeline-thumb');
-    var progress = timelineEl.querySelector('.pendulum-timeline-progress');
+    var phaseReadout = timelineEl.querySelector('.pendulum-timeline-phase');
     var readout = timelineEl.querySelector('.pendulum-timeline-readout');
-
-    segVis.style.flexGrow = visibleMs;
-    segVis.style.flexShrink = 1;
-    segVis.style.flexBasis = '0';
-    segInv.style.flexGrow = invisibleMs;
-    segInv.style.flexShrink = 1;
-    segInv.style.flexBasis = '0';
+    var elapsedReadout = timelineEl.querySelector('.pendulum-timer-elapsed');
+    var remainingReadout = timelineEl.querySelector('.pendulum-timer-remaining');
+    var totalReadout = timelineEl.querySelector('.pendulum-timeline-total');
 
     var canvasWrap = document.createElement('div');
     canvasWrap.className = 'pendulum-canvas-wrap';
@@ -328,6 +319,20 @@
       return '不可视';
     }
 
+    function formatTimer(ms) {
+      var safeMs = Math.max(0, Math.round(ms));
+      var minutes = Math.floor(safeMs / 60000);
+      var seconds = Math.floor((safeMs % 60000) / 1000);
+      var millis = safeMs % 1000;
+      return (
+        String(minutes).padStart(2, '0') +
+        ':' +
+        String(seconds).padStart(2, '0') +
+        '.' +
+        String(millis).padStart(3, '0')
+      );
+    }
+
     function drawFrame(tMs) {
       var th = thetaAtTime(samples, tMs);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -340,17 +345,14 @@
       } else {
         overlay.style.display = 'block';
       }
-      var pct = totalMs > 0 ? (tMs / totalMs) * 100 : 0;
-      thumb.style.left = pct + '%';
-      progress.style.width = pct + '%';
-      track.setAttribute('aria-valuenow', String(Math.round(tMs)));
-      readout.textContent =
-        phaseLabel(tMs) +
-        ' · ' +
-        tMs.toFixed(0) +
-        ' ms / ' +
-        totalMs.toFixed(0) +
-        ' ms';
+      phaseReadout.textContent = phaseLabel(tMs) + '阶段';
+      elapsedReadout.textContent = formatTimer(tMs);
+      remainingReadout.textContent = formatTimer(totalMs - tMs);
+      totalReadout.textContent = '总时长 ' + formatTimer(totalMs);
+      readout.setAttribute(
+        'aria-label',
+        '当前为' + phaseLabel(tMs) + '阶段，已播放' + Math.round(tMs) + '毫秒，总时长' + Math.round(totalMs) + '毫秒'
+      );
     }
 
     function setHudPlaying() {
