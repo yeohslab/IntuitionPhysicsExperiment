@@ -43,8 +43,8 @@
     var invisibleMs = num(t.invisibleMs, '不可视阶段(ms)');
     if (lengthPx <= 0 || lengthPx > 2000) throw new Error(p + '摆长须在 (0, 2000] px');
     if (visibleMs < 0 || invisibleMs < 0) throw new Error(p + '阶段时长不能为负');
-    if (Math.abs(startAngleDeg) > 180)
-      throw new Error(p + '启动角度建议在 ±180° 内');
+    if (Math.abs(startAngleDeg) > 360)
+      throw new Error(p + '启动角度建议在 ±360° 内');
     return {
       startAngleDeg: startAngleDeg,
       initialAngularVelocityDegPerS: initialAngularVelocityDegPerS,
@@ -76,13 +76,15 @@
     cards.forEach(function (card, bi) {
       var rows = card.querySelectorAll('tbody tr');
       rows.forEach(function (tr, ti) {
+        if (!state.blocks[bi] || !state.blocks[bi].trials[ti]) return;
         var inputs = tr.querySelectorAll('input[type="number"]');
-        if (inputs.length < 5 || !state.blocks[bi] || !state.blocks[bi].trials[ti]) return;
-        state.blocks[bi].trials[ti].startAngleDeg = inputs[0].value;
-        state.blocks[bi].trials[ti].initialAngularVelocityDegPerS = inputs[1].value;
-        state.blocks[bi].trials[ti].lengthPx = inputs[2].value;
-        state.blocks[bi].trials[ti].visibleMs = inputs[3].value;
-        state.blocks[bi].trials[ti].invisibleMs = inputs[4].value;
+        if (inputs.length >= 5) {
+          state.blocks[bi].trials[ti].startAngleDeg = inputs[0].value;
+          state.blocks[bi].trials[ti].initialAngularVelocityDegPerS = inputs[1].value;
+          state.blocks[bi].trials[ti].lengthPx = inputs[2].value;
+          state.blocks[bi].trials[ti].visibleMs = inputs[3].value;
+          state.blocks[bi].trials[ti].invisibleMs = inputs[4].value;
+        }
       });
     });
   }
