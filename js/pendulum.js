@@ -189,10 +189,6 @@
       '<span class="pendulum-timer-label">已播放</span>' +
       '<span class="pendulum-timer-value pendulum-timer-elapsed">00:00.000</span>' +
       '</div>' +
-      '<div class="pendulum-timer-card">' +
-      '<span class="pendulum-timer-label">剩余</span>' +
-      '<span class="pendulum-timer-value pendulum-timer-remaining">00:00.000</span>' +
-      '</div>' +
       '</div>' +
       '<div class="pendulum-timeline-readout">' +
       '<span class="pendulum-timeline-total"></span>' +
@@ -203,7 +199,6 @@
     var phaseReadout = timelineEl.querySelector('.pendulum-timeline-phase');
     var readout = timelineEl.querySelector('.pendulum-timeline-readout');
     var elapsedReadout = timelineEl.querySelector('.pendulum-timer-elapsed');
-    var remainingReadout = timelineEl.querySelector('.pendulum-timer-remaining');
     var totalReadout = timelineEl.querySelector('.pendulum-timeline-total');
 
     var canvasWrap = document.createElement('div');
@@ -347,7 +342,6 @@
       }
       phaseReadout.textContent = phaseLabel(tMs) + '阶段';
       elapsedReadout.textContent = formatTimer(tMs);
-      remainingReadout.textContent = formatTimer(totalMs - tMs);
       totalReadout.textContent = '总时长 ' + formatTimer(totalMs);
       readout.setAttribute(
         'aria-label',
