@@ -1,9 +1,47 @@
 (function () {
   'use strict';
 
+  function validateTrial(t, prefix) {
+    if (window.PendulumLab && PendulumLab.normalizeTrial) {
+      try {
+        return PendulumLab.normalizeTrial(t);
+      } catch (e) {
+        throw new Error(prefix + (e.message || String(e)));
+      }
+    }
+    var kind = t.kind || 'response';
+    if (kind !== 'practice' && kind !== 'response') {
+      throw new Error(prefix + '类型无效');
+    }
+    function num(x, label) {
+      var n = Number(x);
+      if (!isFinite(n)) throw new Error(prefix + label + ' 无效');
+      return n;
+    }
+    if (window.PendulumLab && PendulumLab.migrateRawTrial) {
+      t = PendulumLab.migrateRawTrial(t);
+    }
+    num(t.startAngleDeg, '启动角度(°)');
+    num(t.initialAngularVelocityDegPerS, '初始角速度(°/s)');
+    var L = num(t.lengthM, '摆长(m)');
+    if (L <= 0 || L > 20) throw new Error(prefix + '摆长须在 (0,20] m');
+    if (!t.phaseDivisors || t.phaseDivisors.length !== 4) {
+      throw new Error(prefix + '须提供 4 个 phaseDivisors');
+    }
+    t.phaseDivisors.forEach(function (x, i) {
+      var d = num(x, '阶段' + (i + 1) + ' 除数');
+      if (d <= 0) throw new Error(prefix + '周期除数须为正');
+    });
+    return t;
+  }
+
   function validateConfig(cfg) {
     if (!cfg || !Array.isArray(cfg.blocks) || cfg.blocks.length === 0) {
       throw new Error('配置须包含至少一个 block');
+    }
+    var ver = Number(cfg.version);
+    if (ver !== 2 && ver !== 3) {
+      throw new Error('配置文件 version 须为 2 或 3（建议用配置导出页导出 v3）');
     }
     cfg.blocks.forEach(function (block, bi) {
       if (!block.trials || !Array.isArray(block.trials) || block.trials.length === 0) {
@@ -11,20 +49,7 @@
       }
       block.trials.forEach(function (t, ti) {
         var prefix = 'Block ' + (bi + 1) + ' 试次 ' + (ti + 1) + ': ';
-        function num(x, label) {
-          var n = Number(x);
-          if (!isFinite(n)) throw new Error(prefix + label + ' 无效');
-          return n;
-        }
-        num(t.startAngleDeg, '启动角度');
-        num(t.initialAngularVelocityDegPerS, '初始角速度');
-        var L = num(t.lengthPx, '摆长');
-        num(t.visibleMs, '可视阶段');
-        num(t.invisibleMs, '不可视阶段');
-        if (L <= 0 || L > 2000) throw new Error(prefix + '摆长须在 (0,2000]');
-        if (Number(t.visibleMs) < 0 || Number(t.invisibleMs) < 0) {
-          throw new Error(prefix + '阶段时长不能为负');
-        }
+        block.trials[ti] = validateTrial(t, prefix);
       });
     });
     return cfg;
@@ -41,6 +66,10 @@
     URL.revokeObjectURL(a.href);
   }
 
+  function trialLabel(trialParams) {
+    return trialParams.kind === 'practice' ? '练习' : '正式';
+  }
+
   function buildTimeline(jsPsych, cfg) {
     var timeline = [];
 
@@ -50,10 +79,13 @@
         '<div style="max-width:640px;margin:0 auto;text-align:left;line-height:1.6">' +
         '<p>实验即将开始。</p>' +
         '<ul>' +
-        '<li>每个试次会<strong>自动播放</strong>一段单摆运动：前半为<strong>可视</strong>、后半为<strong>不可视</strong>（与配置一致）；不可视阶段摆结与摆球会隐藏并叠加浅灰遮罩。</li>' +
-        '<li><strong>第一步（点估计）</strong>：拖动蓝色摆球汇报<strong>试次结束时刻</strong>您认为摆球应在的角度，点击“确认汇报”。</li>' +
-        '<li><strong>第二步（确信范围）</strong>：在蓝色点两侧拖出一条<strong>弧带</strong>，表示您对该估计的不确定范围（弧越宽表示您越不确定）。</li>' +
-        '<li>角度约定：竖直向下为 0°，向右为正，向左为负。</li>' +
+        '<li><strong>练习试次</strong>：仅观看单摆运动，无需作答，用于熟悉任务。</li>' +
+        '<li><strong>正式试次</strong>：按配置自动播放<strong>四段</strong>（可视 → 不可视 → 可视 → 不可视），段长为 <code>T/x</code>（<code>T</code> 为根据该试次物理参数估计的周期）。</li>' +
+        '<li>实验在全屏下进行，播放阶段鼠标隐藏；作答阶段鼠标重新显示。</li>' +
+        '<li><strong>第一步（点估计）</strong>：在圆轨迹上<strong>点击</strong>放置摆球并拖动调整，汇报<strong>全部播放结束</strong>时的角度，点击“确认汇报”。</li>' +
+        '<li><strong>第二步（确信范围）</strong>：拖出弧带表示不确定范围，点击“确认范围”。</li>' +
+        '<li>每试次开始先看注视点「+」，再播放单摆。</li>' +
+        '<li>角度与角速度：竖直向下 0°，向右为正、向左为负。</li>' +
         '</ul>' +
         '<p>按任意键继续。</p>' +
         '</div>',
@@ -63,6 +95,7 @@
       block.trials.forEach(function (trialParams, trialIndex) {
         var mountId =
           'pend-' + blockIndex + '-' + trialIndex + '-' + Math.random().toString(36).slice(2, 9);
+        var kindLabel = trialLabel(trialParams);
 
         timeline.push({
           type: jsPsychHtmlKeyboardResponse,
@@ -72,7 +105,9 @@
             (blockIndex + 1) +
             ' / 试次 ' +
             (trialIndex + 1) +
-            '</p>' +
+            '（' +
+            kindLabel +
+            '）</p>' +
             '<div id="' +
             mountId +
             '"></div></div>',
@@ -82,11 +117,13 @@
           data: {
             block_index: blockIndex,
             trial_index: trialIndex,
+            trial_kind: trialParams.kind,
             config_startAngleDeg: trialParams.startAngleDeg,
             config_initialAngularVelocityDegPerS: trialParams.initialAngularVelocityDegPerS,
-            config_lengthPx: trialParams.lengthPx,
-            config_visibleMs: trialParams.visibleMs,
-            config_invisibleMs: trialParams.invisibleMs,
+            config_lengthM: trialParams.lengthM,
+            config_phaseDivisors: trialParams.phaseDivisors
+              ? JSON.stringify(trialParams.phaseDivisors)
+              : null,
           },
           on_load: function () {
             var el = document.getElementById(mountId);
@@ -120,6 +157,11 @@
       choices: [' '],
       prompt: '<p class="hint" style="text-align:center">提示：Excel 打开 CSV 时请确认编码为 UTF-8。</p>',
       on_load: function () {
+        var target = document.getElementById('jspsych-target');
+        if (target) {
+          target.classList.remove('experiment-cursor-hidden');
+          target.classList.add('experiment-cursor-response');
+        }
         downloadCsv(jsPsych);
       },
     });
@@ -127,10 +169,23 @@
     return timeline;
   }
 
+  function enterExperimentDisplay(target) {
+    target.classList.add('experiment-active');
+    var el = document.documentElement;
+    var req =
+      el.requestFullscreen ||
+      el.webkitRequestFullscreen ||
+      el.msRequestFullscreen;
+    if (req) {
+      Promise.resolve(req.call(el)).catch(function () {});
+    }
+  }
+
   function runExperiment(cfg) {
     document.getElementById('setup').style.display = 'none';
     var target = document.getElementById('jspsych-target');
     target.style.display = 'block';
+    enterExperimentDisplay(target);
 
     var jsPsych = initJsPsych({
       display_element: 'jspsych-target',

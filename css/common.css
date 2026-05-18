@@ -115,6 +115,27 @@ table.trials {
   font-size: 0.875rem;
 }
 
+select.trial-kind {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.25rem 0.35rem;
+  border-radius: 6px;
+  border: 1px solid #d7dce5;
+  max-width: 5.5rem;
+}
+
+.trial-period-preview {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #5a6b82;
+  min-width: 7rem;
+}
+
+.trial-period-preview .period-t {
+  font-weight: 650;
+  color: #142030;
+}
+
 table.trials th,
 table.trials td {
   border: 1px solid #eef1f6;
@@ -184,9 +205,50 @@ table.trials input {
   background: #ffffff;
 }
 
+.experiment-stage.experiment-active {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: auto;
+  background: #ffffff;
+}
+
+.experiment-stage.experiment-cursor-hidden,
+.experiment-stage.experiment-cursor-hidden * {
+  cursor: none !important;
+}
+
+.experiment-stage.experiment-cursor-hidden .pendulum-fixation-overlay {
+  cursor: pointer !important;
+}
+
+.experiment-stage.experiment-cursor-response .pendulum-canvas-wrap,
+.experiment-stage.experiment-cursor-response .pendulum-canvas,
+.experiment-stage.experiment-cursor-response .pendulum-response-panel,
+.experiment-stage.experiment-cursor-response .pendulum-feedback-panel {
+  cursor: crosshair !important;
+}
+
+.experiment-stage.experiment-cursor-response button,
+.experiment-stage.experiment-cursor-response .pendulum-confirm-btn {
+  cursor: pointer !important;
+}
+
+.experiment-stage.experiment-cursor-response button:disabled {
+  cursor: not-allowed !important;
+}
+
 .experiment-stage .jspsych-content {
-  max-width: 720px;
+  max-width: min(920px, 96vw);
   margin: 0 auto;
+}
+
+.experiment-stage.experiment-active .jspsych-content {
+  max-width: min(920px, 96vw);
+  padding: 1rem;
 }
 
 /* Pendulum trial */
@@ -195,7 +257,7 @@ table.trials input {
   flex-direction: column;
   align-items: stretch;
   gap: 0.65rem;
-  max-width: 580px;
+  max-width: min(920px, 96vw);
   margin: 0 auto;
   padding: 0.35rem 0 1rem;
 }
@@ -221,99 +283,6 @@ table.trials input {
 .pendulum-hud-sub {
   font-size: 0.86rem;
   color: #5a6b82;
-}
-
-/* Timeline */
-.pendulum-timeline {
-  padding: 0.65rem 0.85rem 0.75rem;
-  background: #ffffff;
-  border: 1px solid #e8ecf3;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(20, 32, 48, 0.05);
-}
-
-.pendulum-timeline-head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.35rem;
-  margin-bottom: 0.55rem;
-}
-
-.pendulum-timeline-title {
-  font-weight: 650;
-  font-size: 0.88rem;
-  color: #142030;
-  letter-spacing: 0.02em;
-}
-
-.pendulum-timeline-phase {
-  font-size: 0.82rem;
-  color: #1565c0;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
-
-.pendulum-timer-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
-  margin-bottom: 0.55rem;
-}
-
-.pendulum-timer-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.7rem 0.8rem;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
-  border: 1px solid #d9e5f2;
-}
-
-.pendulum-timer-label {
-  font-size: 0.74rem;
-  color: #5a6b82;
-  letter-spacing: 0.04em;
-}
-
-.pendulum-timer-value {
-  font-size: 1.28rem;
-  font-weight: 700;
-  color: #142030;
-  font-variant-numeric: tabular-nums;
-}
-
-.pendulum-timeline-readout {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.8rem;
-  color: #5a6b82;
-}
-
-.pendulum-timeline-total {
-  font-variant-numeric: tabular-nums;
-}
-
-.pendulum-timeline-divider {
-  color: #a0adbf;
-}
-
-.pendulum-timeline-note {
-  color: #6d7d92;
-}
-
-.pendulum-timeline.finished .pendulum-timer-card {
-  background: linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%);
-}
-
-@media (max-width: 560px) {
-  .pendulum-timer-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .pendulum-explore-actions {
@@ -360,10 +329,30 @@ table.trials input:disabled {
 .pendulum-canvas {
   display: block;
   width: 100%;
-  max-width: 560px;
+  max-width: min(820px, 92vw);
   height: auto;
   background: #ffffff;
   touch-action: none;
+}
+
+.pendulum-fixation-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.pendulum-fixation-plus {
+  font-size: clamp(2.5rem, 8vmin, 4rem);
+  font-weight: 300;
+  line-height: 1;
+  color: #111111;
+  user-select: none;
+  pointer-events: none;
 }
 
 .pendulum-occlusion-overlay {
@@ -372,6 +361,7 @@ table.trials input:disabled {
   top: 0;
   right: 0;
   bottom: 0;
+  z-index: 4;
   background: rgba(200, 206, 216, 0.52);
   pointer-events: none;
   display: none;
@@ -390,6 +380,10 @@ table.trials input:disabled {
   font-size: 0.92rem;
   color: #37485e;
   text-align: center;
+}
+
+.pendulum-confirm-btn:disabled {
+  opacity: 0.45;
 }
 
 .pendulum-confirm-btn {

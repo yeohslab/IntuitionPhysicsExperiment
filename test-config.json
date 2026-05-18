@@ -1,21 +1,28 @@
 {
-  "version": 1,
+  "version": 3,
   "blocks": [
     {
       "trials": [
         {
-          "startAngleDeg": 60,
+          "kind": "practice",
+          "startAngleDeg": 45,
           "initialAngularVelocityDegPerS": 0,
-          "lengthPx": 200,
-          "visibleMs": 1500,
-          "invisibleMs": 800
+          "lengthM": 1,
+          "phaseDivisors": [2, 2, 2, 2]
         },
         {
+          "kind": "response",
+          "startAngleDeg": 60,
+          "initialAngularVelocityDegPerS": 0,
+          "lengthM": 1,
+          "phaseDivisors": [2, 2, 2, 2]
+        },
+        {
+          "kind": "response",
           "startAngleDeg": 0,
-          "initialAngularVelocityDegPerS": 600,
-          "lengthPx": 200,
-          "visibleMs": 1500,
-          "invisibleMs": 800
+          "initialAngularVelocityDegPerS": 120,
+          "lengthM": 1,
+          "phaseDivisors": [2, 2, 2, 2]
         }
       ]
     }

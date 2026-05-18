@@ -1,6 +1,7 @@
 /**
- * 单摆模拟：预计算轨迹 → 自动播放时间轴（可视/不可视对应显示）→ 汇报时间末端摆角。
- * 约定：竖直向下为 0°，向右为正，向左为负。
+ * 单摆模拟：预计算轨迹 → 自动播放（可视/不可视）→ 汇报时间末端摆角。
+ * 动力学：θ̈ = −(g/L) sin θ。周期 T 由守恒 Ē 解析/积分求得；轨迹用 RK4 积分（与 T 一致）。
+ * 角度与角速度约定：竖直向下为 0°，向右为正、向左为负；角速度正值表示摆角增大（向右摆）。
  * 系统能量：E\u0304 = E/(mgL) = ω²L/(2g) + (1 − cosθ)
  *   低能：E\u0304 = 0.4（小幅 libration）
  *   中能：E\u0304 = 1.4（大幅 libration）
@@ -9,7 +10,15 @@
 (function (global) {
   'use strict';
 
-  var G_EFF_PX = 2000;
+  /** 重力加速度 (m/s²)，杆-球转动模型 θ̈ = −(g/L) sin θ */
+  var G_MPS2 = 9.80665;
+  /** 画布显示：1 m 对应像素数（越大摆球活动区越大） */
+  var PX_PER_M = 280;
+  /** 每试次开始注视点「+」最短呈现时间 (ms) */
+  var FIXATION_MS = 1000;
+  /** 能量轨迹推进、转圈周期积分步长 (s) */
+  var DT_ENERGY = 1 / 8192;
+  var THETA_INTEGRAL_STEPS = 65536;
 
   var ENERGY_LEVELS = {
     low: 0.4,
@@ -22,23 +31,31 @@
    * libration（E\u0304 < 2）：起点放在转折点，θ₀ = arccos(1 − E\u0304)，ω₀ = 0。
    * rotation（E\u0304 > 2）：起点放在最低点 θ₀ = 0，ω₀ = √(2gE\u0304/L)。
    */
-  function deriveInitialFromEnergy(level, lengthPx) {
+  function lengthMToPx(Lm) {
+    return Number(Lm) * PX_PER_M;
+  }
+
+  function deriveInitialFromEnergy(level, lengthM) {
     if (!Object.prototype.hasOwnProperty.call(ENERGY_LEVELS, level)) return null;
     var Ebar = ENERGY_LEVELS[level];
-    var L = Number(lengthPx);
+    var L = Number(lengthM);
     if (!isFinite(L) || L <= 0) return null;
     if (Ebar < 2) {
       var theta0 = Math.acos(1 - Ebar);
       return {
         startAngleDeg: rad2deg(theta0),
         initialAngularVelocityDegPerS: 0,
+        startAngleRad: theta0,
+        initialAngularVelocityRadPerS: 0,
         energyBar: Ebar,
       };
     }
-    var omega = Math.sqrt((2 * G_EFF_PX * Ebar) / L);
+    var omega = Math.sqrt((2 * G_MPS2 * Ebar) / L);
     return {
       startAngleDeg: 0,
       initialAngularVelocityDegPerS: rad2deg(omega),
+      startAngleRad: 0,
+      initialAngularVelocityRadPerS: omega,
       energyBar: Ebar,
     };
   }
@@ -55,77 +72,265 @@
     return (r * 180) / Math.PI;
   }
 
-  function computeEnergyBar(thetaDeg, omegaDegPerS, lengthPx) {
-    var L = Number(lengthPx);
-    if (!isFinite(L) || L <= 0) return NaN;
-    var th = deg2rad(Number(thetaDeg) || 0);
-    var om = deg2rad(Number(omegaDegPerS) || 0);
-    return (om * om * L) / (2 * G_EFF_PX) + (1 - Math.cos(th));
+  /** 仿真弧度 θ → 被试汇报角度（°，竖直向下 0°，右正左负） */
+  function thetaToUserDeg(theta) {
+    return rad2deg(theta);
   }
 
-  function rk4Step(theta, omega, L, dt) {
+  function computeEnergyBar(thetaRad, omegaRadPerS, lengthM) {
+    var L = Number(lengthM);
+    if (!isFinite(L) || L <= 0) return NaN;
+    var th = Number(thetaRad) || 0;
+    var om = Number(omegaRadPerS) || 0;
+    return (om * om * L) / (2 * G_MPS2) + (1 - Math.cos(th));
+  }
+
+  /** 由 Ē 得角速度大小 |ω|(θ) = √(2g/L · (Ē − 1 + cosθ)) */
+  function omegaMagnitudeFromEnergy(theta, Ebar, lengthM) {
+    var u = ((2 * G_MPS2) / lengthM) * (Ebar - 1 + Math.cos(theta));
+    return u > 0 ? Math.sqrt(u) : 0;
+  }
+
+  /** 第一类完全椭圆积分 K(m)，m = sin²(θ_max/2)，AGM */
+  function completeEllipticK(m) {
+    if (m >= 1) return Infinity;
+    if (m <= 0) return Math.PI / 2;
+    var a = 1;
+    var b = Math.sqrt(1 - m);
+    while (Math.abs(a - b) > 1e-15 * a) {
+      var t = 0.5 * (a + b);
+      b = Math.sqrt(a * b);
+      a = t;
+    }
+    return Math.PI / (2 * a);
+  }
+
+  /** ∫_{θ_a}^{θ_b} dθ / |ω(θ)|，ω 仅由能量决定 */
+  function integrateTimeOverTheta(thetaA, thetaB, lengthM, Ebar) {
+    var lo = Math.min(thetaA, thetaB);
+    var hi = Math.max(thetaA, thetaB);
+    if (hi - lo < 1e-14) return 0;
+    var n = THETA_INTEGRAL_STEPS;
+    var h = (hi - lo) / n;
+    function invOmega(th) {
+      var om = omegaMagnitudeFromEnergy(th, Ebar, lengthM);
+      return om > 1e-12 ? 1 / om : Infinity;
+    }
+    var sum = invOmega(lo) + invOmega(h);
+    for (var i = 1; i < n; i += 2) {
+      sum += 4 * invOmega(lo + i * h);
+    }
+    for (var j = 2; j < n; j += 2) {
+      sum += 2 * invOmega(lo + j * h);
+    }
+    return (h / 3) * sum;
+  }
+
+  /** 摆动（Ē < 2）：T = 4√(L/g) K(sin²(θ_max/2))，θ_max = arccos(1−Ē) */
+  function periodLibrationFromEnergy(lengthM, Ebar) {
+    if (Ebar >= 2) return NaN;
+    var cosTurn = clamp(1 - Ebar, -1, 1);
+    var thetaMax = Math.acos(cosTurn);
+    var m = Math.sin(thetaMax * 0.5) * Math.sin(thetaMax * 0.5);
+    return 4 * Math.sqrt(lengthM / G_MPS2) * completeEllipticK(m);
+  }
+
+  /**
+   * 转圈（Ē ≥ 2）：T = ∫ dθ/ω(θ)，从 θ₀ 沿初角速度方向转过 2π（ω 由 Ē 决定）。
+   */
+  function periodRotationFromEnergy(theta0, omega0, lengthM, Ebar) {
+    var spinSign = Math.sign(omega0) || 1;
+    var thetaEnd = theta0 + spinSign * 2 * Math.PI;
+    return integrateTimeOverTheta(theta0, thetaEnd, lengthM, Ebar);
+  }
+
+  function estimatePeriodSec(theta0, omega0, lengthM, Ebar) {
+    if (Ebar >= 2 - 1e-10) {
+      var tRot = periodRotationFromEnergy(theta0, omega0, lengthM, Ebar);
+      if (!isFinite(tRot) || tRot <= 0) {
+        throw new Error('无法由能量积分估计转圈周期 T（Ē≥2）');
+      }
+      return tRot;
+    }
+    var tLib = periodLibrationFromEnergy(lengthM, Ebar);
+    if (!isFinite(tLib) || tLib <= 0) {
+      throw new Error('无法由能量估计摆动周期 T');
+    }
+    return tLib;
+  }
+
+  function estimatePeriodMs(startAngleRad, w0RadPerS, lengthM) {
+    var L = Number(lengthM);
+    if (!isFinite(L) || L <= 0) return NaN;
+    var th0 = Number(startAngleRad) || 0;
+    var om0 = Number(w0RadPerS) || 0;
+    var Ebar = computeEnergyBar(th0, om0, L);
+    return estimatePeriodSec(th0, om0, L, Ebar) * 1000;
+  }
+
+  function rk4Step(theta, omega, lengthM, dt) {
     function f(th, om) {
       return {
         dth: om,
-        dom: (-G_EFF_PX / L) * Math.sin(th),
+        dom: (-G_MPS2 / lengthM) * Math.sin(th),
       };
     }
-
     var k1 = f(theta, omega);
     var k2 = f(theta + 0.5 * dt * k1.dth, omega + 0.5 * dt * k1.dom);
     var k3 = f(theta + 0.5 * dt * k2.dth, omega + 0.5 * dt * k2.dom);
     var k4 = f(theta + dt * k3.dth, omega + dt * k3.dom);
-
-    var dth = (dt / 6) * (k1.dth + 2 * k2.dth + 2 * k3.dth + k4.dth);
-    var dom = (dt / 6) * (k1.dom + 2 * k2.dom + 2 * k3.dom + k4.dom);
-    return { theta: theta + dth, omega: omega + dom };
+    return {
+      theta: theta + (dt / 6) * (k1.dth + 2 * k2.dth + 2 * k3.dth + k4.dth),
+      omega: omega + (dt / 6) * (k1.dom + 2 * k2.dom + 2 * k3.dom + k4.dom),
+    };
   }
 
-  function integrate(state, L, advanceBy, maxDt) {
+  function integrateRk4(state, lengthM, advanceBy, maxDt) {
     var t = 0;
     var dt = maxDt;
-    while (t + dt <= advanceBy + 1e-9) {
-      var s = rk4Step(state.theta, state.omega, L, dt);
+    while (t + dt <= advanceBy + 1e-12) {
+      var s = rk4Step(state.theta, state.omega, lengthM, dt);
       state.theta = s.theta;
       state.omega = s.omega;
       t += dt;
     }
     var rem = advanceBy - t;
-    if (rem > 1e-8) {
-      var s2 = rk4Step(state.theta, state.omega, L, rem);
+    if (rem > 1e-14) {
+      var s2 = rk4Step(state.theta, state.omega, lengthM, rem);
       state.theta = s2.theta;
       state.omega = s2.omega;
     }
   }
 
-  function buildTrajectory(startAngleDeg, w0Deg, L, visibleMs, invisibleMs) {
-    var SIM_DT = 1 / 240;
-    var totalMs = visibleMs + invisibleMs;
+  /** 轨迹：RK4 解 θ̈=−(g/L)sinθ；周期 T 仍仅由 Ē 的解析/积分公式给出 */
+  function stateAtTimeRk4(theta0, omega0, lengthM, tSec) {
+    var state = { theta: theta0, omega: omega0 };
+    if (tSec > 0) integrateRk4(state, lengthM, tSec, DT_ENERGY);
+    return state;
+  }
+
+  /**
+   * 将试次参数解析为播放阶段（可视/不可视交替）。
+   * phaseDivisors[i]：第 i 段时长 = T / divisor；偶数段可视，奇数段不可视。
+   */
+  function resolvePhases(params) {
+    var startAngleRad = Number(params.startAngleRad);
+    var w0Rad = Number(params.initialAngularVelocityRadPerS);
+    var Lm = Number(params.lengthM);
+    var divisors = params.phaseDivisors;
+    if (!Array.isArray(divisors) || divisors.length !== 4) {
+      throw new Error('phaseDivisors 须为 4 个正数（四段 T/x）');
+    }
+    var periodMs = estimatePeriodMs(startAngleRad, w0Rad, Lm);
+    var phases = divisors.map(function (x, i) {
+      var d = Number(x);
+      if (!isFinite(d) || d <= 0) throw new Error('阶段周期除数须为正数');
+      return {
+        visible: i % 2 === 0,
+        durationMs: periodMs / d,
+        periodDivisor: d,
+      };
+    });
+    return { phases: phases, periodMs: periodMs };
+  }
+
+  function totalPhaseMs(phases) {
+    var sum = 0;
+    for (var i = 0; i < phases.length; i++) sum += phases[i].durationMs;
+    return sum;
+  }
+
+  function phaseBoundaries(phases) {
+    var bounds = [0];
+    var acc = 0;
+    for (var i = 0; i < phases.length; i++) {
+      acc += phases[i].durationMs;
+      bounds.push(acc);
+    }
+    return bounds;
+  }
+
+  function isVisibleAtTime(tMs, phases) {
+    var acc = 0;
+    for (var i = 0; i < phases.length; i++) {
+      if (tMs < acc + phases[i].durationMs - 1e-6) return phases[i].visible;
+      acc += phases[i].durationMs;
+    }
+    return phases.length ? phases[phases.length - 1].visible : true;
+  }
+
+  function buildTrajectory(startAngleRad, w0Rad, lengthM, phases) {
+    var totalMs = totalPhaseMs(phases);
+    var th0 = Number(startAngleRad) || 0;
+    var om0 = Number(w0Rad) || 0;
     if (totalMs <= 0) {
-      return [{ tMs: 0, theta: deg2rad(startAngleDeg) }];
+      return [{ tMs: 0, theta: th0 }];
     }
     var totalSec = totalMs / 1000;
-    var state = {
-      theta: deg2rad(startAngleDeg),
-      omega: deg2rad(w0Deg),
-    };
+    var state = { theta: th0, omega: om0 };
+    var dt = DT_ENERGY;
     var samples = [{ tMs: 0, theta: state.theta }];
     var tSec = 0;
-    while (tSec < totalSec - 1e-12) {
-      var step = Math.min(SIM_DT, totalSec - tSec);
-      integrate(state, L, step, SIM_DT);
+    while (tSec < totalSec - 1e-14) {
+      var step = Math.min(dt, totalSec - tSec);
+      integrateRk4(state, lengthM, step, dt);
       tSec += step;
       samples.push({ tMs: Math.min(totalMs, tSec * 1000), theta: state.theta });
     }
     var last = samples[samples.length - 1];
-    if (last.tMs < totalMs - 0.05) {
-      integrate(state, L, (totalMs - last.tMs) / 1000, SIM_DT);
-      samples.push({ tMs: totalMs, theta: state.theta });
-    } else {
-      last.tMs = totalMs;
-      last.theta = state.theta;
-    }
+    last.tMs = totalMs;
+    last.theta = state.theta;
     return samples;
+  }
+
+  function migrateRawTrial(raw) {
+    var t = Object.assign({}, raw);
+    if (t.lengthM == null && t.lengthPx != null) {
+      t.lengthM = Number(t.lengthPx) / PX_PER_M;
+    }
+    if (t.startAngleDeg == null && t.startAngleRad != null) {
+      t.startAngleDeg = rad2deg(Number(t.startAngleRad));
+    }
+    if (t.initialAngularVelocityDegPerS == null && t.initialAngularVelocityRadPerS != null) {
+      t.initialAngularVelocityDegPerS = rad2deg(Number(t.initialAngularVelocityRadPerS));
+    }
+    return t;
+  }
+
+  function normalizeTrial(raw) {
+    raw = migrateRawTrial(raw);
+    var kind = raw.kind || raw.trialKind || 'response';
+    if (kind !== 'practice' && kind !== 'response') {
+      throw new Error('试次类型须为 practice（练习）或 response（正式）');
+    }
+    var startAngleDeg = Number(raw.startAngleDeg);
+    var initialAngularVelocityDegPerS = Number(raw.initialAngularVelocityDegPerS);
+    if (!isFinite(startAngleDeg)) throw new Error('启动角度 (°) 无效');
+    if (!isFinite(initialAngularVelocityDegPerS)) {
+      throw new Error('初始角速度 (°/s) 无效');
+    }
+    var base = {
+      kind: kind,
+      startAngleDeg: startAngleDeg,
+      initialAngularVelocityDegPerS: initialAngularVelocityDegPerS,
+      startAngleRad: deg2rad(startAngleDeg),
+      initialAngularVelocityRadPerS: deg2rad(initialAngularVelocityDegPerS),
+      lengthM: Number(raw.lengthM),
+    };
+    if (!isFinite(base.lengthM) || base.lengthM <= 0) throw new Error('摆长 (m) 须为正数');
+    if (!raw.phaseDivisors || raw.phaseDivisors.length !== 4) {
+      throw new Error('须提供 4 个 phaseDivisors（可视₁/不可视₁/可视₂/不可视₂ 的 T/x）');
+    }
+    base.phaseDivisors = raw.phaseDivisors.map(Number);
+    return base;
+  }
+
+  function setExperimentCursor(mode) {
+    var stage = document.getElementById('jspsych-target');
+    if (!stage) return;
+    stage.classList.remove('experiment-cursor-hidden', 'experiment-cursor-response');
+    if (mode === 'hidden') stage.classList.add('experiment-cursor-hidden');
+    else if (mode === 'response') stage.classList.add('experiment-cursor-response');
   }
 
   function thetaAtTime(samples, tMs) {
@@ -145,10 +350,50 @@
     return a.theta + u * (b.theta - a.theta);
   }
 
+  /** 指针位置 → 摆角 θ（竖直向下 0，右正；与 drawRodAndBob 一致） */
   function angleFromPointer(cx, cy, px, py) {
     var dx = px - cx;
     var dy = py - cy;
     return Math.atan2(dx, dy);
+  }
+
+  function bobXY(cx, cy, L, theta) {
+    return { x: cx + L * Math.sin(theta), y: cy + L * Math.cos(theta) };
+  }
+
+  function drawFixationCross(ctx, cx, cy, armPx) {
+    var size = armPx || 22;
+    ctx.save();
+    ctx.strokeStyle = '#111111';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - size, cy);
+    ctx.lineTo(cx + size, cy);
+    ctx.moveTo(cx, cy - size);
+    ctx.lineTo(cx, cy + size);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /** 在轨迹圆上绘制确信范围扇形（与摆球同一 θ 坐标系） */
+  function fillConfidenceWedge(ctx, cx, cy, rIn, rOut, thetaLow, thetaHigh) {
+    var steps = Math.max(8, Math.ceil((Math.abs(thetaHigh - thetaLow) / (Math.PI / 36))));
+    ctx.beginPath();
+    var p0 = bobXY(cx, cy, rIn, thetaLow);
+    ctx.moveTo(p0.x, p0.y);
+    for (var i = 1; i <= steps; i++) {
+      var th = thetaLow + ((thetaHigh - thetaLow) * i) / steps;
+      var p = bobXY(cx, cy, rIn, th);
+      ctx.lineTo(p.x, p.y);
+    }
+    for (var j = steps; j >= 0; j--) {
+      var th2 = thetaLow + ((thetaHigh - thetaLow) * j) / steps;
+      var p2 = bobXY(cx, cy, rOut, th2);
+      ctx.lineTo(p2.x, p2.y);
+    }
+    ctx.closePath();
+    ctx.fill();
   }
 
   /**
@@ -157,19 +402,26 @@
    * @param {function(object): void} onComplete
    */
   function runTrial(container, params, onComplete) {
-    var L = Number(params.lengthPx);
-    var visibleMs = Number(params.visibleMs);
-    var invisibleMs = Number(params.invisibleMs);
-    var totalMs = visibleMs + invisibleMs;
+    params = normalizeTrial(params);
+    var trialKind = params.kind;
+    var isPractice = trialKind === 'practice';
+    var resolved = resolvePhases(params);
+    var phases = resolved.phases;
+    var periodMs = resolved.periodMs;
+    var bounds = phaseBoundaries(phases);
+    var totalMs = bounds[bounds.length - 1];
 
-    var startAngleDeg = Number(params.startAngleDeg);
-    var w0Deg = Number(params.initialAngularVelocityDegPerS);
-    var energyBar = computeEnergyBar(startAngleDeg, w0Deg, L);
+    var Lm = Number(params.lengthM);
+    var L = lengthMToPx(Lm);
+    var startAngleRad = Number(params.startAngleRad);
+    var w0Rad = Number(params.initialAngularVelocityRadPerS);
+    var energyBar = computeEnergyBar(startAngleRad, w0Rad, Lm);
 
-    var samples = buildTrajectory(startAngleDeg, w0Deg, L, visibleMs, invisibleMs);
-    var thetaVisibleEnd = thetaAtTime(samples, visibleMs);
-    var thetaInvisibleEnd = thetaAtTime(samples, totalMs);
-    var finalTheta = thetaInvisibleEnd;
+    var samples = buildTrajectory(startAngleRad, w0Rad, Lm, phases);
+    var finalTheta = thetaAtTime(samples, totalMs);
+    var phaseEndThetasDeg = bounds.slice(1).map(function (tMs) {
+      return thetaToUserDeg(thetaAtTime(samples, tMs));
+    });
 
     var wrap = document.createElement('div');
     wrap.className = 'pendulum-trial';
@@ -177,37 +429,12 @@
     var hud = document.createElement('div');
     hud.className = 'pendulum-hud';
 
-    var timelineEl = document.createElement('div');
-    timelineEl.className = 'pendulum-timeline';
-    timelineEl.innerHTML =
-      '<div class="pendulum-timeline-head">' +
-      '<span class="pendulum-timeline-title">试次时间轴（自动播放）</span>' +
-      '<span class="pendulum-timeline-phase" aria-live="polite"></span>' +
-      '</div>' +
-      '<div class="pendulum-timer-grid" aria-label="试次播放计时器">' +
-      '<div class="pendulum-timer-card">' +
-      '<span class="pendulum-timer-label">已播放</span>' +
-      '<span class="pendulum-timer-value pendulum-timer-elapsed">00:00.000</span>' +
-      '</div>' +
-      '</div>' +
-      '<div class="pendulum-timeline-readout">' +
-      '<span class="pendulum-timeline-total"></span>' +
-      '<span class="pendulum-timeline-divider" aria-hidden="true">/</span>' +
-      '<span class="pendulum-timeline-note">前段可视，后段不可视</span>' +
-      '</div>';
-
-    var phaseReadout = timelineEl.querySelector('.pendulum-timeline-phase');
-    var readout = timelineEl.querySelector('.pendulum-timeline-readout');
-    var elapsedReadout = timelineEl.querySelector('.pendulum-timer-elapsed');
-    var totalReadout = timelineEl.querySelector('.pendulum-timeline-total');
-
     var canvasWrap = document.createElement('div');
     canvasWrap.className = 'pendulum-canvas-wrap';
 
     var canvas = document.createElement('canvas');
     canvas.className = 'pendulum-canvas';
-    // 方形画布，足以容纳以摆长 L 为半径的完整圆周（边距起码 32 px）
-    var canvasSize = Math.max(560, Math.ceil(2 * L + 80));
+    var canvasSize = Math.max(720, Math.ceil(2 * L + 140));
     canvas.width = canvasSize;
     canvas.height = canvasSize;
     var ctx = canvas.getContext('2d');
@@ -216,8 +443,14 @@
     overlay.className = 'pendulum-occlusion-overlay';
     overlay.setAttribute('aria-hidden', 'true');
 
+    var fixationOverlay = document.createElement('div');
+    fixationOverlay.className = 'pendulum-fixation-overlay';
+    fixationOverlay.setAttribute('aria-hidden', 'false');
+    fixationOverlay.innerHTML = '<span class="pendulum-fixation-plus">+</span>';
+
     canvasWrap.appendChild(canvas);
     canvasWrap.appendChild(overlay);
+    canvasWrap.appendChild(fixationOverlay);
 
     var exploreActions = document.createElement('div');
     exploreActions.className = 'pendulum-explore-actions';
@@ -254,7 +487,6 @@
     feedbackPanel.appendChild(nextBtn);
 
     wrap.appendChild(hud);
-    wrap.appendChild(timelineEl);
     wrap.appendChild(canvasWrap);
     wrap.appendChild(exploreActions);
     wrap.appendChild(responsePanel);
@@ -275,23 +507,33 @@
       ctx.restore();
     };
 
-    var drawBobAndRod = function (theta) {
-      var bx = cx + L * Math.sin(theta);
-      var by = cy + L * Math.cos(theta);
+    var ROD_WIDTH = Math.max(7, Math.min(14, L * 0.04));
+
+    function drawRodAndBob(theta, style) {
+      style = style || {};
+      var rodColor = style.rodColor || '#455a64';
+      var bobColor = style.bobColor || '#c62828';
+      var showBob = style.showBob !== false;
+      var showRod = style.showRod !== false;
+      var bob = bobXY(cx, cy, L, theta);
       ctx.save();
-      ctx.strokeStyle = '#263238';
-      ctx.lineWidth = 3;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(bx, by);
-      ctx.stroke();
-      ctx.fillStyle = '#c62828';
-      ctx.beginPath();
-      ctx.arc(bx, by, R_BOB, 0, Math.PI * 2);
-      ctx.fill();
+      if (showRod) {
+        ctx.strokeStyle = rodColor;
+        ctx.lineWidth = ROD_WIDTH;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(bob.x, bob.y);
+        ctx.stroke();
+      }
+      if (showBob) {
+        ctx.fillStyle = bobColor;
+        ctx.beginPath();
+        ctx.arc(bob.x, bob.y, R_BOB, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
-    };
+    }
 
     var drawFaintArc = function () {
       ctx.save();
@@ -309,56 +551,35 @@
     var playbackStartTs = null;
     var rafId = null;
 
-    function phaseLabel(tMs) {
-      if (tMs < visibleMs - 1e-6) return '可视';
-      return '不可视';
-    }
-
-    function formatTimer(ms) {
-      var safeMs = Math.max(0, Math.round(ms));
-      var minutes = Math.floor(safeMs / 60000);
-      var seconds = Math.floor((safeMs % 60000) / 1000);
-      var millis = safeMs % 1000;
-      return (
-        String(minutes).padStart(2, '0') +
-        ':' +
-        String(seconds).padStart(2, '0') +
-        '.' +
-        String(millis).padStart(3, '0')
-      );
-    }
-
     function drawFrame(tMs) {
       var th = thetaAtTime(samples, tMs);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawFaintArc();
       pivotDraw();
-      var vis = tMs < visibleMs - 1e-6;
-      if (vis) {
-        drawBobAndRod(th);
+      if (isVisibleAtTime(tMs, phases)) {
+        drawRodAndBob(th);
         overlay.style.display = 'none';
       } else {
         overlay.style.display = 'block';
       }
-      phaseReadout.textContent = phaseLabel(tMs) + '阶段';
-      elapsedReadout.textContent = formatTimer(tMs);
-      totalReadout.textContent = '总时长 ' + formatTimer(totalMs);
-      readout.setAttribute(
-        'aria-label',
-        '当前为' + phaseLabel(tMs) + '阶段，已播放' + Math.round(tMs) + '毫秒，总时长' + Math.round(totalMs) + '毫秒'
-      );
     }
 
     function setHudPlaying() {
-      hud.innerHTML =
-        '<span class="pendulum-hud-main">请观察单摆运动，时间轴会自动播放。</span>' +
-        '<span class="pendulum-hud-sub">不可视阶段摆球会被遮挡。播放结束后请汇报试次结束时刻的摆球位置。</span>';
+      if (isPractice) {
+        hud.innerHTML =
+          '<span class="pendulum-hud-main">练习试次：请观察单摆运动。</span>' +
+          '<span class="pendulum-hud-sub">本试次仅呈现、无需作答。可视与不可视阶段将交替播放。</span>';
+      } else {
+        hud.innerHTML =
+          '<span class="pendulum-hud-main">请观察单摆运动。</span>' +
+          '<span class="pendulum-hud-sub">不可视阶段摆球会被遮挡。全部阶段播放结束后请汇报试次结束时刻的摆球位置。</span>';
+      }
     }
 
     function setHudResponse() {
       hud.innerHTML =
         '<span class="pendulum-hud-main">请汇报<strong>试次结束时刻</strong>摆球应在的角度。</span>' +
-        '<span class="pendulum-hud-sub">拖动画布上的蓝色摆球（默认在最低点），完成后点击确认。</span>';
+        '<span class="pendulum-hud-sub">先在圆轨迹上<strong>点击</strong>放置摆球，可拖动调整，再点击「确认汇报」。</span>';
     }
 
     function setHudFeedback() {
@@ -367,8 +588,24 @@
         '<span class="pendulum-hud-sub">拖动画布以在蓝色点两侧开合扭弧（越宽 = 越不确定）。完成后点击“确认范围”。</span>';
     }
 
-    setHudPlaying();
-    drawFrame(0);
+    function setHudFixation() {
+      hud.innerHTML =
+        '<span class="pendulum-hud-main">请看屏幕中央的注视点（<strong>+</strong>）。</span>' +
+        '<span class="pendulum-hud-sub">约 ' +
+        Math.round(FIXATION_MS / 1000) +
+        ' 秒后自动开始；也可<strong>点击画面</strong>或按<strong>空格</strong>提前继续。</span>';
+    }
+
+    function drawFixationFrame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      drawFixationCross(ctx, cx, cy, Math.max(22, canvasSize * 0.028));
+    }
+
+    function showFixationOverlay(visible) {
+      fixationOverlay.style.display = visible ? 'flex' : 'none';
+    }
 
     function tick(ts) {
       if (playbackStartTs == null) playbackStartTs = ts;
@@ -384,47 +621,121 @@
       drawFrame(t);
       rafId = requestAnimationFrame(tick);
     }
-    rafId = requestAnimationFrame(tick);
+
+    function startPlayback() {
+      setHudPlaying();
+      exploreActions.style.display = '';
+      playStatus.textContent = '正在播放…';
+      drawFrame(0);
+      playbackStartTs = null;
+      rafId = requestAnimationFrame(tick);
+    }
+
+    var fixationEnded = false;
+    var fixationStartTs = performance.now();
+    var fixationMs = 0;
+
+    function endFixation() {
+      if (fixationEnded) return;
+      fixationEnded = true;
+      fixationMs = performance.now() - fixationStartTs;
+      window.removeEventListener('keydown', onFixationKey);
+      canvas.removeEventListener('click', onFixationClick);
+      fixationOverlay.removeEventListener('click', onFixationClick);
+      showFixationOverlay(false);
+      overlay.style.display = 'none';
+      startPlayback();
+    }
+
+    function onFixationKey(ev) {
+      if (ev.key === ' ' || ev.key === 'Enter') {
+        ev.preventDefault();
+        endFixation();
+      }
+    }
+
+    function onFixationClick(ev) {
+      ev.preventDefault();
+      endFixation();
+    }
+
+    setHudFixation();
+    setExperimentCursor('hidden');
+    exploreActions.style.display = 'none';
+    overlay.style.display = 'none';
+    drawFixationFrame();
+    showFixationOverlay(true);
+    window.addEventListener('keydown', onFixationKey);
+    canvas.addEventListener('click', onFixationClick);
+    fixationOverlay.addEventListener('click', onFixationClick);
+    setTimeout(endFixation, FIXATION_MS);
+
+    function buildBaseData() {
+      var out = {
+        trialKind: trialKind,
+        energyBar: energyBar,
+        startAngleDeg: Number(params.startAngleDeg),
+        initialAngularVelocityDegPerS: Number(params.initialAngularVelocityDegPerS),
+        startAngleRad: startAngleRad,
+        initialAngularVelocityRadPerS: w0Rad,
+        lengthM: Lm,
+        lengthPx: L,
+        periodMs: periodMs,
+        phaseDivisors: phases.map(function (p) {
+          return p.periodDivisor;
+        }),
+        phaseDurationsMs: phases.map(function (p) {
+          return p.durationMs;
+        }),
+        phaseVisible: phases.map(function (p) {
+          return p.visible;
+        }),
+        phaseEndThetaDeg: phaseEndThetasDeg,
+        totalPlaybackMs: totalMs,
+        trueAngleAtEndDeg: thetaToUserDeg(finalTheta),
+        fixationMs: fixationMs,
+      };
+      return out;
+    }
 
     function onPlaybackEnd() {
-      timelineEl.classList.add('finished');
       exploreActions.style.display = 'none';
 
+      if (isPractice) {
+        var practiceData = buildBaseData();
+        practiceData.playbackMs = performance.now() - trialStartTs;
+        container.removeChild(wrap);
+        onComplete(practiceData);
+        return;
+      }
+
       responsePanel.style.display = 'flex';
+      setExperimentCursor('response');
       var responseStart = performance.now();
       var playbackMs = responseStart - trialStartTs;
 
-      // 默认从最低点（0°）开始，避免泄露真实答案
-      var reportedTheta = 0;
+      var reportedTheta = null;
+      var hasPlacedMarker = false;
       overlay.style.display = 'none';
       setHudResponse();
+      btn.disabled = true;
 
       function drawResponseFrame() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawFaintArc();
         pivotDraw();
-        var bx = cx + L * Math.sin(reportedTheta);
-        var by = cy + L * Math.cos(reportedTheta);
-        // 拖动中的摆球（蓝色）与连接的虚线
-        ctx.save();
-        ctx.strokeStyle = 'rgba(21, 101, 192, 0.45)';
-        ctx.setLineDash([6, 4]);
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(bx, by);
-        ctx.stroke();
-        ctx.restore();
-        ctx.save();
-        ctx.fillStyle = '#1565c0';
-        ctx.beginPath();
-        ctx.arc(bx, by, R_BOB, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-        angleReadout.textContent =
-          '汇报角度：' +
-          rad2deg(reportedTheta).toFixed(1) +
-          '°（竖直向下为 0°，右正左负）';
+        if (hasPlacedMarker && reportedTheta != null) {
+          drawRodAndBob(reportedTheta, {
+            rodColor: '#1565c0',
+            bobColor: '#1565c0',
+          });
+          angleReadout.textContent =
+            '汇报角度：' +
+            thetaToUserDeg(reportedTheta).toFixed(1) +
+            '°（竖直向下为 0°，右正左负）';
+        } else {
+          angleReadout.textContent = '请在圆轨迹上点击以放置摆球';
+        }
       }
 
       drawResponseFrame();
@@ -442,21 +753,29 @@
       }
 
       var dragging = false;
+      function placeFromPointer(ev) {
+        var p = pointerToCanvas(ev);
+        var dx = p.x - cx;
+        var dy = p.y - cy;
+        if (Math.hypot(dx, dy) < 8) return;
+        reportedTheta = Math.atan2(dx, dy);
+        hasPlacedMarker = true;
+        btn.disabled = false;
+        drawResponseFrame();
+      }
       function onDown(ev) {
         ev.preventDefault();
         dragging = true;
+        placeFromPointer(ev);
       }
       function onUp(ev) {
         ev.preventDefault();
         dragging = false;
       }
       function onMove(ev) {
-        if (!dragging) return;
+        if (!dragging || !hasPlacedMarker) return;
         ev.preventDefault();
-        var p = pointerToCanvas(ev);
-        // 全 360° 范围：不再 clamp，使用 [-π, π]
-        reportedTheta = angleFromPointer(cx, cy, p.x, p.y);
-        drawResponseFrame();
+        placeFromPointer(ev);
       }
 
       canvas.addEventListener('mousedown', onDown);
@@ -478,6 +797,7 @@
       }
 
       btn.onclick = function () {
+        if (!hasPlacedMarker || reportedTheta == null) return;
         cleanupListeners();
         var rt = performance.now() - responseStart;
         function wrapAngle(a) {
@@ -486,7 +806,7 @@
         }
         var trueWrapped = wrapAngle(finalTheta);
         var rawDiff = wrapAngle(reportedTheta - trueWrapped);
-        var errDeg = rad2deg(rawDiff);
+        var errDeg = thetaToUserDeg(rawDiff);
 
         // 进入“确信范围”阶段：被试拖动表达对点估计的不确定性
         responsePanel.style.display = 'none';
@@ -502,75 +822,52 @@
           drawFaintArc();
           pivotDraw();
 
-          // 范围弧带：以摆长 L 为中心半径，画定宽环带
           var bandHalf = Math.max(8, R_BOB * 0.6);
           var rIn = L - bandHalf;
           var rOut = L + bandHalf;
-          function canvasAngleFromTheta(theta) {
-            return Math.atan2(Math.cos(theta), Math.sin(theta));
-          }
           var thetaLow = reportedTheta - halfWidth;
           var thetaHigh = reportedTheta + halfWidth;
-          var aLow = canvasAngleFromTheta(thetaLow);
-          var aHigh = canvasAngleFromTheta(thetaHigh);
-          // 填充从 aLow 顺时针到 aHigh（调整方向使侍后与范围匹配）
+
           ctx.save();
           ctx.fillStyle = 'rgba(21, 101, 192, 0.20)';
-          ctx.beginPath();
-          ctx.arc(cx, cy, rOut, aLow, aHigh, true);
-          ctx.arc(cx, cy, rIn, aHigh, aLow, false);
-          ctx.closePath();
-          ctx.fill();
+          fillConfidenceWedge(ctx, cx, cy, rIn, rOut, thetaLow, thetaHigh);
           ctx.restore();
 
-          // 范围边界线（两根径向虚线）
           ctx.save();
           ctx.strokeStyle = 'rgba(21, 101, 192, 0.55)';
           ctx.setLineDash([5, 4]);
           ctx.lineWidth = 1.5;
           [thetaLow, thetaHigh].forEach(function (th) {
-            var bx = cx + rOut * Math.sin(th);
-            var by = cy + rOut * Math.cos(th);
-            var ix = cx + rIn * Math.sin(th);
-            var iy = cy + rIn * Math.cos(th);
+            var inner = bobXY(cx, cy, rIn, th);
+            var outer = bobXY(cx, cy, rOut, th);
             ctx.beginPath();
-            ctx.moveTo(ix, iy);
-            ctx.lineTo(bx, by);
+            ctx.moveTo(inner.x, inner.y);
+            ctx.lineTo(outer.x, outer.y);
             ctx.stroke();
           });
           ctx.restore();
 
-          // 已确认的点估计（蓝色摆球与实线摆结）
-          var bx = cx + L * Math.sin(reportedTheta);
-          var by = cy + L * Math.cos(reportedTheta);
-          ctx.save();
-          ctx.strokeStyle = 'rgba(21, 101, 192, 0.85)';
-          ctx.lineWidth = 2.5;
-          ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(cx, cy);
-          ctx.lineTo(bx, by);
-          ctx.stroke();
-          ctx.fillStyle = '#1565c0';
-          ctx.beginPath();
-          ctx.arc(bx, by, R_BOB, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
+          drawRodAndBob(reportedTheta, {
+            rodColor: '#1565c0',
+            bobColor: '#1565c0',
+          });
 
           var halfDeg = rad2deg(halfWidth);
-          var lowDeg = rad2deg(thetaLow);
-          var highDeg = rad2deg(thetaHigh);
+          var lowDeg = thetaToUserDeg(thetaLow);
+          var highDeg = thetaToUserDeg(thetaHigh);
           feedbackReadout.innerHTML =
-            '<span class="fb-rep">中心：' + rad2deg(reportedTheta).toFixed(1) + '°</span>' +
+            '<span class="fb-rep">中心：' + thetaToUserDeg(reportedTheta).toFixed(1) + '°</span>' +
             '　<span class="fb-half">±' + halfDeg.toFixed(1) + '°</span>' +
             '　<span class="fb-range">[' + lowDeg.toFixed(1) + '°, ' + highDeg.toFixed(1) + '°]</span>';
         }
 
         function updateHalfWidthFromPointer(ev) {
           var p = pointerToCanvas(ev);
-          var pointerTheta = angleFromPointer(cx, cy, p.x, p.y);
+          var dx = p.x - cx;
+          var dy = p.y - cy;
+          if (Math.hypot(dx, dy) < 8) return;
+          var pointerTheta = Math.atan2(dx, dy);
           var d = pointerTheta - reportedTheta;
-          // 包裹到 (-π, π]
           d = ((d + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
           halfWidth = Math.min(Math.PI, Math.max(deg2rad(0.5), Math.abs(d)));
           drawConfidenceFrame();
@@ -614,23 +911,14 @@
           cleanupConfListeners();
           var confidenceMs = performance.now() - confidenceStart;
           var halfWidthDeg = rad2deg(halfWidth);
-          var lowerDeg = rad2deg(reportedTheta - halfWidth);
-          var upperDeg = rad2deg(reportedTheta + halfWidth);
+          var lowerDeg = thetaToUserDeg(reportedTheta - halfWidth);
+          var upperDeg = thetaToUserDeg(reportedTheta + halfWidth);
           // 检验误差是否在报告范围内（以包裹后的误差判断）
           var hitRange = Math.abs(rawDiff) <= halfWidth + 1e-9;
-          var data = {
-            energyBar: energyBar,
-            startAngleDeg: startAngleDeg,
-            initialAngularVelocityDegPerS: w0Deg,
-            lengthPx: L,
-            visibleMs: visibleMs,
-            invisibleMs: invisibleMs,
-            thetaVisibleEndDeg: rad2deg(thetaVisibleEnd),
-            thetaInvisibleEndDeg: rad2deg(thetaInvisibleEnd),
-            trueAngleAtTimelineEndDeg: rad2deg(finalTheta),
-            trueAngleWrappedDeg: rad2deg(trueWrapped),
-            trueAngleAtReportCueDeg: rad2deg(finalTheta),
-            reportedAngleDeg: rad2deg(reportedTheta),
+          var data = Object.assign(buildBaseData(), {
+            trueAngleWrappedDeg: thetaToUserDeg(trueWrapped),
+            trueAngleAtReportCueDeg: thetaToUserDeg(finalTheta),
+            reportedAngleDeg: thetaToUserDeg(reportedTheta),
             angularErrorDeg: errDeg,
             absAngularErrorDeg: Math.abs(errDeg),
             confidenceHalfWidthDeg: halfWidthDeg,
@@ -640,7 +928,7 @@
             playbackPhaseMs: playbackMs,
             responseRtMs: rt,
             confidenceRtMs: confidenceMs,
-          };
+          });
           container.removeChild(wrap);
           onComplete(data);
         };
@@ -652,8 +940,24 @@
     runTrial: runTrial,
     deg2rad: deg2rad,
     rad2deg: rad2deg,
+    thetaToUserDeg: thetaToUserDeg,
+    lengthMToPx: lengthMToPx,
+    estimatePeriodMs: estimatePeriodMs,
+    resolvePhases: resolvePhases,
+    normalizeTrial: normalizeTrial,
+    migrateRawTrial: migrateRawTrial,
+    setExperimentCursor: setExperimentCursor,
     deriveInitialFromEnergy: deriveInitialFromEnergy,
     computeEnergyBar: computeEnergyBar,
+    G_MPS2: G_MPS2,
+    PX_PER_M: PX_PER_M,
+    DT_ENERGY: DT_ENERGY,
+    omegaMagnitudeFromEnergy: omegaMagnitudeFromEnergy,
+    periodLibrationFromEnergy: periodLibrationFromEnergy,
+    periodRotationFromEnergy: periodRotationFromEnergy,
+    integrateTimeOverTheta: integrateTimeOverTheta,
+    stateAtTimeRk4: stateAtTimeRk4,
+    completeEllipticK: completeEllipticK,
     ENERGY_LEVELS: ENERGY_LEVELS,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
