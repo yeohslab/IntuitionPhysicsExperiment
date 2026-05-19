@@ -1,15 +1,20 @@
 (function () {
   'use strict';
 
-  function validateTrial(t, prefix) {
-    if (window.PendulumLab && PendulumLab.normalizeTrial) {
+  function validateUnit(t, prefix) {
+    if (window.PendulumLab && PendulumLab.normalizeUnit) {
       try {
-        return PendulumLab.normalizeTrial(t);
+        return PendulumLab.normalizeUnit(t);
       } catch (e) {
         throw new Error(prefix + (e.message || String(e)));
       }
     }
     var kind = t.kind || 'response';
+    if (kind === 'text') {
+      var displayText = t.displayText != null ? String(t.displayText) : '';
+      if (!displayText.trim()) throw new Error(prefix + '显示文字不能为空');
+      return { kind: 'text', displayText: displayText };
+    }
     if (kind !== 'practice' && kind !== 'response') {
       throw new Error(prefix + '类型无效');
     }
@@ -25,12 +30,12 @@
     num(t.initialAngularVelocityDegPerS, '初始角速度(°/s)');
     var L = num(t.lengthM, '摆长(m)');
     if (L <= 0 || L > 20) throw new Error(prefix + '摆长须在 (0,20] m');
-    if (!t.phaseDivisors || t.phaseDivisors.length !== 4) {
-      throw new Error(prefix + '须提供 4 个 phaseDivisors');
+    if (!t.phaseFactors || t.phaseFactors.length !== 4) {
+      throw new Error(prefix + '须提供 4 个 phaseFactors');
     }
-    t.phaseDivisors.forEach(function (x, i) {
-      var d = num(x, '阶段' + (i + 1) + ' 除数');
-      if (d <= 0) throw new Error(prefix + '周期除数须为正');
+    t.phaseFactors.forEach(function (x, i) {
+      var f = num(x, '阶段' + (i + 1) + ' 系数');
+      if (f <= 0) throw new Error(prefix + '阶段系数须为正');
     });
     return t;
   }
@@ -40,16 +45,16 @@
       throw new Error('配置须包含至少一个 block');
     }
     var ver = Number(cfg.version);
-    if (ver !== 2 && ver !== 3) {
-      throw new Error('配置文件 version 须为 2 或 3（建议用配置导出页导出 v3）');
+    if (ver !== 2 && ver !== 3 && ver !== 4) {
+      throw new Error('配置文件 version 须为 2、3 或 4（建议用配置导出页导出 v4）');
     }
     cfg.blocks.forEach(function (block, bi) {
       if (!block.trials || !Array.isArray(block.trials) || block.trials.length === 0) {
-        throw new Error('Block ' + (bi + 1) + ' 须包含至少一个试次');
+        throw new Error('Block ' + (bi + 1) + ' 须包含至少一个单元');
       }
       block.trials.forEach(function (t, ti) {
-        var prefix = 'Block ' + (bi + 1) + ' 试次 ' + (ti + 1) + ': ';
-        block.trials[ti] = validateTrial(t, prefix);
+        var prefix = 'Block ' + (bi + 1) + ' 单元 ' + (ti + 1) + ': ';
+        block.trials[ti] = validateUnit(t, prefix);
       });
     });
     return cfg;
@@ -66,12 +71,18 @@
     URL.revokeObjectURL(a.href);
   }
 
-  function trialLabel(trialParams) {
-    return trialParams.kind === 'practice' ? '练习' : '正式';
+  function unitLabel(trialParams) {
+    if (trialParams.kind === 'practice') return '练习';
+    if (trialParams.kind === 'text') return '文字';
+    return '正式';
   }
 
   function buildTimeline(jsPsych, cfg) {
     var timeline = [];
+    var fixationSec =
+      window.PendulumLab && PendulumLab.FIXATION_MS
+        ? Math.round(PendulumLab.FIXATION_MS / 1000)
+        : 2;
 
     timeline.push({
       type: jsPsychHtmlKeyboardResponse,
@@ -79,12 +90,15 @@
         '<div style="max-width:640px;margin:0 auto;text-align:left;line-height:1.6">' +
         '<p>实验即将开始。</p>' +
         '<ul>' +
-        '<li><strong>练习试次</strong>：仅观看单摆运动，无需作答，用于熟悉任务。</li>' +
-        '<li><strong>正式试次</strong>：按配置自动播放<strong>四段</strong>（可视 → 不可视 → 可视 → 不可视），段长为 <code>T/x</code>（<code>T</code> 为根据该试次物理参数估计的周期）。</li>' +
+        '<li><strong>练习试次</strong>：注视点后观看单摆运动，无需作答。</li>' +
+        '<li><strong>正式试次</strong>：注视点后按配置自动播放<strong>四段</strong>（可视 → 不可视 → 可视 → 不可视），段长为 <code>x·T</code>（默认可视 <code>1T</code>、不可视 <code>0.4T</code>）。</li>' +
+        '<li><strong>文字显示单元</strong>：注视点后于屏幕中央显示配置文字，阅读完毕后按<strong>空格键</strong>继续。</li>' +
         '<li>实验在全屏下进行，播放阶段鼠标隐藏；作答阶段鼠标重新显示。</li>' +
         '<li><strong>第一步（点估计）</strong>：在圆轨迹上<strong>点击</strong>放置摆球并拖动调整，汇报<strong>全部播放结束</strong>时的角度，点击“确认汇报”。</li>' +
         '<li><strong>第二步（确信范围）</strong>：拖出弧带表示不确定范围，点击“确认范围”。</li>' +
-        '<li>每试次开始先看注视点「+」，再播放单摆。</li>' +
+        '<li>单摆单元开始先看注视点「+」约 ' +
+        fixationSec +
+        ' 秒（可点击或按空格提前继续），再进入本单元内容。</li>' +
         '<li>角度与角速度：竖直向下 0°，向右为正、向左为负。</li>' +
         '</ul>' +
         '<p>按任意键继续。</p>' +
@@ -95,7 +109,25 @@
       block.trials.forEach(function (trialParams, trialIndex) {
         var mountId =
           'pend-' + blockIndex + '-' + trialIndex + '-' + Math.random().toString(36).slice(2, 9);
-        var kindLabel = trialLabel(trialParams);
+        var kindLabel = unitLabel(trialParams);
+        var isText = trialParams.kind === 'text';
+
+        var trialData = {
+          block_index: blockIndex,
+          trial_index: trialIndex,
+          trial_kind: trialParams.kind,
+        };
+        if (isText) {
+          trialData.config_displayText = trialParams.displayText;
+        } else {
+          trialData.config_startAngleDeg = trialParams.startAngleDeg;
+          trialData.config_initialAngularVelocityDegPerS =
+            trialParams.initialAngularVelocityDegPerS;
+          trialData.config_lengthM = trialParams.lengthM;
+          trialData.config_phaseFactors = trialParams.phaseFactors
+            ? JSON.stringify(trialParams.phaseFactors)
+            : null;
+        }
 
         timeline.push({
           type: jsPsychHtmlKeyboardResponse,
@@ -103,7 +135,7 @@
             '<div style="text-align:center;width:100%">' +
             '<p style="margin:0 0 8px">Block ' +
             (blockIndex + 1) +
-            ' / 试次 ' +
+            ' / 单元 ' +
             (trialIndex + 1) +
             '（' +
             kindLabel +
@@ -114,17 +146,7 @@
           choices: 'NO_KEYS',
           trial_duration: null,
           response_ends_trial: false,
-          data: {
-            block_index: blockIndex,
-            trial_index: trialIndex,
-            trial_kind: trialParams.kind,
-            config_startAngleDeg: trialParams.startAngleDeg,
-            config_initialAngularVelocityDegPerS: trialParams.initialAngularVelocityDegPerS,
-            config_lengthM: trialParams.lengthM,
-            config_phaseDivisors: trialParams.phaseDivisors
-              ? JSON.stringify(trialParams.phaseDivisors)
-              : null,
-          },
+          data: trialData,
           on_load: function () {
             var el = document.getElementById(mountId);
             if (!el || !window.PendulumLab) {
@@ -133,7 +155,11 @@
               });
               return;
             }
-            PendulumLab.runTrial(el, trialParams, function (data) {
+            var run =
+              isText && PendulumLab.runTextUnit
+                ? PendulumLab.runTextUnit
+                : PendulumLab.runUnit || PendulumLab.runTrial;
+            run(el, trialParams, function (data) {
               jsPsych.finishTrial(
                 Object.assign({}, data, {
                   block_index: blockIndex,

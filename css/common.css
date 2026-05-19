@@ -253,6 +253,7 @@ table.trials input {
 
 /* Pendulum trial */
 .pendulum-trial {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -338,21 +339,96 @@ table.trials input:disabled {
 .pendulum-fixation-overlay {
   position: absolute;
   inset: 0;
-  z-index: 6;
+  z-index: 200;
   display: none;
   align-items: center;
   justify-content: center;
   background: #ffffff;
   cursor: pointer;
+  pointer-events: auto;
+}
+
+.pendulum-fixation-overlay.is-active {
+  display: flex !important;
+}
+
+.experiment-stage.showing-fixation .pendulum-fixation-overlay.is-active {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  width: 100vw;
+  height: 100vh;
+}
+
+.pendulum-fixation-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  pointer-events: none;
 }
 
 .pendulum-fixation-plus {
-  font-size: clamp(2.5rem, 8vmin, 4rem);
+  font-size: clamp(3rem, 12vmin, 5.5rem);
   font-weight: 300;
   line-height: 1;
   color: #111111;
   user-select: none;
-  pointer-events: none;
+}
+
+.pendulum-fixation-hint {
+  font-size: 0.9rem;
+  color: #5a6b82;
+  letter-spacing: 0.04em;
+}
+
+.pendulum-trial.is-fixating .pendulum-hud,
+.pendulum-trial.is-fixating .pendulum-canvas-wrap,
+.pendulum-trial.is-fixating .pendulum-text-stage,
+.pendulum-trial.is-fixating .pendulum-explore-actions,
+.pendulum-trial.is-fixating .pendulum-response-panel,
+.pendulum-trial.is-fixating .pendulum-feedback-panel {
+  visibility: hidden;
+}
+
+.pendulum-text-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: min(52vh, 420px);
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.pendulum-text-inner {
+  max-width: 36rem;
+  font-size: clamp(1.05rem, 2.4vw, 1.35rem);
+  line-height: 1.65;
+  color: #1a2332;
+  text-align: center;
+  white-space: pre-wrap;
+}
+
+.trials textarea.trial-display-text {
+  width: 100%;
+  min-width: 10rem;
+  min-height: 4.5rem;
+  font: inherit;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid #c5cdd8;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.trials .cell-muted {
+  color: #9aa8b8;
+  text-align: center;
 }
 
 .pendulum-occlusion-overlay {

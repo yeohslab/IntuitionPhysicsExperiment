@@ -15,7 +15,8 @@
   /** 画布显示：1 m 对应像素数（越大摆球活动区越大） */
   var PX_PER_M = 280;
   /** 每试次开始注视点「+」最短呈现时间 (ms) */
-  var FIXATION_MS = 1000;
+  var FIXATION_MS = 2000;
+  var DEFAULT_PHASE_FACTORS = [1, 0.4, 1, 0.4];
   /** 能量轨迹推进、转圈周期积分步长 (s) */
   var DT_ENERGY = 1 / 8192;
   var THETA_INTEGRAL_STEPS = 65536;
@@ -211,24 +212,36 @@
 
   /**
    * 将试次参数解析为播放阶段（可视/不可视交替）。
-   * phaseDivisors[i]：第 i 段时长 = T / divisor；偶数段可视，奇数段不可视。
+   * phaseFactors[i]：第 i 段时长 = x·T；偶数段可视，奇数段不可视。
    */
+  function resolvePhaseFactors(raw) {
+    if (raw.phaseFactors && raw.phaseFactors.length === 4) {
+      return raw.phaseFactors.map(Number);
+    }
+    if (raw.phaseDivisors && raw.phaseDivisors.length === 4) {
+      return raw.phaseDivisors.map(function (d) {
+        return 1 / Number(d);
+      });
+    }
+    return DEFAULT_PHASE_FACTORS.slice();
+  }
+
   function resolvePhases(params) {
     var startAngleRad = Number(params.startAngleRad);
     var w0Rad = Number(params.initialAngularVelocityRadPerS);
     var Lm = Number(params.lengthM);
-    var divisors = params.phaseDivisors;
-    if (!Array.isArray(divisors) || divisors.length !== 4) {
-      throw new Error('phaseDivisors 须为 4 个正数（四段 T/x）');
+    var factors = params.phaseFactors;
+    if (!Array.isArray(factors) || factors.length !== 4) {
+      throw new Error('phaseFactors 须为 4 个正数（四段 x·T）');
     }
     var periodMs = estimatePeriodMs(startAngleRad, w0Rad, Lm);
-    var phases = divisors.map(function (x, i) {
-      var d = Number(x);
-      if (!isFinite(d) || d <= 0) throw new Error('阶段周期除数须为正数');
+    var phases = factors.map(function (x, i) {
+      var f = Number(x);
+      if (!isFinite(f) || f <= 0) throw new Error('阶段系数 x 须为正数');
       return {
         visible: i % 2 === 0,
-        durationMs: periodMs / d,
-        periodDivisor: d,
+        durationMs: periodMs * f,
+        periodFactor: f,
       };
     });
     return { phases: phases, periodMs: periodMs };
@@ -294,14 +307,27 @@
     if (t.initialAngularVelocityDegPerS == null && t.initialAngularVelocityRadPerS != null) {
       t.initialAngularVelocityDegPerS = rad2deg(Number(t.initialAngularVelocityRadPerS));
     }
+    if (!t.phaseFactors || t.phaseFactors.length !== 4) {
+      t.phaseFactors = resolvePhaseFactors(t);
+    }
+    delete t.phaseDivisors;
     return t;
+  }
+
+  function normalizeTextUnit(raw) {
+    raw = migrateRawTrial(raw);
+    var kind = raw.kind || raw.trialKind || 'text';
+    if (kind !== 'text') throw new Error('文字单元类型须为 text');
+    var displayText = raw.displayText != null ? String(raw.displayText) : '';
+    if (!displayText.trim()) throw new Error('文字显示单元须提供 displayText');
+    return { kind: 'text', displayText: displayText };
   }
 
   function normalizeTrial(raw) {
     raw = migrateRawTrial(raw);
     var kind = raw.kind || raw.trialKind || 'response';
     if (kind !== 'practice' && kind !== 'response') {
-      throw new Error('试次类型须为 practice（练习）或 response（正式）');
+      throw new Error('试次类型须为 practice（练习）、response（正式）或 text（文字）');
     }
     var startAngleDeg = Number(raw.startAngleDeg);
     var initialAngularVelocityDegPerS = Number(raw.initialAngularVelocityDegPerS);
@@ -318,11 +344,17 @@
       lengthM: Number(raw.lengthM),
     };
     if (!isFinite(base.lengthM) || base.lengthM <= 0) throw new Error('摆长 (m) 须为正数');
-    if (!raw.phaseDivisors || raw.phaseDivisors.length !== 4) {
-      throw new Error('须提供 4 个 phaseDivisors（可视₁/不可视₁/可视₂/不可视₂ 的 T/x）');
+    if (!raw.phaseFactors || raw.phaseFactors.length !== 4) {
+      throw new Error('须提供 4 个 phaseFactors（可视₁/不可视₁/可视₂/不可视₂ 的 x·T）');
     }
-    base.phaseDivisors = raw.phaseDivisors.map(Number);
+    base.phaseFactors = raw.phaseFactors.map(Number);
     return base;
+  }
+
+  function normalizeUnit(raw) {
+    var kind = (raw && (raw.kind || raw.trialKind)) || 'response';
+    if (kind === 'text') return normalizeTextUnit(raw);
+    return normalizeTrial(raw);
   }
 
   function setExperimentCursor(mode) {
@@ -397,6 +429,149 @@
   }
 
   /**
+   * 文字显示单元：注视点后于屏幕中央显示文字，按空格进入下一单元。
+   * @param {HTMLElement} container
+   * @param {object} params
+   * @param {function(object): void} onComplete
+   */
+  function runTextUnit(container, params, onComplete) {
+    params = normalizeTextUnit(params);
+    var unitStartTs = performance.now();
+
+    var wrap = document.createElement('div');
+    wrap.className = 'pendulum-trial pendulum-text-unit';
+
+    var hud = document.createElement('div');
+    hud.className = 'pendulum-hud';
+
+    var textStage = document.createElement('div');
+    textStage.className = 'pendulum-text-stage';
+    var textInner = document.createElement('div');
+    textInner.className = 'pendulum-text-inner';
+    textInner.textContent = params.displayText;
+    textStage.appendChild(textInner);
+
+    var fixationOverlay = document.createElement('div');
+    fixationOverlay.className = 'pendulum-fixation-overlay';
+    fixationOverlay.setAttribute('role', 'img');
+    fixationOverlay.setAttribute('aria-label', '注视点');
+    fixationOverlay.innerHTML =
+      '<div class="pendulum-fixation-inner">' +
+      '<span class="pendulum-fixation-plus">+</span>' +
+      '<span class="pendulum-fixation-hint">注视点 · 点击或按空格继续</span>' +
+      '</div>';
+
+    wrap.appendChild(hud);
+    wrap.appendChild(textStage);
+    wrap.appendChild(fixationOverlay);
+    container.appendChild(wrap);
+
+    textStage.style.display = 'none';
+
+    function setHudFixation() {
+      hud.innerHTML =
+        '<span class="pendulum-hud-main">请看屏幕中央的注视点（<strong>+</strong>）。</span>' +
+        '<span class="pendulum-hud-sub">约 ' +
+        Math.round(FIXATION_MS / 1000) +
+        ' 秒后自动开始；也可<strong>点击画面</strong>或按<strong>空格</strong>提前继续。</span>';
+    }
+
+    function setHudText() {
+      hud.innerHTML =
+        '<span class="pendulum-hud-main">请阅读屏幕中央的文字。</span>' +
+        '<span class="pendulum-hud-sub">阅读完毕后按<strong>空格键</strong>继续。</span>';
+    }
+
+    function showFixationOverlay(visible) {
+      var stage = document.getElementById('jspsych-target');
+      if (visible) {
+        fixationOverlay.classList.add('is-active');
+        fixationOverlay.style.display = 'flex';
+        wrap.classList.add('is-fixating');
+        if (stage) stage.classList.add('showing-fixation');
+      } else {
+        fixationOverlay.classList.remove('is-active');
+        fixationOverlay.style.display = 'none';
+        wrap.classList.remove('is-fixating');
+        if (stage) stage.classList.remove('showing-fixation');
+      }
+    }
+
+    var fixationEnded = false;
+    var fixationReady = false;
+    var fixationStartTs = performance.now();
+    var fixationMs = 0;
+    var fixationTimerId = null;
+    var textShownTs = null;
+
+    function startTextPhase() {
+      setHudText();
+      setExperimentCursor('hidden');
+      textStage.style.display = 'flex';
+      textShownTs = performance.now();
+      window.addEventListener('keydown', onTextKey, true);
+    }
+
+    function endFixation() {
+      if (fixationEnded || !fixationReady) return;
+      fixationEnded = true;
+      fixationMs = performance.now() - fixationStartTs;
+      if (fixationTimerId != null) clearTimeout(fixationTimerId);
+      window.removeEventListener('keydown', onFixationKey, true);
+      fixationOverlay.removeEventListener('click', onFixationClick);
+      textStage.removeEventListener('click', onFixationClick);
+      showFixationOverlay(false);
+      startTextPhase();
+    }
+
+    function onFixationKey(ev) {
+      if (!fixationReady || fixationEnded) return;
+      if (ev.key === ' ' || ev.key === 'Enter') {
+        ev.preventDefault();
+        ev.stopPropagation();
+        endFixation();
+      }
+    }
+
+    function onFixationClick(ev) {
+      if (!fixationReady || fixationEnded) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      endFixation();
+    }
+
+    function onTextKey(ev) {
+      if (ev.key !== ' ') return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      window.removeEventListener('keydown', onTextKey, true);
+      var textDisplayMs = textShownTs != null ? performance.now() - textShownTs : 0;
+      container.removeChild(wrap);
+      onComplete({
+        trialKind: 'text',
+        displayText: params.displayText,
+        fixationMs: fixationMs,
+        textDisplayMs: textDisplayMs,
+        unitDurationMs: performance.now() - unitStartTs,
+      });
+    }
+
+    setHudFixation();
+    setExperimentCursor('hidden');
+    showFixationOverlay(true);
+    window.addEventListener('keydown', onFixationKey, true);
+    fixationOverlay.addEventListener('click', onFixationClick);
+    textStage.addEventListener('click', onFixationClick);
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        fixationReady = true;
+        fixationStartTs = performance.now();
+        fixationTimerId = setTimeout(endFixation, FIXATION_MS);
+      });
+    });
+  }
+
+  /**
    * @param {HTMLElement} container
    * @param {object} params
    * @param {function(object): void} onComplete
@@ -445,12 +620,16 @@
 
     var fixationOverlay = document.createElement('div');
     fixationOverlay.className = 'pendulum-fixation-overlay';
-    fixationOverlay.setAttribute('aria-hidden', 'false');
-    fixationOverlay.innerHTML = '<span class="pendulum-fixation-plus">+</span>';
+    fixationOverlay.setAttribute('role', 'img');
+    fixationOverlay.setAttribute('aria-label', '注视点');
+    fixationOverlay.innerHTML =
+      '<div class="pendulum-fixation-inner">' +
+      '<span class="pendulum-fixation-plus">+</span>' +
+      '<span class="pendulum-fixation-hint">注视点 · 点击或按空格继续</span>' +
+      '</div>';
 
     canvasWrap.appendChild(canvas);
     canvasWrap.appendChild(overlay);
-    canvasWrap.appendChild(fixationOverlay);
 
     var exploreActions = document.createElement('div');
     exploreActions.className = 'pendulum-explore-actions';
@@ -491,6 +670,7 @@
     wrap.appendChild(exploreActions);
     wrap.appendChild(responsePanel);
     wrap.appendChild(feedbackPanel);
+    wrap.appendChild(fixationOverlay);
     container.appendChild(wrap);
 
     // 支点放在画布中央，确保以 L 为半径的完整圆都可见
@@ -604,7 +784,18 @@
     }
 
     function showFixationOverlay(visible) {
-      fixationOverlay.style.display = visible ? 'flex' : 'none';
+      var stage = document.getElementById('jspsych-target');
+      if (visible) {
+        fixationOverlay.classList.add('is-active');
+        fixationOverlay.style.display = 'flex';
+        wrap.classList.add('is-fixating');
+        if (stage) stage.classList.add('showing-fixation');
+      } else {
+        fixationOverlay.classList.remove('is-active');
+        fixationOverlay.style.display = 'none';
+        wrap.classList.remove('is-fixating');
+        if (stage) stage.classList.remove('showing-fixation');
+      }
     }
 
     function tick(ts) {
@@ -632,43 +823,60 @@
     }
 
     var fixationEnded = false;
+    var fixationReady = false;
     var fixationStartTs = performance.now();
     var fixationMs = 0;
+    var fixationTimerId = null;
 
     function endFixation() {
-      if (fixationEnded) return;
+      if (fixationEnded || !fixationReady) return;
       fixationEnded = true;
       fixationMs = performance.now() - fixationStartTs;
-      window.removeEventListener('keydown', onFixationKey);
-      canvas.removeEventListener('click', onFixationClick);
+      if (fixationTimerId != null) clearTimeout(fixationTimerId);
+      window.removeEventListener('keydown', onFixationKey, true);
       fixationOverlay.removeEventListener('click', onFixationClick);
+      canvas.removeEventListener('click', onFixationClick);
       showFixationOverlay(false);
       overlay.style.display = 'none';
       startPlayback();
     }
 
     function onFixationKey(ev) {
+      if (!fixationReady || fixationEnded) return;
       if (ev.key === ' ' || ev.key === 'Enter') {
         ev.preventDefault();
+        ev.stopPropagation();
         endFixation();
       }
     }
 
     function onFixationClick(ev) {
+      if (!fixationReady || fixationEnded) return;
       ev.preventDefault();
+      ev.stopPropagation();
       endFixation();
     }
 
-    setHudFixation();
-    setExperimentCursor('hidden');
-    exploreActions.style.display = 'none';
-    overlay.style.display = 'none';
-    drawFixationFrame();
-    showFixationOverlay(true);
-    window.addEventListener('keydown', onFixationKey);
-    canvas.addEventListener('click', onFixationClick);
-    fixationOverlay.addEventListener('click', onFixationClick);
-    setTimeout(endFixation, FIXATION_MS);
+    function startFixationPhase() {
+      setHudFixation();
+      setExperimentCursor('hidden');
+      exploreActions.style.display = 'none';
+      overlay.style.display = 'none';
+      drawFixationFrame();
+      showFixationOverlay(true);
+      window.addEventListener('keydown', onFixationKey, true);
+      fixationOverlay.addEventListener('click', onFixationClick);
+      canvas.addEventListener('click', onFixationClick);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          fixationReady = true;
+          fixationStartTs = performance.now();
+          fixationTimerId = setTimeout(endFixation, FIXATION_MS);
+        });
+      });
+    }
+
+    startFixationPhase();
 
     function buildBaseData() {
       var out = {
@@ -681,8 +889,8 @@
         lengthM: Lm,
         lengthPx: L,
         periodMs: periodMs,
-        phaseDivisors: phases.map(function (p) {
-          return p.periodDivisor;
+        phaseFactors: phases.map(function (p) {
+          return p.periodFactor;
         }),
         phaseDurationsMs: phases.map(function (p) {
           return p.durationMs;
@@ -938,6 +1146,13 @@
 
   global.PendulumLab = {
     runTrial: runTrial,
+    runTextUnit: runTextUnit,
+    runUnit: function (container, params, onComplete) {
+      params = migrateRawTrial(params);
+      var kind = params.kind || params.trialKind || 'response';
+      if (kind === 'text') return runTextUnit(container, params, onComplete);
+      return runTrial(container, params, onComplete);
+    },
     deg2rad: deg2rad,
     rad2deg: rad2deg,
     thetaToUserDeg: thetaToUserDeg,
@@ -945,7 +1160,12 @@
     estimatePeriodMs: estimatePeriodMs,
     resolvePhases: resolvePhases,
     normalizeTrial: normalizeTrial,
+    normalizeTextUnit: normalizeTextUnit,
+    normalizeUnit: normalizeUnit,
     migrateRawTrial: migrateRawTrial,
+    resolvePhaseFactors: resolvePhaseFactors,
+    DEFAULT_PHASE_FACTORS: DEFAULT_PHASE_FACTORS,
+    FIXATION_MS: FIXATION_MS,
     setExperimentCursor: setExperimentCursor,
     deriveInitialFromEnergy: deriveInitialFromEnergy,
     computeEnergyBar: computeEnergyBar,

@@ -1,28 +1,32 @@
 {
-  "version": 3,
+  "version": 4,
   "blocks": [
     {
       "trials": [
+        {
+          "kind": "text",
+          "displayText": "欢迎参加实验。请阅读本段说明，阅读完毕后按空格键继续。"
+        },
         {
           "kind": "practice",
           "startAngleDeg": 45,
           "initialAngularVelocityDegPerS": 0,
           "lengthM": 1,
-          "phaseDivisors": [2, 2, 2, 2]
+          "phaseFactors": [1, 0.4, 1, 0.4]
         },
         {
           "kind": "response",
           "startAngleDeg": 60,
           "initialAngularVelocityDegPerS": 0,
           "lengthM": 1,
-          "phaseDivisors": [2, 2, 2, 2]
+          "phaseFactors": [1, 0.4, 1, 0.4]
         },
         {
           "kind": "response",
           "startAngleDeg": 0,
           "initialAngularVelocityDegPerS": 120,
           "lengthM": 1,
-          "phaseDivisors": [2, 2, 2, 2]
+          "phaseFactors": [1, 0.4, 1, 0.4]
         }
       ]
     }
