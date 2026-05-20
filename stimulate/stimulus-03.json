@@ -2,12 +2,36 @@
   "schemaVersion": 3,
   "sequence": [
     {
+      "kind": "rest",
+      "id": "74cccdaf-6dab-4265-bf55-3fcacf7242ff",
+      "units": [
+        {
+          "id": "349e0616-d1b1-4c78-9545-5ff39e3f5a17",
+          "type": "textControl",
+          "text": "# 直觉物理实验\n\n欢迎参加本实验\n\n## 实验目的\n\n我们会向您呈现**单摆**的运动。运动过程中，摆球会**时而可见、时而消失**；消失时运动仍在继续，只是画面上看不到。每个片段结束后，请您根据**内心印象**，判断摆杆在**该时刻结束点**大致指向哪个方向，并在屏幕上标出。  \n\n按空格键开始",
+          "key": " "
+        }
+      ]
+    },
+    {
       "kind": "practice",
       "id": "stim-f3-s91003-n1",
       "children": [
         {
           "id": "stim-f3-s91003-n3",
           "units": [
+            {
+              "id": "7ea54985-bf3e-4097-a66d-6896f2783d61",
+              "type": "textDisplay",
+              "text": "# 练习阶段\n\n1/3\n",
+              "durationMs": 1000
+            },
+            {
+              "id": "feea671a-931a-4787-ae24-ac9753383ab9",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n2",
               "type": "pendulumStimulus",
@@ -27,6 +51,18 @@
           "id": "stim-f3-s91003-n5",
           "units": [
             {
+              "id": "84b1dd96-78eb-4ccd-be20-03d55d4f59dd",
+              "type": "textDisplay",
+              "text": "# 练习阶段 \n\n2/3",
+              "durationMs": 1000
+            },
+            {
+              "id": "dd573d3b-e8d6-4dbe-9dd1-405020b537d1",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n4",
               "type": "pendulumStimulus",
               "theta0Deg": -74.1394353379,
@@ -45,6 +81,18 @@
           "id": "stim-f3-s91003-n7",
           "units": [
             {
+              "id": "fc4938fc-9fe2-49a2-b60f-79c898989cbb",
+              "type": "textDisplay",
+              "text": "# 练习阶段 3/3",
+              "durationMs": 1000
+            },
+            {
+              "id": "93337bde-7786-4e59-b70a-68143d75336c",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n6",
               "type": "pendulumStimulus",
               "theta0Deg": -119.4954832457,
@@ -62,12 +110,30 @@
       ]
     },
     {
+      "kind": "rest",
+      "id": "9722a06f-e7dd-41a8-8c75-96a0179fe349",
+      "units": [
+        {
+          "id": "9d57a988-317f-4726-bfd2-2da2e1d1113c",
+          "type": "textControl",
+          "text": "# 摆球任务说明\n\n## 可视\n\n- 画面上方有**悬挂点**，一根杆连着**摆球**。  \n- 摆球会按真实物理规律运动\n\n## 时间与可见性\n- 每个试次中，摆球会**显示 → 隐藏 → 再显示 → 再隐藏**，共两段可见、两段不可见。  \n- **隐藏时摆球仍在运动**，只是不画在屏幕上；请勿以为运动停止。  \n- 全部时段播放完毕后，画面会**定格**，摆球消失，并出现**圆形参考轨迹**。\n\n## 作答\n\n1. 在圆轨迹附近**用鼠标点击**您认为摆杆应处的方向。  \n2. **按住拖动**可微调摆杆角度。  \n3. 满意后按 **空格键** 或点击 **「确认」** 提交；提交后自动进入下一试次。  \n4. 系统**不会**告诉您对错，也**不会**显示正确答案。\n\n## 重要\n\n- 请估计的是**该试次全部时段结束瞬间**摆杆的角度，不是某一中间时刻\n- 每次试次的初始运动状态不同，请勿与上一试次比较，**独立判断**即可\n\n按空格开始实验",
+          "key": " "
+        }
+      ]
+    },
+    {
       "kind": "block",
       "id": "stim-f3-s91003-n12",
       "children": [
         {
           "id": "stim-f3-s91003-n9",
           "units": [
+            {
+              "id": "98c3a4ec-3693-4c08-a80d-50c20fccf1c4",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n8",
               "type": "pendulumStimulus",
@@ -87,6 +153,12 @@
           "id": "stim-f3-s91003-nb",
           "units": [
             {
+              "id": "2c2454c6-bbbe-45e8-9788-4793385f1b0f",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-na",
               "type": "pendulumStimulus",
               "theta0Deg": -15.5328849703,
@@ -104,6 +176,12 @@
         {
           "id": "stim-f3-s91003-nd",
           "units": [
+            {
+              "id": "4a7b8cb1-29ef-43f1-aeb9-9b611232803b",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-nc",
               "type": "pendulumStimulus",
@@ -123,6 +201,12 @@
           "id": "stim-f3-s91003-nf",
           "units": [
             {
+              "id": "be0acb0d-99cc-4f2d-8ec4-4f1434ec2688",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-ne",
               "type": "pendulumStimulus",
               "theta0Deg": -21.8665613048,
@@ -140,6 +224,12 @@
         {
           "id": "stim-f3-s91003-nh",
           "units": [
+            {
+              "id": "27de015f-84aa-46ec-b0f3-13aa847c2261",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-ng",
               "type": "pendulumStimulus",
@@ -159,6 +249,12 @@
           "id": "stim-f3-s91003-nj",
           "units": [
             {
+              "id": "fe43a5a0-913b-498d-ba1f-6472c6c978a2",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-ni",
               "type": "pendulumStimulus",
               "theta0Deg": -35.1548721828,
@@ -176,6 +272,12 @@
         {
           "id": "stim-f3-s91003-nl",
           "units": [
+            {
+              "id": "2107e0b6-7689-4359-a920-b3acb7da140b",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-nk",
               "type": "pendulumStimulus",
@@ -195,6 +297,12 @@
           "id": "stim-f3-s91003-nn",
           "units": [
             {
+              "id": "a531a02f-bd57-4449-bc21-66f777cd3ed2",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-nm",
               "type": "pendulumStimulus",
               "theta0Deg": 25.0258699246,
@@ -212,6 +320,12 @@
         {
           "id": "stim-f3-s91003-np",
           "units": [
+            {
+              "id": "ec143aa4-c6b2-451e-8b6a-8563417119e1",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-no",
               "type": "pendulumStimulus",
@@ -231,6 +345,12 @@
           "id": "stim-f3-s91003-nr",
           "units": [
             {
+              "id": "ac9df16a-c8cf-4e9d-a03a-b752c36c4141",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-nq",
               "type": "pendulumStimulus",
               "theta0Deg": 23.1999863964,
@@ -248,6 +368,12 @@
         {
           "id": "stim-f3-s91003-nt",
           "units": [
+            {
+              "id": "5f181497-88ae-423f-aebc-944661beb901",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-ns",
               "type": "pendulumStimulus",
@@ -267,6 +393,12 @@
           "id": "stim-f3-s91003-nv",
           "units": [
             {
+              "id": "3e7aff98-0501-4e81-8780-1758f97aee8b",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-nu",
               "type": "pendulumStimulus",
               "theta0Deg": -41.9691335689,
@@ -284,6 +416,12 @@
         {
           "id": "stim-f3-s91003-nx",
           "units": [
+            {
+              "id": "3505f144-7b72-435b-b6cf-b48efb36639e",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-nw",
               "type": "pendulumStimulus",
@@ -303,6 +441,12 @@
           "id": "stim-f3-s91003-nz",
           "units": [
             {
+              "id": "211a19de-1cf9-4669-956c-d560be648238",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-ny",
               "type": "pendulumStimulus",
               "theta0Deg": -50.2703445777,
@@ -320,6 +464,12 @@
         {
           "id": "stim-f3-s91003-n11",
           "units": [
+            {
+              "id": "6a30bad7-0c4f-40fa-b5a9-d78c8acbc7f3",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n10",
               "type": "pendulumStimulus",
@@ -345,6 +495,12 @@
           "id": "stim-f3-s91003-n14",
           "units": [
             {
+              "id": "9385f478-52fc-4148-94cd-934e1d9a2f89",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n13",
               "type": "pendulumStimulus",
               "theta0Deg": 49.0353648551,
@@ -362,6 +518,12 @@
         {
           "id": "stim-f3-s91003-n16",
           "units": [
+            {
+              "id": "8a2db3c4-8845-43c2-8092-20bca2b3f2c4",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n15",
               "type": "pendulumStimulus",
@@ -381,6 +543,12 @@
           "id": "stim-f3-s91003-n18",
           "units": [
             {
+              "id": "ca0d3ba1-73b7-4014-94af-025d03061863",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n17",
               "type": "pendulumStimulus",
               "theta0Deg": -43.6708961986,
@@ -398,6 +566,12 @@
         {
           "id": "stim-f3-s91003-n1a",
           "units": [
+            {
+              "id": "c237e419-bf0f-4f2f-b300-b06b4ef4b3e9",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n19",
               "type": "pendulumStimulus",
@@ -417,6 +591,12 @@
           "id": "stim-f3-s91003-n1c",
           "units": [
             {
+              "id": "a6e68962-2f9e-4aba-bab2-7cd20191d226",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n1b",
               "type": "pendulumStimulus",
               "theta0Deg": -7.5926846266,
@@ -434,6 +614,12 @@
         {
           "id": "stim-f3-s91003-n1e",
           "units": [
+            {
+              "id": "a7edb465-d3c0-402f-af57-835d2ab566e8",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n1d",
               "type": "pendulumStimulus",
@@ -453,6 +639,12 @@
           "id": "stim-f3-s91003-n1g",
           "units": [
             {
+              "id": "eae73826-63f8-4abc-8d0e-c4d803cd7510",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n1f",
               "type": "pendulumStimulus",
               "theta0Deg": 56.3527229894,
@@ -470,6 +662,12 @@
         {
           "id": "stim-f3-s91003-n1i",
           "units": [
+            {
+              "id": "5c06f61d-e7d6-4905-9fa5-518204341d13",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n1h",
               "type": "pendulumStimulus",
@@ -489,6 +687,12 @@
           "id": "stim-f3-s91003-n1k",
           "units": [
             {
+              "id": "7d0db5cc-7c30-4424-8f30-fa184a563c45",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n1j",
               "type": "pendulumStimulus",
               "theta0Deg": 0.9818081092,
@@ -506,6 +710,12 @@
         {
           "id": "stim-f3-s91003-n1m",
           "units": [
+            {
+              "id": "7dc54607-bf34-4fa2-bc78-1430dd30cef5",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n1l",
               "type": "pendulumStimulus",
@@ -525,6 +735,12 @@
           "id": "stim-f3-s91003-n1o",
           "units": [
             {
+              "id": "b2f01e97-9a04-4bce-a249-12d6fadaa65a",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n1n",
               "type": "pendulumStimulus",
               "theta0Deg": -21.9973806012,
@@ -542,6 +758,12 @@
         {
           "id": "stim-f3-s91003-n1q",
           "units": [
+            {
+              "id": "bdc41133-7496-49f5-b622-c6c0f62bdd3b",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n1p",
               "type": "pendulumStimulus",
@@ -561,6 +783,12 @@
           "id": "stim-f3-s91003-n1s",
           "units": [
             {
+              "id": "2c15e9d1-bde9-46b0-99d4-e769d065efd1",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n1r",
               "type": "pendulumStimulus",
               "theta0Deg": 18.3171737473,
@@ -579,6 +807,12 @@
           "id": "stim-f3-s91003-n1u",
           "units": [
             {
+              "id": "851e2d7f-7739-4b2c-8eef-4eef75bfb254",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n1t",
               "type": "pendulumStimulus",
               "theta0Deg": 59.4002708327,
@@ -596,6 +830,12 @@
         {
           "id": "stim-f3-s91003-n1w",
           "units": [
+            {
+              "id": "9053f28b-421d-4197-814d-2dfa4ecb8db7",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n1v",
               "type": "pendulumStimulus",
@@ -621,6 +861,12 @@
           "id": "stim-f3-s91003-n1z",
           "units": [
             {
+              "id": "35e26144-c9c5-4aa0-b4a5-b31d575fc998",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n1y",
               "type": "pendulumStimulus",
               "theta0Deg": 2.6424866728,
@@ -638,6 +884,12 @@
         {
           "id": "stim-f3-s91003-n21",
           "units": [
+            {
+              "id": "70376b2e-f912-4d80-85f2-78393dcad517",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n20",
               "type": "pendulumStimulus",
@@ -657,6 +909,12 @@
           "id": "stim-f3-s91003-n23",
           "units": [
             {
+              "id": "3785defe-f4c1-40d9-9df4-a93f9ec58ff5",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n22",
               "type": "pendulumStimulus",
               "theta0Deg": -30.2537382022,
@@ -674,6 +932,12 @@
         {
           "id": "stim-f3-s91003-n25",
           "units": [
+            {
+              "id": "301e880f-5e9e-4607-b36b-6998d7c87b9c",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n24",
               "type": "pendulumStimulus",
@@ -693,6 +957,12 @@
           "id": "stim-f3-s91003-n27",
           "units": [
             {
+              "id": "e233b6f8-d319-4ec4-a0e5-6835d902df98",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n26",
               "type": "pendulumStimulus",
               "theta0Deg": -37.2640457656,
@@ -710,6 +980,12 @@
         {
           "id": "stim-f3-s91003-n29",
           "units": [
+            {
+              "id": "56e55178-5bcd-404a-a839-24b7bea13c2b",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n28",
               "type": "pendulumStimulus",
@@ -729,6 +1005,12 @@
           "id": "stim-f3-s91003-n2b",
           "units": [
             {
+              "id": "2873107d-0985-42c0-94a5-1eebd72a4d74",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n2a",
               "type": "pendulumStimulus",
               "theta0Deg": -53.6883023847,
@@ -746,6 +1028,12 @@
         {
           "id": "stim-f3-s91003-n2d",
           "units": [
+            {
+              "id": "7cd0a1a0-480f-4d85-9cd0-d06ab78a92d4",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n2c",
               "type": "pendulumStimulus",
@@ -765,6 +1053,12 @@
           "id": "stim-f3-s91003-n2f",
           "units": [
             {
+              "id": "6800d1b5-72f1-41b7-8338-b22d6e9b59a0",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n2e",
               "type": "pendulumStimulus",
               "theta0Deg": 90.4071017448,
@@ -782,6 +1076,12 @@
         {
           "id": "stim-f3-s91003-n2h",
           "units": [
+            {
+              "id": "e160d5a6-7e74-4229-a09c-8d5b48bbe356",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n2g",
               "type": "pendulumStimulus",
@@ -801,6 +1101,12 @@
           "id": "stim-f3-s91003-n2j",
           "units": [
             {
+              "id": "39c69c53-f255-4046-910e-1cee51327f40",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n2i",
               "type": "pendulumStimulus",
               "theta0Deg": -46.1777506024,
@@ -818,6 +1124,12 @@
         {
           "id": "stim-f3-s91003-n2l",
           "units": [
+            {
+              "id": "fa9acdbb-9a22-4ef6-8269-1cccbcee8909",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n2k",
               "type": "pendulumStimulus",
@@ -837,6 +1149,12 @@
           "id": "stim-f3-s91003-n2n",
           "units": [
             {
+              "id": "04449f12-b835-4362-9e37-a66b776ad2dc",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n2m",
               "type": "pendulumStimulus",
               "theta0Deg": 75.0911392551,
@@ -855,6 +1173,12 @@
           "id": "stim-f3-s91003-n2p",
           "units": [
             {
+              "id": "6e1320a2-94c6-4186-ba3f-545ccdf905fb",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n2o",
               "type": "pendulumStimulus",
               "theta0Deg": -91.2676386349,
@@ -872,6 +1196,12 @@
         {
           "id": "stim-f3-s91003-n2r",
           "units": [
+            {
+              "id": "97563306-18ec-4be2-ad1b-fa8c74dd36fb",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n2q",
               "type": "pendulumStimulus",
@@ -897,6 +1227,12 @@
           "id": "stim-f3-s91003-n2u",
           "units": [
             {
+              "id": "455f745b-2161-4f5a-9e04-2f5417d4d751",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n2t",
               "type": "pendulumStimulus",
               "theta0Deg": -7.3766951356,
@@ -914,6 +1250,12 @@
         {
           "id": "stim-f3-s91003-n2w",
           "units": [
+            {
+              "id": "d506329a-e013-405d-8559-46ee6c100ef8",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n2v",
               "type": "pendulumStimulus",
@@ -933,6 +1275,12 @@
           "id": "stim-f3-s91003-n2y",
           "units": [
             {
+              "id": "618601e8-5c66-4dd0-991a-cc38709415e5",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n2x",
               "type": "pendulumStimulus",
               "theta0Deg": 47.0309962425,
@@ -950,6 +1298,12 @@
         {
           "id": "stim-f3-s91003-n30",
           "units": [
+            {
+              "id": "a0d1be7d-c429-4192-ae58-fabe7d1f25aa",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n2z",
               "type": "pendulumStimulus",
@@ -969,6 +1323,12 @@
           "id": "stim-f3-s91003-n32",
           "units": [
             {
+              "id": "439b14ea-bdab-4de5-8270-fcd6b04ced32",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n31",
               "type": "pendulumStimulus",
               "theta0Deg": 39.3270229921,
@@ -986,6 +1346,12 @@
         {
           "id": "stim-f3-s91003-n34",
           "units": [
+            {
+              "id": "ac209ea9-75a6-4fff-8cd0-e7a26885d80d",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n33",
               "type": "pendulumStimulus",
@@ -1005,6 +1371,12 @@
           "id": "stim-f3-s91003-n36",
           "units": [
             {
+              "id": "6b90b7b6-641a-41cf-b8ec-e9b00a3154c0",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n35",
               "type": "pendulumStimulus",
               "theta0Deg": 59.00945873,
@@ -1022,6 +1394,12 @@
         {
           "id": "stim-f3-s91003-n38",
           "units": [
+            {
+              "id": "d3c16182-37e5-4015-9146-e72796352aba",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n37",
               "type": "pendulumStimulus",
@@ -1041,6 +1419,12 @@
           "id": "stim-f3-s91003-n3a",
           "units": [
             {
+              "id": "ed89ac8c-ba6e-46fd-a721-5695c99864d2",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n39",
               "type": "pendulumStimulus",
               "theta0Deg": 18.9546474069,
@@ -1058,6 +1442,12 @@
         {
           "id": "stim-f3-s91003-n3c",
           "units": [
+            {
+              "id": "11f5f2b0-91e4-4426-b8b5-8bb0afc51f5f",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n3b",
               "type": "pendulumStimulus",
@@ -1077,6 +1467,12 @@
           "id": "stim-f3-s91003-n3e",
           "units": [
             {
+              "id": "c2d8178f-ad5e-4e63-ac0b-0b2476402095",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n3d",
               "type": "pendulumStimulus",
               "theta0Deg": 60.3606552165,
@@ -1094,6 +1490,12 @@
         {
           "id": "stim-f3-s91003-n3g",
           "units": [
+            {
+              "id": "05ff6cd2-35c6-4fc4-9570-66e4ad80c2c3",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n3f",
               "type": "pendulumStimulus",
@@ -1113,6 +1515,12 @@
           "id": "stim-f3-s91003-n3i",
           "units": [
             {
+              "id": "cc967944-7525-4c0d-bfd0-36e8d83f19db",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n3h",
               "type": "pendulumStimulus",
               "theta0Deg": 118.309411006,
@@ -1131,6 +1539,12 @@
           "id": "stim-f3-s91003-n3k",
           "units": [
             {
+              "id": "56595086-b3ae-45c2-9540-47754f2ca5a3",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n3j",
               "type": "pendulumStimulus",
               "theta0Deg": 81.1058173701,
@@ -1148,6 +1562,12 @@
         {
           "id": "stim-f3-s91003-n3m",
           "units": [
+            {
+              "id": "e81881ae-0d3f-4889-931d-2da3429a35ac",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n3l",
               "type": "pendulumStimulus",
@@ -1173,6 +1593,12 @@
           "id": "stim-f3-s91003-n3p",
           "units": [
             {
+              "id": "80a50391-54f0-44c6-b0dc-62f0bd81509a",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n3o",
               "type": "pendulumStimulus",
               "theta0Deg": -19.1360854357,
@@ -1190,6 +1616,12 @@
         {
           "id": "stim-f3-s91003-n3r",
           "units": [
+            {
+              "id": "f3b88fa2-d918-4a0f-bf03-c1f5ad360c2d",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n3q",
               "type": "pendulumStimulus",
@@ -1209,6 +1641,12 @@
           "id": "stim-f3-s91003-n3t",
           "units": [
             {
+              "id": "6a4817c3-d6f8-436b-a52a-dc612d373b85",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n3s",
               "type": "pendulumStimulus",
               "theta0Deg": 68.2500209939,
@@ -1226,6 +1664,12 @@
         {
           "id": "stim-f3-s91003-n3v",
           "units": [
+            {
+              "id": "e0d3d31b-ad52-499c-9240-f5761dec0ceb",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n3u",
               "type": "pendulumStimulus",
@@ -1245,6 +1689,12 @@
           "id": "stim-f3-s91003-n3x",
           "units": [
             {
+              "id": "8586332c-d0ee-4c6e-8386-f9e524d6c1fc",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n3w",
               "type": "pendulumStimulus",
               "theta0Deg": -13.2278885879,
@@ -1262,6 +1712,12 @@
         {
           "id": "stim-f3-s91003-n3z",
           "units": [
+            {
+              "id": "59dc86b1-5612-4816-be6a-09e804eb0392",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n3y",
               "type": "pendulumStimulus",
@@ -1281,6 +1737,12 @@
           "id": "stim-f3-s91003-n41",
           "units": [
             {
+              "id": "aa61b4dd-e9f1-4d92-8c9f-1067c7c7ae4f",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n40",
               "type": "pendulumStimulus",
               "theta0Deg": 130.8108869847,
@@ -1298,6 +1760,12 @@
         {
           "id": "stim-f3-s91003-n43",
           "units": [
+            {
+              "id": "fb324cba-37d8-483d-bbdb-b088cdb31436",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n42",
               "type": "pendulumStimulus",
@@ -1317,6 +1785,12 @@
           "id": "stim-f3-s91003-n45",
           "units": [
             {
+              "id": "aa7298e8-d68f-416b-98eb-d77aff25076e",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n44",
               "type": "pendulumStimulus",
               "theta0Deg": 56.950950399,
@@ -1334,6 +1808,12 @@
         {
           "id": "stim-f3-s91003-n47",
           "units": [
+            {
+              "id": "d703cd57-976a-4f21-bc9a-9ad92df6be60",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n46",
               "type": "pendulumStimulus",
@@ -1353,6 +1833,12 @@
           "id": "stim-f3-s91003-n49",
           "units": [
             {
+              "id": "634e65bc-cbf3-428b-a245-3009b2f4ef63",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n48",
               "type": "pendulumStimulus",
               "theta0Deg": 56.0582125839,
@@ -1370,6 +1856,12 @@
         {
           "id": "stim-f3-s91003-n4b",
           "units": [
+            {
+              "id": "6575cb67-c53c-4570-a03b-9e7379516d01",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n4a",
               "type": "pendulumStimulus",
@@ -1389,6 +1881,12 @@
           "id": "stim-f3-s91003-n4d",
           "units": [
             {
+              "id": "a0b81753-3a24-4fbc-835a-182fe340045e",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n4c",
               "type": "pendulumStimulus",
               "theta0Deg": -64.6429399587,
@@ -1407,6 +1905,12 @@
           "id": "stim-f3-s91003-n4f",
           "units": [
             {
+              "id": "c165e670-9579-4e2a-8cdb-054bcf398a18",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n4e",
               "type": "pendulumStimulus",
               "theta0Deg": 19.693316957,
@@ -1424,6 +1928,12 @@
         {
           "id": "stim-f3-s91003-n4h",
           "units": [
+            {
+              "id": "087baf29-0f10-4d28-97b2-fac1d20ad763",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n4g",
               "type": "pendulumStimulus",
@@ -1449,6 +1959,12 @@
           "id": "stim-f3-s91003-n4k",
           "units": [
             {
+              "id": "4889756e-e03b-433e-a471-96edf60e6b0a",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n4j",
               "type": "pendulumStimulus",
               "theta0Deg": 24.181944374,
@@ -1466,6 +1982,12 @@
         {
           "id": "stim-f3-s91003-n4m",
           "units": [
+            {
+              "id": "910ef70c-7590-451f-b2ac-21ff39d5d8e5",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n4l",
               "type": "pendulumStimulus",
@@ -1485,6 +2007,12 @@
           "id": "stim-f3-s91003-n4o",
           "units": [
             {
+              "id": "5c541177-0efa-432d-be88-c30d58f662e5",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n4n",
               "type": "pendulumStimulus",
               "theta0Deg": 50.667452747,
@@ -1502,6 +2030,12 @@
         {
           "id": "stim-f3-s91003-n4q",
           "units": [
+            {
+              "id": "e89ff044-672d-42ed-89f5-d03c3af2621c",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n4p",
               "type": "pendulumStimulus",
@@ -1521,6 +2055,12 @@
           "id": "stim-f3-s91003-n4s",
           "units": [
             {
+              "id": "05912ee7-5715-4e85-a2b6-db15dddc6ce6",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n4r",
               "type": "pendulumStimulus",
               "theta0Deg": 41.0191366263,
@@ -1538,6 +2078,12 @@
         {
           "id": "stim-f3-s91003-n4u",
           "units": [
+            {
+              "id": "eb9a917c-db1b-403a-8beb-23e1085b82de",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n4t",
               "type": "pendulumStimulus",
@@ -1557,6 +2103,12 @@
           "id": "stim-f3-s91003-n4w",
           "units": [
             {
+              "id": "b2764d61-c9cd-419c-921b-d83d3775f91c",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n4v",
               "type": "pendulumStimulus",
               "theta0Deg": -151.1479261424,
@@ -1574,6 +2126,12 @@
         {
           "id": "stim-f3-s91003-n4y",
           "units": [
+            {
+              "id": "0ca5fcd2-7cab-4cf5-8297-968ea392555b",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n4x",
               "type": "pendulumStimulus",
@@ -1593,6 +2151,12 @@
           "id": "stim-f3-s91003-n50",
           "units": [
             {
+              "id": "66155f67-7362-46d5-ab70-3ac2601020fd",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n4z",
               "type": "pendulumStimulus",
               "theta0Deg": 105.2523976564,
@@ -1610,6 +2174,12 @@
         {
           "id": "stim-f3-s91003-n52",
           "units": [
+            {
+              "id": "62a5ca10-3c7c-4f81-a4f0-cf28dd487728",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n51",
               "type": "pendulumStimulus",
@@ -1629,6 +2199,12 @@
           "id": "stim-f3-s91003-n54",
           "units": [
             {
+              "id": "35ac0c5a-9430-4e0a-b5c7-5fa75d142e72",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n53",
               "type": "pendulumStimulus",
               "theta0Deg": 45.4702494945,
@@ -1646,6 +2222,12 @@
         {
           "id": "stim-f3-s91003-n56",
           "units": [
+            {
+              "id": "b3b01426-d574-43da-b11a-c34f4d02f5ae",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n55",
               "type": "pendulumStimulus",
@@ -1665,6 +2247,12 @@
           "id": "stim-f3-s91003-n58",
           "units": [
             {
+              "id": "a1ad6250-bc6b-4500-af38-376d669c6d14",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n57",
               "type": "pendulumStimulus",
               "theta0Deg": -19.9983979482,
@@ -1683,6 +2271,12 @@
           "id": "stim-f3-s91003-n5a",
           "units": [
             {
+              "id": "b003f80f-eb9a-4d9e-87ff-2c7d4501925d",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n59",
               "type": "pendulumStimulus",
               "theta0Deg": -95.9847855661,
@@ -1700,6 +2294,12 @@
         {
           "id": "stim-f3-s91003-n5c",
           "units": [
+            {
+              "id": "6f2c6f61-911e-4011-a43f-0f75dc46638c",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n5b",
               "type": "pendulumStimulus",
@@ -1725,6 +2325,12 @@
           "id": "stim-f3-s91003-n5f",
           "units": [
             {
+              "id": "80eff402-ab77-4934-a1c2-97b2caf5cbe6",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n5e",
               "type": "pendulumStimulus",
               "theta0Deg": -38.4288944397,
@@ -1742,6 +2348,12 @@
         {
           "id": "stim-f3-s91003-n5h",
           "units": [
+            {
+              "id": "a8671bbb-e790-42d2-9a3d-89af163b2206",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n5g",
               "type": "pendulumStimulus",
@@ -1761,6 +2373,12 @@
           "id": "stim-f3-s91003-n5j",
           "units": [
             {
+              "id": "cc2419ba-21f1-496a-8307-2f76f2a28f73",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n5i",
               "type": "pendulumStimulus",
               "theta0Deg": -122.0437774435,
@@ -1778,6 +2396,12 @@
         {
           "id": "stim-f3-s91003-n5l",
           "units": [
+            {
+              "id": "6370f19d-5ee2-4b9d-8c77-0bd58e979043",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n5k",
               "type": "pendulumStimulus",
@@ -1797,6 +2421,12 @@
           "id": "stim-f3-s91003-n5n",
           "units": [
             {
+              "id": "5eb748e3-6d99-4632-ad19-e4cef50f3d5e",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n5m",
               "type": "pendulumStimulus",
               "theta0Deg": -171.4556588978,
@@ -1814,6 +2444,12 @@
         {
           "id": "stim-f3-s91003-n5p",
           "units": [
+            {
+              "id": "7d353fde-d820-4200-835a-257002618436",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n5o",
               "type": "pendulumStimulus",
@@ -1833,6 +2469,12 @@
           "id": "stim-f3-s91003-n5r",
           "units": [
             {
+              "id": "ab50a74c-bbd6-4e61-871a-2fa055c1c9ae",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n5q",
               "type": "pendulumStimulus",
               "theta0Deg": -46.7280122358,
@@ -1850,6 +2492,12 @@
         {
           "id": "stim-f3-s91003-n5t",
           "units": [
+            {
+              "id": "8a976206-78b7-45cc-a11d-c69345da15fa",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n5s",
               "type": "pendulumStimulus",
@@ -1869,6 +2517,12 @@
           "id": "stim-f3-s91003-n5v",
           "units": [
             {
+              "id": "c9d26bd8-5f5a-4fdb-9943-0066bd9b6b37",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n5u",
               "type": "pendulumStimulus",
               "theta0Deg": -49.6260094084,
@@ -1886,6 +2540,12 @@
         {
           "id": "stim-f3-s91003-n5x",
           "units": [
+            {
+              "id": "7c9d2b0e-43ef-4537-9c6b-9705594c3769",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n5w",
               "type": "pendulumStimulus",
@@ -1905,6 +2565,12 @@
           "id": "stim-f3-s91003-n5z",
           "units": [
             {
+              "id": "8e9b0055-41af-4b62-9bd4-356fe4262fa3",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n5y",
               "type": "pendulumStimulus",
               "theta0Deg": -69.829813689,
@@ -1922,6 +2588,12 @@
         {
           "id": "stim-f3-s91003-n61",
           "units": [
+            {
+              "id": "2803ba97-a37e-422d-b871-c2687e59815d",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n60",
               "type": "pendulumStimulus",
@@ -1941,6 +2613,12 @@
           "id": "stim-f3-s91003-n63",
           "units": [
             {
+              "id": "b2b968a0-9619-4a8c-a5e2-4388417c687e",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n62",
               "type": "pendulumStimulus",
               "theta0Deg": 89.0470279008,
@@ -1959,6 +2637,12 @@
           "id": "stim-f3-s91003-n65",
           "units": [
             {
+              "id": "ac70abb4-e755-40e6-a3c5-4036be04dd31",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n64",
               "type": "pendulumStimulus",
               "theta0Deg": -141.626995923,
@@ -1976,6 +2660,12 @@
         {
           "id": "stim-f3-s91003-n67",
           "units": [
+            {
+              "id": "8cbec980-e54c-4ec8-91e0-2bb147e75499",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n66",
               "type": "pendulumStimulus",
@@ -2001,6 +2691,12 @@
           "id": "stim-f3-s91003-n6a",
           "units": [
             {
+              "id": "da561213-9d10-466d-8dc1-8a2878b0d3a5",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n69",
               "type": "pendulumStimulus",
               "theta0Deg": 47.4907777458,
@@ -2018,6 +2714,12 @@
         {
           "id": "stim-f3-s91003-n6c",
           "units": [
+            {
+              "id": "30d9d0af-6a22-478a-bfcb-a2c11fb72864",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n6b",
               "type": "pendulumStimulus",
@@ -2037,6 +2739,12 @@
           "id": "stim-f3-s91003-n6e",
           "units": [
             {
+              "id": "5a816664-321b-4758-8d3d-88aee48f7893",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n6d",
               "type": "pendulumStimulus",
               "theta0Deg": -24.799765069,
@@ -2054,6 +2762,12 @@
         {
           "id": "stim-f3-s91003-n6g",
           "units": [
+            {
+              "id": "eef84310-9239-4d6e-ac13-82fcc7b75da1",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n6f",
               "type": "pendulumStimulus",
@@ -2073,6 +2787,12 @@
           "id": "stim-f3-s91003-n6i",
           "units": [
             {
+              "id": "1235dbf9-c5fd-4c81-9b00-55091775fe65",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n6h",
               "type": "pendulumStimulus",
               "theta0Deg": -72.7622433845,
@@ -2090,6 +2810,12 @@
         {
           "id": "stim-f3-s91003-n6k",
           "units": [
+            {
+              "id": "731d5ea0-f27b-4d5d-9569-f58486a1a244",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n6j",
               "type": "pendulumStimulus",
@@ -2109,6 +2835,12 @@
           "id": "stim-f3-s91003-n6m",
           "units": [
             {
+              "id": "1db114eb-563c-4fb5-a101-51c78ab88916",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n6l",
               "type": "pendulumStimulus",
               "theta0Deg": 65.3767190874,
@@ -2126,6 +2858,12 @@
         {
           "id": "stim-f3-s91003-n6o",
           "units": [
+            {
+              "id": "1c94abee-33c2-4fc3-940f-f48440d2e4c4",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n6n",
               "type": "pendulumStimulus",
@@ -2145,6 +2883,12 @@
           "id": "stim-f3-s91003-n6q",
           "units": [
             {
+              "id": "26960dd4-ccb9-46c7-8a6a-d00efe22735b",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n6p",
               "type": "pendulumStimulus",
               "theta0Deg": 18.790491689,
@@ -2162,6 +2906,12 @@
         {
           "id": "stim-f3-s91003-n6s",
           "units": [
+            {
+              "id": "c89699b0-f093-468e-ba2d-17694d6bbb18",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n6r",
               "type": "pendulumStimulus",
@@ -2181,6 +2931,12 @@
           "id": "stim-f3-s91003-n6u",
           "units": [
             {
+              "id": "243d74d0-66f5-4b8e-9c2b-238c3cf7a9ff",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n6t",
               "type": "pendulumStimulus",
               "theta0Deg": -122.6196177956,
@@ -2198,6 +2954,12 @@
         {
           "id": "stim-f3-s91003-n6w",
           "units": [
+            {
+              "id": "27ef3653-387d-486b-96fe-e5b8588b207e",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n6v",
               "type": "pendulumStimulus",
@@ -2217,6 +2979,12 @@
           "id": "stim-f3-s91003-n6y",
           "units": [
             {
+              "id": "4d8eb1e0-b555-401a-a29f-ac9753c62479",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n6x",
               "type": "pendulumStimulus",
               "theta0Deg": -17.6343993377,
@@ -2235,6 +3003,12 @@
           "id": "stim-f3-s91003-n70",
           "units": [
             {
+              "id": "4939a44b-c165-4b81-9fad-06262f8d57da",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n6z",
               "type": "pendulumStimulus",
               "theta0Deg": 4.8664908204,
@@ -2252,6 +3026,12 @@
         {
           "id": "stim-f3-s91003-n72",
           "units": [
+            {
+              "id": "9d966d5e-725a-4d0f-9191-8343d70e6b80",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n71",
               "type": "pendulumStimulus",
@@ -2277,6 +3057,12 @@
           "id": "stim-f3-s91003-n75",
           "units": [
             {
+              "id": "38f7b620-3695-46f0-9ff4-6393ace6beb0",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n74",
               "type": "pendulumStimulus",
               "theta0Deg": 100.5720830709,
@@ -2294,6 +3080,12 @@
         {
           "id": "stim-f3-s91003-n77",
           "units": [
+            {
+              "id": "afad7daa-5c79-4725-beb6-3ca3c5cd9be3",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n76",
               "type": "pendulumStimulus",
@@ -2313,6 +3105,12 @@
           "id": "stim-f3-s91003-n79",
           "units": [
             {
+              "id": "3d3a0d0c-63ff-4a9c-bad2-0f7bd846c25c",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n78",
               "type": "pendulumStimulus",
               "theta0Deg": 42.1445380524,
@@ -2330,6 +3128,12 @@
         {
           "id": "stim-f3-s91003-n7b",
           "units": [
+            {
+              "id": "2c3c8a11-9624-40b9-92f7-168f3b130b44",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n7a",
               "type": "pendulumStimulus",
@@ -2349,6 +3153,12 @@
           "id": "stim-f3-s91003-n7d",
           "units": [
             {
+              "id": "d6ea0f51-484c-4dbf-bba7-9453b35fc35a",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n7c",
               "type": "pendulumStimulus",
               "theta0Deg": -130.6620118953,
@@ -2366,6 +3176,12 @@
         {
           "id": "stim-f3-s91003-n7f",
           "units": [
+            {
+              "id": "a0b9ab30-f3d7-44a2-84a4-bc893e05da20",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n7e",
               "type": "pendulumStimulus",
@@ -2385,6 +3201,12 @@
           "id": "stim-f3-s91003-n7h",
           "units": [
             {
+              "id": "85cabf28-2365-46c2-8687-368a2fb4d32c",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n7g",
               "type": "pendulumStimulus",
               "theta0Deg": 34.3877081852,
@@ -2402,6 +3224,12 @@
         {
           "id": "stim-f3-s91003-n7j",
           "units": [
+            {
+              "id": "c7741345-e418-4dff-b302-d2663f88a317",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n7i",
               "type": "pendulumStimulus",
@@ -2421,6 +3249,12 @@
           "id": "stim-f3-s91003-n7l",
           "units": [
             {
+              "id": "6d249e0a-bfb6-40d6-a6fe-a14b41194b47",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n7k",
               "type": "pendulumStimulus",
               "theta0Deg": 38.0923647154,
@@ -2438,6 +3272,12 @@
         {
           "id": "stim-f3-s91003-n7n",
           "units": [
+            {
+              "id": "5db0ee33-28ae-4536-9729-d6393222f0e3",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n7m",
               "type": "pendulumStimulus",
@@ -2457,6 +3297,12 @@
           "id": "stim-f3-s91003-n7p",
           "units": [
             {
+              "id": "099ba6cd-8e08-49fe-aaf1-7743c56339e3",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n7o",
               "type": "pendulumStimulus",
               "theta0Deg": -152.6341179572,
@@ -2474,6 +3320,12 @@
         {
           "id": "stim-f3-s91003-n7r",
           "units": [
+            {
+              "id": "2b04d5fb-0670-408f-a741-c744a25b14a5",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n7q",
               "type": "pendulumStimulus",
@@ -2493,6 +3345,12 @@
           "id": "stim-f3-s91003-n7t",
           "units": [
             {
+              "id": "31850c9a-4747-4990-b51a-f11fd8a3530e",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n7s",
               "type": "pendulumStimulus",
               "theta0Deg": -41.8735855725,
@@ -2511,6 +3369,12 @@
           "id": "stim-f3-s91003-n7v",
           "units": [
             {
+              "id": "8a788309-7325-45d0-a0bd-4a057a2839a1",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n7u",
               "type": "pendulumStimulus",
               "theta0Deg": 31.0846262891,
@@ -2528,6 +3392,12 @@
         {
           "id": "stim-f3-s91003-n7x",
           "units": [
+            {
+              "id": "faf9f954-3ace-45d5-8586-77aebd937b94",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n7w",
               "type": "pendulumStimulus",
@@ -2553,6 +3423,12 @@
           "id": "stim-f3-s91003-n80",
           "units": [
             {
+              "id": "4e775709-ac38-4661-89ee-60d92af3566c",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n7z",
               "type": "pendulumStimulus",
               "theta0Deg": -8.6135757063,
@@ -2570,6 +3446,12 @@
         {
           "id": "stim-f3-s91003-n82",
           "units": [
+            {
+              "id": "f9783df8-c1ec-4ac7-9dfa-f9b8d50c198d",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n81",
               "type": "pendulumStimulus",
@@ -2589,6 +3471,12 @@
           "id": "stim-f3-s91003-n84",
           "units": [
             {
+              "id": "33aca58f-1ea1-4270-8d26-5c646d2f6a1e",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n83",
               "type": "pendulumStimulus",
               "theta0Deg": 14.5279055927,
@@ -2606,6 +3494,12 @@
         {
           "id": "stim-f3-s91003-n86",
           "units": [
+            {
+              "id": "764d5a84-103b-470c-9a3e-b263bc0c6430",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n85",
               "type": "pendulumStimulus",
@@ -2625,6 +3519,12 @@
           "id": "stim-f3-s91003-n88",
           "units": [
             {
+              "id": "7bb66fe7-1a00-4884-8ae1-d0ea914e9dfb",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n87",
               "type": "pendulumStimulus",
               "theta0Deg": -4.7992055956,
@@ -2642,6 +3542,12 @@
         {
           "id": "stim-f3-s91003-n8a",
           "units": [
+            {
+              "id": "1014caad-6bb3-44c5-a1ee-13b6e31c257f",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n89",
               "type": "pendulumStimulus",
@@ -2661,6 +3567,12 @@
           "id": "stim-f3-s91003-n8c",
           "units": [
             {
+              "id": "ce37d3e6-6a0a-497f-9aad-fcc3f6e4df8a",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n8b",
               "type": "pendulumStimulus",
               "theta0Deg": -164.4208645262,
@@ -2678,6 +3590,12 @@
         {
           "id": "stim-f3-s91003-n8e",
           "units": [
+            {
+              "id": "e7a96f81-c66a-4ee0-8c89-ec91aca321ec",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n8d",
               "type": "pendulumStimulus",
@@ -2697,6 +3615,12 @@
           "id": "stim-f3-s91003-n8g",
           "units": [
             {
+              "id": "00ea73b0-9e93-429f-b595-369d72c36a34",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n8f",
               "type": "pendulumStimulus",
               "theta0Deg": -140.9314082656,
@@ -2714,6 +3638,12 @@
         {
           "id": "stim-f3-s91003-n8i",
           "units": [
+            {
+              "id": "5752a328-ba71-4239-82c4-5033351d92dd",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n8h",
               "type": "pendulumStimulus",
@@ -2733,6 +3663,12 @@
           "id": "stim-f3-s91003-n8k",
           "units": [
             {
+              "id": "ed0c61e4-d132-4e17-825e-d6862690f302",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n8j",
               "type": "pendulumStimulus",
               "theta0Deg": 29.3412513658,
@@ -2750,6 +3686,12 @@
         {
           "id": "stim-f3-s91003-n8m",
           "units": [
+            {
+              "id": "e10230a4-db33-4d25-9115-7455504a13a8",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n8l",
               "type": "pendulumStimulus",
@@ -2769,6 +3711,12 @@
           "id": "stim-f3-s91003-n8o",
           "units": [
             {
+              "id": "bc980323-cfe6-4930-8065-049631728391",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n8n",
               "type": "pendulumStimulus",
               "theta0Deg": 69.7320810333,
@@ -2787,6 +3735,12 @@
           "id": "stim-f3-s91003-n8q",
           "units": [
             {
+              "id": "3775891d-2966-4238-bee2-57513f5444f5",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
               "id": "stim-f3-s91003-n8p",
               "type": "pendulumStimulus",
               "theta0Deg": -158.1587823015,
@@ -2804,6 +3758,12 @@
         {
           "id": "stim-f3-s91003-n8s",
           "units": [
+            {
+              "id": "c934f135-6687-4700-aa4c-0865e2d7d9bd",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
             {
               "id": "stim-f3-s91003-n8r",
               "type": "pendulumStimulus",

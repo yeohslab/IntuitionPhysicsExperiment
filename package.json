@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "verify-physics": "npx --yes tsx scripts/verify-pendulum-period.ts && npx --yes tsx scripts/verify-physics-precision.ts",
-    "generate-stimulate": "npx --yes tsx scripts/generate-stimulate-sets.ts"
+    "generate-stimulate": "npx --yes tsx scripts/generate-stimulate-sets.ts",
+    "sync-stimulate": "npx --yes tsx scripts/sync-stimulate-from-template.ts"
   },
   "dependencies": {
     "@jspsych/plugin-html-keyboard-response": "^2.1.0",
