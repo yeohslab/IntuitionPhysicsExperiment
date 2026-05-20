@@ -10,8 +10,8 @@ import type {
 import { sanitizeImageDataUrl } from "../shared/html";
 import { newId } from "../shared/ids";
 import { KEY_CHOICE_OPTIONS } from "../shared/keys";
+import { cloneStimulusSet, DEFAULT_STIMULUS_SET } from "../stimulate";
 import {
-  createDefaultStimulusSet,
   loadDraftFromLocal,
   parseExperimentStimulusSet,
   saveDraftToLocal,
@@ -1342,7 +1342,7 @@ export function disposeEditor(): void {
 export function mountEditor(container: HTMLElement): void {
   disposeEditor();
 
-  const initial = loadDraftFromLocal() ?? createDefaultStimulusSet();
+  const initial = loadDraftFromLocal() ?? cloneStimulusSet(DEFAULT_STIMULUS_SET);
   state = {
     set: initial,
     selectedSegmentId: "",

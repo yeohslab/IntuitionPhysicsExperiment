@@ -1,4 +1,4 @@
-import { STIMULUS_JSON_URLS } from "../stimulateUrls";
+import { cloneStimulusSet, STIMULUS_SETS } from "../stimulate";
 import {
   normalizeSubjectId,
   stimulusIndexForNormalizedSubjectId,
@@ -6,11 +6,9 @@ import {
   SUBJECT_ID_NUM_MIN,
 } from "../subjectStimulus";
 import {
-  parseExperimentStimulusSet,
   saveStimulusSetToSession,
   SESSION_STIMULUS_FILE_INDEX_KEY,
   SESSION_SUBJECT_ID_KEY,
-  validateRunnableSet,
 } from "../shared/storage";
 
 export function disposeStart(): void {}
@@ -70,7 +68,7 @@ export function mountStart(container: HTMLElement): void {
     dialog.close();
   });
 
-  container.querySelector("#form-subject")?.addEventListener("submit", async (e) => {
+  container.querySelector("#form-subject")?.addEventListener("submit", (e) => {
     e.preventDefault();
     const normalized = normalizeSubjectId(input.value);
     if (!normalized) {
@@ -80,23 +78,15 @@ export function mountStart(container: HTMLElement): void {
     }
 
     const idx = stimulusIndexForNormalizedSubjectId(normalized);
-    const url = STIMULUS_JSON_URLS[idx];
-    if (!url) {
-      errEl.textContent = "内部错误：找不到刺激集 URL。";
+    const template = STIMULUS_SETS[idx];
+    if (!template) {
+      errEl.textContent = "内部错误：找不到刺激集。";
       errEl.hidden = false;
       return;
     }
 
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const raw = (await res.json()) as unknown;
-      const set = parseExperimentStimulusSet(raw);
-      if (!set) {
-        throw new Error("刺激集 JSON 无效或 schema 不是 3");
-      }
-      const verr = validateRunnableSet(set);
-      if (verr) throw new Error(verr);
+      const set = cloneStimulusSet(template);
 
       sessionStorage.setItem(SESSION_SUBJECT_ID_KEY, normalized);
       sessionStorage.setItem(SESSION_STIMULUS_FILE_INDEX_KEY, String(idx));

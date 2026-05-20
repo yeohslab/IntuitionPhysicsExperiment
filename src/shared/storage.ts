@@ -20,18 +20,6 @@ export const SESSION_SUBJECT_ID_KEY = "jspsych-subject-id";
 export const SESSION_STIMULUS_FILE_INDEX_KEY = "jspsych-stimulus-file-index";
 export const LOCAL_DRAFT_KEY = "jspsych-stimulus-draft";
 
-export function createDefaultStimulusSet(): ExperimentStimulusSet {
-  const unit: StimulusUnit = {
-    id: newId(),
-    type: "textDisplay",
-    text: "示例：**文本显示** 单元（支持基础 Markdown）",
-    durationMs: 1000,
-  };
-  const trial: Trial = { id: newId(), units: [unit] };
-  const block: BlockSegment = { kind: "block", id: newId(), children: [trial] };
-  return { schemaVersion: STIMULUS_SET_SCHEMA_VERSION, sequence: [block] };
-}
-
 function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null && !Array.isArray(x);
 }
