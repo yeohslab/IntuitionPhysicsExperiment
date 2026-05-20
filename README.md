@@ -46,9 +46,9 @@ npm run generate-stimulate
 1. 将工作流推送到 `main`。
 2. 打开仓库 **Settings → Pages**。
 3. **Build and deployment → Source** 选 **GitHub Actions**（不要选 “Deploy from a branch” 的 `/(root)`）。
-4. 等待 **Actions** 里 “Deploy to GitHub Pages” 跑绿后，访问 `https://<用户名>.github.io/JsPsychProjectTemplate/#/editor`。
+4. 等待 **Actions** 里 “Deploy to GitHub Pages” 跑绿后，访问 `https://<用户名>.github.io/<仓库名>/`（例如 `#/start`）。
 
-`vite.config.ts` 中 `base: "./"` 已适配项目站子路径（如 `/JsPsychProjectTemplate/`）。
+在 **GitHub Actions** 构建时，`vite.config.ts` 会读取环境变量 `GITHUB_REPOSITORY`，将 `base` 设为 `/<仓库名>/`，避免在无末尾斜杠的入口地址下相对资源路径被解析到 `github.io` 根目录而 404 白屏。本地构建未设置该变量时仍使用 `./`。
 
 ```bash
 npm run preview
