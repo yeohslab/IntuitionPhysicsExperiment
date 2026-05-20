@@ -1,0 +1,47 @@
+.physics-trial {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0 1rem;
+}
+
+.physics-canvas {
+  display: block;
+  width: min(800px, 100%);
+  height: auto;
+  aspect-ratio: 800 / 520;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  touch-action: none;
+}
+
+.physics-footer {
+  width: 100%;
+  max-width: 800px;
+}
+
+.physics-hint {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.physics-estimate-ui {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.physics-readonly {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.physics-readonly p {
+  margin: 0.25rem 0;
+}

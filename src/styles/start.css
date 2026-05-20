@@ -1,0 +1,86 @@
+.start-view {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.start-panel {
+  max-width: 28rem;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.75rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e8eaed;
+}
+
+.start-panel__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+}
+
+.start-panel__intro {
+  margin: 0 0 1.25rem;
+  line-height: 1.55;
+}
+
+.start-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.btn-lg {
+  padding: 0.55rem 1.1rem;
+  font-size: 1rem;
+}
+
+#start-error {
+  margin-top: 1rem;
+  color: #b3261e;
+}
+
+.start-dialog {
+  border: none;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 22rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.start-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.start-dialog__form {
+  padding: 1.25rem 1.35rem;
+}
+
+.start-dialog__form h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.start-dialog__label {
+  display: block;
+  margin: 1rem 0 0.35rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.start-dialog__input {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.start-dialog__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  justify-content: flex-end;
+}

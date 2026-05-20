@@ -1,0 +1,620 @@
+.editor-view {
+  min-height: 100vh;
+  padding-bottom: 2rem;
+}
+
+.editor-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.editor-header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.35rem;
+}
+
+.editor-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.banner {
+  margin: 0 1.25rem;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  background: #fef7e0;
+  border: 1px solid #f9e79f;
+  color: #6d4c00;
+  display: none;
+}
+
+.banner--visible {
+  display: block;
+}
+
+.editor-body {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(320px, 1.15fr);
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .editor-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel-tree {
+  max-height: calc(100vh - 9rem);
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+
+.tree-root {
+  flex: 1;
+  overflow: auto;
+  margin: 0 -0.25rem;
+  padding: 0 0.25rem;
+}
+
+.tree-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tree-list--trials {
+  margin: 0.15rem 0 0.35rem 0.5rem;
+  padding-left: 0.35rem;
+  border-left: 2px solid #e8eaed;
+}
+
+.tree-list--units {
+  margin: 0.15rem 0 0.35rem 0.5rem;
+  padding-left: 0.35rem;
+  border-left: 2px dashed #e0e0e0;
+}
+
+.tree-li {
+  margin: 0;
+  padding: 0;
+}
+
+.tree-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  padding: 0.4rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  margin-bottom: 0.2rem;
+  background: #fafafa;
+}
+
+.tree-row:hover {
+  border-color: #dadce0;
+}
+
+.tree-row.is-selected {
+  border-color: #0b57d0;
+  background: #e8f0fe;
+}
+
+.tree-row--trial {
+  background: #fcfcfc;
+}
+
+/* Practice 顶层段标题行（非刺激单元类型） */
+.tree-row--practice {
+  background: #f9fbf7;
+}
+
+.tree-row--rest {
+  background: #f8faf0;
+}
+
+.tree-row__main {
+  font-weight: 600;
+  flex: 1 1 120px;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tree-ico {
+  color: #80868b;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.tree-row__count {
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.tree-row__preview {
+  flex: 1 1 100%;
+  margin-left: 1.75rem;
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 520px) {
+  .tree-row__preview {
+    flex: 1 1 140px;
+    margin-left: 0;
+  }
+}
+
+.tree-fold,
+.tree-fold-spacer {
+  flex-shrink: 0;
+  width: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tree-fold {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #5f6368;
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.tree-fold:hover {
+  background: #e8eaed;
+  color: #202124;
+}
+
+.tree-children--collapsed {
+  display: none;
+}
+
+.tree-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.panel-editor {
+  min-height: 280px;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+}
+
+.panel--wide {
+  min-height: 320px;
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.panel__head h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.panel__head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.panel__head-actions--wrap {
+  max-width: 100%;
+  justify-content: flex-end;
+}
+
+.unit-form--physics .form-grid {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(120px, 1.2fr);
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+}
+
+.item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-height: 2rem;
+}
+
+.item-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  margin-bottom: 0.35rem;
+  background: #fafafa;
+}
+
+.item-row:hover {
+  border-color: #dadce0;
+}
+
+.item-row.is-selected {
+  border-color: #0b57d0;
+  background: #e8f0fe;
+}
+
+.drag-handle {
+  cursor: grab;
+  user-select: none;
+  color: #80868b;
+  font-size: 1rem;
+}
+
+.item-row__main {
+  font-weight: 600;
+}
+
+.item-preview {
+  grid-column: 2 / -1;
+  margin-left: 1.75rem;
+  font-size: 0.8rem;
+}
+
+@media (min-width: 400px) {
+  .item-preview {
+    grid-column: 3;
+    margin-left: 0;
+  }
+}
+
+.sortable-ghost {
+  opacity: 0.55;
+}
+
+.sortable-chosen {
+  background: #e3f2fd;
+}
+
+.unit-editor {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e8eaed;
+}
+
+.unit-editor h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+/* 文本类单元：纵向分组，避免两列表格把说明与输入挤乱 */
+.unit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.unit-form__block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.unit-form__block--tight {
+  gap: 0.3rem;
+}
+
+.unit-form__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #202124;
+}
+
+.unit-form__hint {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.unit-form__textarea {
+  width: 100%;
+  min-height: 7rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  font: inherit;
+  line-height: 1.45;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.unit-form__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.unit-form__row-label {
+  flex: 0 0 auto;
+  min-width: 7.5rem;
+  font-size: 0.85rem;
+  color: #5f6368;
+}
+
+.unit-form__number {
+  width: 8rem;
+  max-width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.unit-form .key-row {
+  width: 100%;
+}
+
+.unit-form .key-row select,
+.unit-form .key-row input[type="text"] {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 0.5rem 0.75rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.form-grid label {
+  padding-top: 0.35rem;
+  font-size: 0.85rem;
+  color: #5f6368;
+}
+
+.form-grid input,
+.form-grid textarea,
+.form-grid select {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.key-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.key-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+.key-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.runner-view {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f4f5f7;
+  color: #1a1a1a;
+}
+
+.runner-toolbar {
+  padding: 0.5rem 1rem;
+  background: #fff;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.runner-toolbar .btn-ghost {
+  color: #1a1a1a;
+  border-color: #dadce0;
+}
+
+.runner-toolbar .btn-ghost:hover {
+  background: #f1f3f4;
+}
+
+.jspsych-target {
+  flex: 1;
+  min-height: 60vh;
+  background: #fff;
+  color: #1a1a1a;
+}
+
+/* 覆盖可能继承的深色，保证试次区域可读 */
+.runner-view .jspsych-target,
+.runner-view .jspsych-content,
+.runner-view .jspsych-display {
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.runner-done {
+  padding: 2rem;
+  text-align: center;
+  color: #1a1a1a;
+  background: #fff;
+  border-top: 1px solid #e8eaed;
+}
+
+.runner-done p {
+  margin: 0 0 1rem;
+}
+
+.runner-panel {
+  max-width: 480px;
+  margin: 3rem auto;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e8eaed;
+}
+
+.runner-panel--error {
+  background: #fce8e6;
+  border-color: #f5c6c0;
+}
+
+.stimulus-image-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+}
+
+.stimulus-image-wrap img {
+  max-width: min(90vw, 960px);
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+.stimulus-missing p {
+  margin: 0;
+  color: #5f6368;
+}
+
+.image-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.unit-image-preview {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border: 1px solid #e8eaed;
+  border-radius: 8px;
+  margin-top: 0.35rem;
+}
+
+.stimulus-wrap {
+  text-align: center;
+  padding: 2rem;
+}
+
+.runner-view .stimulus-wrap.stimulus-markdown {
+  text-align: center;
+  max-width: 42rem;
+  margin: 0 auto;
+  line-height: 1.55;
+  font-size: 1.05rem;
+}
+
+/* 列表：外框在居中容器内水平居中，条目仍左对齐便于阅读 */
+.runner-view .stimulus-markdown ul,
+.runner-view .stimulus-markdown ol {
+  display: inline-block;
+  text-align: left;
+  margin: 0 0 0.75rem;
+  padding-left: 1.35rem;
+  vertical-align: top;
+}
+
+.runner-view .stimulus-markdown pre {
+  margin: 0 auto 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f1f3f4;
+  border-radius: 8px;
+  overflow: auto;
+  text-align: left;
+  display: inline-block;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.runner-view .stimulus-markdown h1,
+.runner-view .stimulus-markdown h2,
+.runner-view .stimulus-markdown h3 {
+  margin: 0 0 0.65rem;
+  line-height: 1.25;
+}
+
+.runner-view .stimulus-markdown h1 {
+  font-size: 1.65rem;
+}
+
+.runner-view .stimulus-markdown h2 {
+  font-size: 1.35rem;
+}
+
+.runner-view .stimulus-markdown h3 {
+  font-size: 1.15rem;
+}
+
+.runner-view .stimulus-markdown p {
+  margin: 0 0 0.75rem;
+}
+
+.runner-view .stimulus-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.runner-view .stimulus-markdown li {
+  margin: 0.2rem 0;
+}
+
+.runner-view .stimulus-markdown code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.92em;
+  background: #f1f3f4;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+.runner-view .stimulus-markdown pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.runner-view .stimulus-markdown a {
+  color: #0b57d0;
+  text-decoration: underline;
+}
+
+.runner-view .stimulus-markdown hr {
+  border: 0;
+  border-top: 1px solid #dadce0;
+  margin: 1rem 0;
+}

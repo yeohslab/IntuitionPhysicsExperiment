@@ -1,21 +1,12 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>单摆物理实验（jsPsych）</title>
-    <link rel="stylesheet" href="./css/common.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JsPsych 刺激编辑与运行</title>
   </head>
   <body>
-    <main class="page">
-      <h1>单摆物理实验</h1>
-      <p class="hint">
-        静态站点，可部署到 GitHub Pages。配置使用角度制与米；Block 可含练习/正式试次与文字显示单元，单摆单元均有注视点（约 2 秒）。阶段时长为 x·T（默认可视 1T、不可视 0.4T）。被试汇报与确信范围为度（°），竖直向下 0°，右正左负。
-      </p>
-      <ul>
-        <li><a href="./builder.html">配置导出</a>：按 Block / 试次编辑参数并导出 JSON。</li>
-        <li><a href="./experiment.html">正式实验</a>：导入 JSON，运行 jsPsych 流程并下载 CSV。</li>
-      </ul>
-    </main>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -1,0 +1,114 @@
+:root {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  color: #1a1a1a;
+  background: #f4f5f7;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+a {
+  color: #0b57d0;
+}
+
+.muted {
+  color: #5f6368;
+  font-size: 0.875rem;
+}
+
+.hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  padding: 0.3rem 0.55rem;
+  font-size: 0.8rem;
+}
+
+.btn-primary {
+  background: #0b57d0;
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #0945a8;
+}
+
+.btn-secondary {
+  background: #fff;
+  border-color: #dadce0;
+  color: #1a1a1a;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #f1f3f4;
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: #dadce0;
+  color: #1a1a1a;
+}
+
+.btn-danger {
+  background: #c5221f;
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #9e1a18;
+}
+
+.btn-icon {
+  padding: 0.25rem 0.45rem;
+  min-width: 2rem;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+.stimulus-control-prompt {
+  margin-top: 1.25rem;
+  text-align: center;
+}
+
+.stimulus-control-prompt kbd {
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  border: 1px solid #dadce0;
+  background: #f1f3f4;
+  font-size: 0.85em;
+}

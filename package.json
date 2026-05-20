@@ -1,0 +1,27 @@
+{
+  "name": "jspsych-stimulus-editor",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "verify-physics": "npx --yes tsx scripts/verify-pendulum-period.ts && npx --yes tsx scripts/verify-physics-precision.ts",
+    "generate-stimulate": "npx --yes tsx scripts/generate-stimulate-sets.ts"
+  },
+  "dependencies": {
+    "@jspsych/plugin-html-keyboard-response": "^2.1.0",
+    "@stdlib/math-base-special-ellipj": "^0.4.1",
+    "@stdlib/math-base-special-ellipk": "^0.2.4",
+    "dompurify": "^3.4.5",
+    "jspsych": "^8.0.0",
+    "marked": "^18.0.4",
+    "sortablejs": "^1.15.6"
+  },
+  "devDependencies": {
+    "@types/sortablejs": "^1.15.8",
+    "typescript": "~5.6.3",
+    "vite": "^6.0.3"
+  }
+}
