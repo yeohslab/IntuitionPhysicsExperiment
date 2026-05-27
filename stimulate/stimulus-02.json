@@ -1,14 +1,14 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 5,
   "sequence": [
     {
       "kind": "rest",
-      "id": "892f85d3-ec26-43a6-8724-ab66bcb686d9",
+      "id": "a6203883-e3e6-4dc2-ae0d-d29470cd1328",
       "units": [
         {
-          "id": "bbe3845b-5ca8-4752-aec3-2bf82f59a2d6",
+          "id": "7756585d-c220-41ac-b891-e2a6f7ea3342",
           "type": "textControl",
-          "text": "# 直觉物理实验\n\n欢迎参加本实验\n\n## 实验目的\n\n我们会向您呈现**单摆**的运动。运动过程中，摆球会**时而可见、时而消失**；消失时运动仍在继续，只是画面上看不到。每个片段结束后，请您根据**内心印象**，判断摆杆在**该时刻结束点**大致指向哪个方向，并在屏幕上标出。  \n\n按空格键开始",
+          "text": "# 直觉物理实验\n\n欢迎参加本实验\n\n## 实验目的\n\n我们会向您呈现**单摆**的运动。运动过程中，摆球会**时而可见、时而消失**；消失时运动仍在继续，只是画面上看不到。每个试次全部时段结束后，请您根据**内心印象**完成两步汇报：\n\n1. **最后停在哪里**：在画面上点击并拖动，确认摆杆在**该试次结束瞬间**的指向；\n2. **可能落在的范围**：用滑块调节您认为真值可能落在的范围（越宽表示越不确定）。\n\n试次结束时会显示**本试次得分**（无累计分），不会告知正确答案。\n\n按空格键开始",
           "key": " "
         }
       ]
@@ -21,13 +21,13 @@
           "id": "stim-f2-s91002-n3",
           "units": [
             {
-              "id": "06e19ffb-cfbe-4287-8c1b-bfa3da9203c1",
+              "id": "75fc4e9f-b853-4dc3-b3e1-96f997a42fe7",
               "type": "textDisplay",
-              "text": "# 练习阶段\n\n1/3\n",
+              "text": "# 练习阶段\n\n1/4\n\n本阶段含完整作答与得分反馈，不计入正式分析。\n",
               "durationMs": 1000
             },
             {
-              "id": "ef94f6e4-bbbb-4d55-86bb-a7d9ffd5b825",
+              "id": "98e449f2-df3a-4d98-a887-694da0b700b9",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -35,15 +35,15 @@
             {
               "id": "stim-f2-s91002-n2",
               "type": "pendulumStimulus",
-              "theta0Deg": -14.5281989593,
+              "theta0Deg": 14.5281989593,
               "omega0DegPerSec": 17.027457893,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.2509485224517394,
+              "show1T": 1.0737805033568293,
+              "hide1T": 0.9168351889820769,
+              "show2T": 0.7930069350404665,
+              "hide2T": 0.635032499791123
             }
           ]
         },
@@ -51,13 +51,13 @@
           "id": "stim-f2-s91002-n5",
           "units": [
             {
-              "id": "1df5cd3b-3329-4b87-a64c-68f9c0f09f3b",
+              "id": "7e32d867-38f6-4397-b448-dd132126dad6",
               "type": "textDisplay",
-              "text": "# 练习阶段 \n\n2/3",
+              "text": "# 练习阶段\n\n2/4\n",
               "durationMs": 1000
             },
             {
-              "id": "ba192d38-17a8-45b1-83cb-34a8459d29f6",
+              "id": "01031e41-c298-45ed-8cb8-deb290fe5516",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -65,15 +65,15 @@
             {
               "id": "stim-f2-s91002-n4",
               "type": "pendulumStimulus",
-              "theta0Deg": 53.1219624169,
-              "omega0DegPerSec": 161.6823233691,
+              "theta0Deg": 25.5834803078,
+              "omega0DegPerSec": 122.9303566993,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 1.9237337652200561,
+              "show1T": 0.7601429356727749,
+              "hide1T": 0.675362094421871,
+              "show2T": 0.8403219017200172,
+              "hide2T": 0.8697176489513367
             }
           ]
         },
@@ -81,13 +81,13 @@
           "id": "stim-f2-s91002-n7",
           "units": [
             {
-              "id": "b2691330-c3b9-4855-8954-d259bb99c8ae",
+              "id": "2aef270e-e90c-45de-b586-54027e805ed5",
               "type": "textDisplay",
-              "text": "# 练习阶段 3/3",
+              "text": "# 练习阶段\n\n3/4\n",
               "durationMs": 1000
             },
             {
-              "id": "bfb0e3fa-1b1d-49e5-82df-b99b047db9a9",
+              "id": "7303bce3-9fbc-431e-86f1-3ce2a062148f",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -95,41 +95,29 @@
             {
               "id": "stim-f2-s91002-n6",
               "type": "pendulumStimulus",
-              "theta0Deg": -149.0350067709,
-              "omega0DegPerSec": 185.6448604092,
+              "theta0Deg": 136.3966374658,
+              "omega0DegPerSec": 143.9596361224,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.641066866027563,
+              "show1T": 0.8838222736958414,
+              "hide1T": 0.7963685264112428,
+              "show2T": 0.9724610865814611,
+              "hide2T": 0.8584301653318107
             }
           ]
-        }
-      ]
-    },
-    {
-      "kind": "rest",
-      "id": "b0808a4f-ae9b-4d50-9601-b0f470d6ca50",
-      "units": [
-        {
-          "id": "3c5870e6-9d77-42b9-943d-f63bb9d4e48e",
-          "type": "textControl",
-          "text": "# 摆球任务说明\n\n## 可视\n\n- 画面上方有**悬挂点**，一根杆连着**摆球**。  \n- 摆球会按真实物理规律运动\n\n## 时间与可见性\n- 每个试次中，摆球会**显示 → 隐藏 → 再显示 → 再隐藏**，共两段可见、两段不可见。  \n- **隐藏时摆球仍在运动**，只是不画在屏幕上；请勿以为运动停止。  \n- 全部时段播放完毕后，画面会**定格**，摆球消失，并出现**圆形参考轨迹**。\n\n## 作答\n\n1. 在圆轨迹附近**用鼠标点击**您认为摆杆应处的方向。  \n2. **按住拖动**可微调摆杆角度。  \n3. 满意后按 **空格键** 或点击 **「确认」** 提交；提交后自动进入下一试次。  \n4. 系统**不会**告诉您对错，也**不会**显示正确答案。\n\n## 重要\n\n- 请估计的是**该试次全部时段结束瞬间**摆杆的角度，不是某一中间时刻\n- 每次试次的初始运动状态不同，请勿与上一试次比较，**独立判断**即可\n\n按空格开始实验",
-          "key": " "
-        }
-      ]
-    },
-    {
-      "kind": "block",
-      "id": "stim-f2-s91002-n12",
-      "children": [
+        },
         {
           "id": "stim-f2-s91002-n9",
           "units": [
             {
-              "id": "cd1c06c4-dbf0-4a76-ad88-40ccfdc65d24",
+              "id": "0e8e1c6d-0799-42f5-bb0a-f2166ab324bb",
+              "type": "textDisplay",
+              "text": "# 练习阶段\n\n4/4\n",
+              "durationMs": 1000
+            },
+            {
+              "id": "d5cd2b67-d4d8-4700-91c5-ff5c3fc07b30",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -137,23 +125,53 @@
             {
               "id": "stim-f2-s91002-n8",
               "type": "pendulumStimulus",
-              "theta0Deg": -17.9774506856,
-              "omega0DegPerSec": 4.3531561736,
+              "theta0Deg": 173.2349340152,
+              "omega0DegPerSec": 183.0697992446,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.883660025925086,
+              "show1T": 1.0403662285534665,
+              "hide1T": 0.830640256870538,
+              "show2T": 0.8779605303425342,
+              "hide2T": 0.7644059406593442
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "f5352be9-0eb2-41f3-953b-6b8b0867d53f",
+      "units": [
+        {
+          "id": "fd1e7595-beb8-4fc4-b8ec-63712867422e",
+          "type": "textControl",
+          "text": "# 摆球任务说明\n\n## 可视\n\n- 画面上方有**悬挂点**，一根杆连着**摆球**。  \n- 摆球会按真实物理规律运动\n\n## 时间与可见性\n- 每个试次中，摆球会**显示 → 隐藏 → 再显示 → 再隐藏**，共两段可见、两段不可见。  \n- **隐藏时摆球仍在运动**，只是不画在屏幕上；请勿以为运动停止。  \n- 全部时段播放完毕后，进入**作答界面**。\n\n## 作答（两步）\n\n### 第一步：点估计\n\n1. 在画面上**点击**您认为摆杆最终指向的方向，**拖动**微调。  \n2. 点击「确认位置」或按空格确认。\n\n### 第二步：不确定度\n\n1. 在页脚**拖动滑块**，调节您认为真值可能落在的范围（**越宽越不确定**）。  \n2. 第一次在滑块轨道上点击的位置即为初始范围；可继续拖动调整。  \n3. 点击「提交」进入得分反馈。\n\n## 得分反馈\n\n- 显示本试次是否**命中**您所报的范围，以及**本试次得分**（0–100）。  \n- **不显示**真实角度或累计分。按空格进入下一试次。\n\n## 重要\n\n- 请估计**该试次全部时段结束瞬间**的状态，不是某一中间时刻  \n- 每次试次初始运动不同，请**独立判断**\n\n按空格开始实验",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "72162fbf-cfe2-4508-9e14-19fe08522b89",
+      "units": [
+        {
+          "id": "cb31f33d-0f35-438f-8f0a-9c2a93ab7658",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 1 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-nk",
+      "children": [
         {
           "id": "stim-f2-s91002-nb",
           "units": [
             {
-              "id": "2c1becf0-0975-4ebb-bd9c-e93a0dd4413d",
+              "id": "290de867-2c80-4c62-b3d7-08c4f84a396b",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -161,15 +179,15 @@
             {
               "id": "stim-f2-s91002-na",
               "type": "pendulumStimulus",
-              "theta0Deg": -19.8280176613,
-              "omega0DegPerSec": 17.4496990108,
+              "theta0Deg": 1.2673918717,
+              "omega0DegPerSec": 44.9694421462,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.340566752141143,
+              "show1T": 1.2110909511102363,
+              "hide1T": 0.7847573397448286,
+              "show2T": 0.7695805943803862,
+              "hide2T": 0.6835164549993351
             }
           ]
         },
@@ -177,7 +195,7 @@
           "id": "stim-f2-s91002-nd",
           "units": [
             {
-              "id": "5369a89a-4646-4ef2-93bc-b7b166ebbc8d",
+              "id": "45dce3a8-dcec-4432-bcfb-4bce358d610e",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -185,15 +203,15 @@
             {
               "id": "stim-f2-s91002-nc",
               "type": "pendulumStimulus",
-              "theta0Deg": 10.3722772747,
-              "omega0DegPerSec": 38.06732763,
+              "theta0Deg": 3.7134890445,
+              "omega0DegPerSec": 44.6364456556,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.6306810075314617,
+              "show1T": 1.0830585126532242,
+              "hide1T": 0.9211280255112797,
+              "show2T": 1.155701773823239,
+              "hide2T": 0.677801089710556
             }
           ]
         },
@@ -201,7 +219,7 @@
           "id": "stim-f2-s91002-nf",
           "units": [
             {
-              "id": "a88480b9-6837-4d00-93f0-cd05f23cc8f0",
+              "id": "c3c87141-5711-4ae7-a2bd-36d213126ff6",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -209,15 +227,15 @@
             {
               "id": "stim-f2-s91002-ne",
               "type": "pendulumStimulus",
-              "theta0Deg": 1.2673918717,
-              "omega0DegPerSec": 46.4961961735,
+              "theta0Deg": -9.0775044914,
+              "omega0DegPerSec": -42.7168025995,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.75412451829477,
+              "show1T": 1.15483330108691,
+              "hide1T": 0.7261864535976201,
+              "show2T": 1.2230358563829213,
+              "hide2T": 0.8088322858093306
             }
           ]
         },
@@ -225,7 +243,7 @@
           "id": "stim-f2-s91002-nh",
           "units": [
             {
-              "id": "278bbeee-a9d3-4997-b498-bc3908fa069b",
+              "id": "676bcfae-2c48-40c3-991a-cd003c705ec0",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -233,15 +251,15 @@
             {
               "id": "stim-f2-s91002-ng",
               "type": "pendulumStimulus",
-              "theta0Deg": 25.0252846163,
-              "omega0DegPerSec": 33.3101848434,
+              "theta0Deg": 10.3690688498,
+              "omega0DegPerSec": 41.9938808709,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.1631174201229038,
+              "show1T": 0.8661791145568714,
+              "hide1T": 0.8214757106034085,
+              "show2T": 0.8585144471144304,
+              "hide2T": 0.9671734585426748
             }
           ]
         },
@@ -249,7 +267,7 @@
           "id": "stim-f2-s91002-nj",
           "units": [
             {
-              "id": "79e18b3e-a0e8-42f0-8dcd-277f32d42025",
+              "id": "05459bf2-6da0-470b-b0e5-6932164f1902",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -257,167 +275,179 @@
             {
               "id": "stim-f2-s91002-ni",
               "type": "pendulumStimulus",
-              "theta0Deg": -3.7134890445,
-              "omega0DegPerSec": 55.1339620216,
+              "theta0Deg": 9.992583096,
+              "omega0DegPerSec": -42.2157400397,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.5276137238608882,
+              "show1T": 1.1910699981963262,
+              "hide1T": 0.7001496913144365,
+              "show2T": 1.0286601937841624,
+              "hide2T": 0.5559307269286364
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "0b4560d9-16ec-47b0-8770-025765590171",
+      "units": [
         {
-          "id": "stim-f2-s91002-nl",
+          "id": "b0bb1978-d48c-427e-a0a6-ea186cc889f5",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 2 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-nv",
+      "children": [
+        {
+          "id": "stim-f2-s91002-nm",
           "units": [
             {
-              "id": "85ebe7eb-59ad-4e69-ac6c-7e0aed436c04",
+              "id": "15a7e1cc-ba5c-497e-afc9-07ce4007ddae",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-nk",
+              "id": "stim-f2-s91002-nl",
               "type": "pendulumStimulus",
-              "theta0Deg": -9.0775044914,
-              "omega0DegPerSec": 57.6707437931,
+              "theta0Deg": 29.5049664471,
+              "omega0DegPerSec": 48.8248922302,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.176233235856241,
+              "show1T": 0.9721716557396576,
+              "hide1T": 0.8617597526172176,
+              "show2T": 0.8552005755482242,
+              "hide2T": 0.5914869854459539
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-nn",
+          "id": "stim-f2-s91002-no",
           "units": [
             {
-              "id": "ae76e1f7-176b-440c-b30e-c7ac0c908424",
+              "id": "bfe85689-c90b-4992-95ab-6ddec2f3dc0a",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-nm",
+              "id": "stim-f2-s91002-nn",
               "type": "pendulumStimulus",
-              "theta0Deg": -17.1457534097,
-              "omega0DegPerSec": 57.1518934042,
+              "theta0Deg": 25.0265503675,
+              "omega0DegPerSec": 54.4033214242,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.593912168516941,
+              "show1T": 1.1308507603826001,
+              "hide1T": 0.5228870761347935,
+              "show2T": 1.1778093841858208,
+              "hide2T": 0.6653843784006312
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-np",
+          "id": "stim-f2-s91002-nq",
           "units": [
             {
-              "id": "5f2b660a-be42-4000-aca1-cf18de3c495f",
+              "id": "f89af12f-81a2-415d-860a-70b24083c04b",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-no",
+              "id": "stim-f2-s91002-np",
               "type": "pendulumStimulus",
-              "theta0Deg": 42.3592457827,
-              "omega0DegPerSec": -15.3506109129,
+              "theta0Deg": -41.7719648872,
+              "omega0DegPerSec": -19.5196765809,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.344128982319491,
+              "show1T": 0.868691269075498,
+              "hide1T": 0.9187009498709813,
+              "show2T": 1.086947199772112,
+              "hide2T": 0.699630030314438
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-nr",
+          "id": "stim-f2-s91002-ns",
           "units": [
             {
-              "id": "85292bb8-71e6-405a-bc56-85f4df83dfc2",
+              "id": "5dba7332-daf2-488b-a5b2-34382c9cb47a",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-nq",
+              "id": "stim-f2-s91002-nr",
               "type": "pendulumStimulus",
-              "theta0Deg": 43.5330634285,
-              "omega0DegPerSec": 21.5631217856,
+              "theta0Deg": -35.3278902546,
+              "omega0DegPerSec": -38.831578873,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.0492051170168324,
+              "show1T": 0.7646262584021315,
+              "hide1T": 0.643912720726803,
+              "show2T": 1.0093536050990224,
+              "hide2T": 0.502590318210423
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-nt",
+          "id": "stim-f2-s91002-nu",
           "units": [
             {
-              "id": "852b8c3e-5c53-42f2-b3cf-89f2251477b8",
+              "id": "0285ef22-9678-4014-beb5-3275ca89fbf9",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-ns",
+              "id": "stim-f2-s91002-nt",
               "type": "pendulumStimulus",
-              "theta0Deg": 37.7473553549,
-              "omega0DegPerSec": -44.4556684692,
+              "theta0Deg": -25.7856620383,
+              "omega0DegPerSec": 53.5563893644,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.6729801872734957,
+              "show1T": 1.1451394715113565,
+              "hide1T": 0.8680080015910789,
+              "show2T": 1.1214873660355806,
+              "hide2T": 0.8247340138768777
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "fbcb16c2-ea35-4b7f-8570-7a0a3b0d7206",
+      "units": [
         {
-          "id": "stim-f2-s91002-nv",
-          "units": [
-            {
-              "id": "8d562160-4e54-48b4-899a-27c30de24fd9",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-nu",
-              "type": "pendulumStimulus",
-              "theta0Deg": -42.6684975252,
-              "omega0DegPerSec": 39.2238897253,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
+          "id": "fd6c1f3a-12c5-440c-9cb7-e96d1c1249aa",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 3 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n16",
+      "children": [
         {
           "id": "stim-f2-s91002-nx",
           "units": [
             {
-              "id": "5e7ded9d-0096-4ca1-848c-c87f637fa3b9",
+              "id": "f76fb686-45e5-45e4-97df-5bdcc3187a5d",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -425,15 +455,15 @@
             {
               "id": "stim-f2-s91002-nw",
               "type": "pendulumStimulus",
-              "theta0Deg": 9.992583096,
-              "omega0DegPerSec": -77.5012647623,
+              "theta0Deg": 14.0612104442,
+              "omega0DegPerSec": 80.198489565,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.368157775003293,
+              "show1T": 1.059962096507661,
+              "hide1T": 0.5255874467547983,
+              "show2T": 0.9612389093963429,
+              "hide2T": 0.9526506499387324
             }
           ]
         },
@@ -441,7 +471,7 @@
           "id": "stim-f2-s91002-nz",
           "units": [
             {
-              "id": "6115e2a1-fa3d-4c6e-8893-a6e991b48e31",
+              "id": "6d041091-883f-41d8-9948-bda97c423b1b",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -449,15 +479,15 @@
             {
               "id": "stim-f2-s91002-ny",
               "type": "pendulumStimulus",
-              "theta0Deg": -35.8922222536,
-              "omega0DegPerSec": 60.4149704557,
+              "theta0Deg": 3.9674860239,
+              "omega0DegPerSec": 82.9170046322,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.193440878068996,
+              "show1T": 0.8765646700048819,
+              "hide1T": 0.5584996764082462,
+              "show2T": 0.9639875200809911,
+              "hide2T": 0.9450118527747691
             }
           ]
         },
@@ -465,7 +495,7 @@
           "id": "stim-f2-s91002-n11",
           "units": [
             {
-              "id": "b0c3f25c-1e4a-4f6c-8f4f-1d1c69d5dc6c",
+              "id": "9c634840-a5ab-4565-8650-64f0349af00d",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -473,77 +503,89 @@
             {
               "id": "stim-f2-s91002-n10",
               "type": "pendulumStimulus",
-              "theta0Deg": 29.5049664471,
-              "omega0DegPerSec": 71.2183023226,
+              "theta0Deg": 26.976287663,
+              "omega0DegPerSec": 71.8579065168,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.5545909424245963,
+              "show1T": 1.0277173058129847,
+              "hide1T": 0.7463001860305667,
+              "show2T": 1.134969352162443,
+              "hide2T": 0.9234405284514651
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n13",
+          "units": [
+            {
+              "id": "a0ec77a4-798d-41fb-b69a-4e7a7c0bdfde",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n12",
+              "type": "pendulumStimulus",
+              "theta0Deg": 33.6253164243,
+              "omega0DegPerSec": 64.9789015828,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.204336424224732,
+              "show1T": 0.8897366190794855,
+              "hide1T": 0.9239594489336014,
+              "show2T": 0.8664630062412471,
+              "hide2T": 0.9853645581752062
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n15",
+          "units": [
+            {
+              "id": "24f84687-f2ab-4e7c-935c-e7fd632a44f0",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n14",
+              "type": "pendulumStimulus",
+              "theta0Deg": -43.1470040325,
+              "omega0DegPerSec": -50.6380927244,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.4155561051515937,
+              "show1T": 0.8566845058230683,
+              "hide1T": 0.8242841294268146,
+              "show2T": 1.210345809115097,
+              "hide2T": 0.6606389118824154
             }
           ]
         }
       ]
     },
     {
+      "kind": "rest",
+      "id": "fe517c7b-702b-4b8e-b33f-866eed1fb3e7",
+      "units": [
+        {
+          "id": "0bc68d5a-06b3-49c0-b145-fa7724ce80a8",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 4 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
       "kind": "block",
-      "id": "stim-f2-s91002-n1x",
+      "id": "stim-f2-s91002-n1h",
       "children": [
-        {
-          "id": "stim-f2-s91002-n14",
-          "units": [
-            {
-              "id": "2027984b-0ea7-4fda-bcf1-35828ee120db",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n13",
-              "type": "pendulumStimulus",
-              "theta0Deg": -20.0364078674,
-              "omega0DegPerSec": 78.6420418661,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n16",
-          "units": [
-            {
-              "id": "c77de445-3a74-4d54-9888-2e5bdde7e1e9",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n15",
-              "type": "pendulumStimulus",
-              "theta0Deg": 25.0265503675,
-              "omega0DegPerSec": 78.1136725823,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
         {
           "id": "stim-f2-s91002-n18",
           "units": [
             {
-              "id": "79da1b94-a115-44ba-be0b-2edeb61cd16b",
+              "id": "a3450ba7-5347-4959-8bb5-ccaf83183890",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -551,15 +593,15 @@
             {
               "id": "stim-f2-s91002-n17",
               "type": "pendulumStimulus",
-              "theta0Deg": -41.7719648872,
-              "omega0DegPerSec": -63.0625896552,
+              "theta0Deg": -24.9795998074,
+              "omega0DegPerSec": 88.6165125983,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.080438521970153,
+              "show1T": 0.7723429463803768,
+              "hide1T": 0.7413932932540774,
+              "show2T": 1.012338865781203,
+              "hide2T": 0.5499693528981879
             }
           ]
         },
@@ -567,7 +609,7 @@
           "id": "stim-f2-s91002-n1a",
           "units": [
             {
-              "id": "11c8847b-4504-4ea2-909c-3defb184e8c2",
+              "id": "c616b95a-5364-468a-b739-8d945ce7244e",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -575,15 +617,15 @@
             {
               "id": "stim-f2-s91002-n19",
               "type": "pendulumStimulus",
-              "theta0Deg": -36.2663781736,
-              "omega0DegPerSec": 73.5085014822,
+              "theta0Deg": 1.3747573458,
+              "omega0DegPerSec": 96.7106312432,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.567101484459686,
+              "show1T": 0.9649733012774959,
+              "hide1T": 0.7801754676038399,
+              "show2T": 1.2074016267433763,
+              "hide2T": 0.9433192614233121
             }
           ]
         },
@@ -591,7 +633,7 @@
           "id": "stim-f2-s91002-n1c",
           "units": [
             {
-              "id": "e1af1215-9037-42f6-a254-1de6234aca29",
+              "id": "0a066702-812a-486f-a72a-29ce1bbedbb5",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -599,15 +641,15 @@
             {
               "id": "stim-f2-s91002-n1b",
               "type": "pendulumStimulus",
-              "theta0Deg": -61.0409490857,
-              "omega0DegPerSec": 26.0051906139,
+              "theta0Deg": -51.2914851867,
+              "omega0DegPerSec": -57.716449482,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.5224372032753037,
+              "show1T": 0.9705699814949185,
+              "hide1T": 0.7418639520183206,
+              "show2T": 1.1756024517817423,
+              "hide2T": 0.9010210711276159
             }
           ]
         },
@@ -615,7 +657,7 @@
           "id": "stim-f2-s91002-n1e",
           "units": [
             {
-              "id": "c7d28f8d-50c1-43ae-884a-0341cb66b9aa",
+              "id": "8f556875-8e07-4d64-9950-69718eaf2984",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -623,15 +665,15 @@
             {
               "id": "stim-f2-s91002-n1d",
               "type": "pendulumStimulus",
-              "theta0Deg": -35.3278902546,
-              "omega0DegPerSec": -80.4071383127,
+              "theta0Deg": -35.2202968765,
+              "omega0DegPerSec": 80.0807666398,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.225289497064738,
+              "show1T": 0.907803158974275,
+              "hide1T": 0.7452789937378839,
+              "show2T": 1.0067843517754227,
+              "hide2T": 0.6113392194965854
             }
           ]
         },
@@ -639,7 +681,7 @@
           "id": "stim-f2-s91002-n1g",
           "units": [
             {
-              "id": "538ac00b-7bb4-46a7-a8be-532e497815e7",
+              "id": "f47d31fc-ed5c-45ff-9e5e-92a7161e9055",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -647,167 +689,179 @@
             {
               "id": "stim-f2-s91002-n1f",
               "type": "pendulumStimulus",
-              "theta0Deg": 6.7345956713,
-              "omega0DegPerSec": -98.8446042045,
+              "theta0Deg": -36.9616507553,
+              "omega0DegPerSec": -78.2620845561,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.1104856464997166,
+              "show1T": 0.8022866161772981,
+              "hide1T": 0.9870676001301035,
+              "show2T": 0.8981016686884686,
+              "hide2T": 0.8035406820708886
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "b214c2c4-3431-464d-950b-8016b893142c",
+      "units": [
         {
-          "id": "stim-f2-s91002-n1i",
+          "id": "1162fe98-fc6d-44c0-b5a5-726a572e5272",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 5 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n1s",
+      "children": [
+        {
+          "id": "stim-f2-s91002-n1j",
           "units": [
             {
-              "id": "0940ea3b-d178-4fed-94ff-38969a1144c2",
+              "id": "22529ae8-999d-4e48-8d9f-6ac7c48113fb",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n1h",
+              "id": "stim-f2-s91002-n1i",
               "type": "pendulumStimulus",
-              "theta0Deg": -62.9513528757,
-              "omega0DegPerSec": -39.5510882618,
+              "theta0Deg": -39.4425122906,
+              "omega0DegPerSec": -90.2111017695,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.0580347370319902,
+              "show1T": 0.8552720850566402,
+              "hide1T": 0.9903865568339825,
+              "show2T": 0.7717492867959663,
+              "hide2T": 0.9428793203551322
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n1k",
+          "id": "stim-f2-s91002-n1l",
           "units": [
             {
-              "id": "8273324f-276d-44da-baff-d674873a4e67",
+              "id": "2a8012f8-df7c-48e4-bdbe-feabe1513cdb",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n1j",
+              "id": "stim-f2-s91002-n1k",
               "type": "pendulumStimulus",
-              "theta0Deg": 53.8084899914,
-              "omega0DegPerSec": -64.8197823869,
+              "theta0Deg": 0.5115252547,
+              "omega0DegPerSec": -108.6311746958,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.044662367261564,
+              "show1T": 0.7895361576229334,
+              "hide1T": 0.7446188706671819,
+              "show2T": 0.9478672791738063,
+              "hide2T": 0.6335592874092981
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n1m",
+          "id": "stim-f2-s91002-n1n",
           "units": [
             {
-              "id": "b00af1da-1e9d-4320-82a6-6a261649d10d",
+              "id": "4e613fe4-91c3-47ca-b51a-d19ced3e294c",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n1l",
+              "id": "stim-f2-s91002-n1m",
               "type": "pendulumStimulus",
-              "theta0Deg": 14.0612104442,
-              "omega0DegPerSec": 103.7343203087,
+              "theta0Deg": -36.4916704874,
+              "omega0DegPerSec": 92.9927648272,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 1.948571540335263,
+              "show1T": 0.7910518025746569,
+              "hide1T": 0.9183688090415671,
+              "show2T": 0.7730471806135029,
+              "hide2T": 0.806143086636439
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n1o",
+          "id": "stim-f2-s91002-n1p",
           "units": [
             {
-              "id": "81c55ef0-146a-4714-8114-7113f3d4277c",
+              "id": "c00cc1f2-6b7e-493b-ae57-b235d75d9c3c",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n1n",
+              "id": "stim-f2-s91002-n1o",
               "type": "pendulumStimulus",
-              "theta0Deg": 43.1727094855,
-              "omega0DegPerSec": -85.6862844892,
+              "theta0Deg": -31.6596570332,
+              "omega0DegPerSec": -96.9922989035,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.3962096605842595,
+              "show1T": 0.8834544060518965,
+              "hide1T": 0.8243959383107722,
+              "show2T": 1.1449434072710574,
+              "hide2T": 0.8253860661061481
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n1q",
+          "id": "stim-f2-s91002-n1r",
           "units": [
             {
-              "id": "2af23531-863d-4813-9ca3-0abc7916ccfc",
+              "id": "9029f7b2-c8d9-4e7c-86dc-1c9caed11b6f",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n1p",
+              "id": "stim-f2-s91002-n1q",
               "type": "pendulumStimulus",
-              "theta0Deg": -27.9079852346,
-              "omega0DegPerSec": 101.3889574433,
+              "theta0Deg": -53.5201954376,
+              "omega0DegPerSec": 72.6583444458,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.4093566667605812,
+              "show1T": 1.1067553964676335,
+              "hide1T": 0.5114581388188526,
+              "show2T": 1.0235849724849686,
+              "hide2T": 0.7400406111264601
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "759197f6-8da8-4853-84be-d663b22bdf72",
+      "units": [
         {
-          "id": "stim-f2-s91002-n1s",
-          "units": [
-            {
-              "id": "93a57164-9db8-40a2-a445-4d0c8cd30eb5",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n1r",
-              "type": "pendulumStimulus",
-              "theta0Deg": 72.1217281837,
-              "omega0DegPerSec": 38.1685823373,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
+          "id": "5cb5d53a-2ee4-4b77-9221-84d0c9b60e2a",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 6 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n23",
+      "children": [
         {
           "id": "stim-f2-s91002-n1u",
           "units": [
             {
-              "id": "eec79e9d-4491-42a7-88a7-c8a8150cdf8e",
+              "id": "83d2a733-1038-4421-9aa9-2b41a21a3ba5",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -815,15 +869,15 @@
             {
               "id": "stim-f2-s91002-n1t",
               "type": "pendulumStimulus",
-              "theta0Deg": 3.9674860239,
-              "omega0DegPerSec": 114.1036066482,
+              "theta0Deg": 4.1579384543,
+              "omega0DegPerSec": -119.1756344877,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 1.9383407515151263,
+              "show1T": 0.8242283423896879,
+              "hide1T": 0.7702039226423949,
+              "show2T": 0.8230010332772508,
+              "hide2T": 0.5751462473999709
             }
           ]
         },
@@ -831,7 +885,7 @@
           "id": "stim-f2-s91002-n1w",
           "units": [
             {
-              "id": "baab0618-ec6b-4571-80b4-99fca8b6163e",
+              "id": "67432359-7fb4-4016-a020-9b36735098e0",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -839,101 +893,113 @@
             {
               "id": "stim-f2-s91002-n1v",
               "type": "pendulumStimulus",
-              "theta0Deg": -25.9289855417,
-              "omega0DegPerSec": 109.0540506661,
+              "theta0Deg": 35.6094423216,
+              "omega0DegPerSec": -106.0057168002,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.2176468559451377,
+              "show1T": 1.002607161179185,
+              "hide1T": 0.7474124272121117,
+              "show2T": 0.8650898297782987,
+              "hide2T": 0.8698555651353672
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n1y",
+          "units": [
+            {
+              "id": "a7bfafb3-47da-4685-b138-2e92c7489a34",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n1x",
+              "type": "pendulumStimulus",
+              "theta0Deg": 29.5153928641,
+              "omega0DegPerSec": -110.2615773415,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.248567440116818,
+              "show1T": 1.0554130974924192,
+              "hide1T": 0.7848653576802462,
+              "show2T": 0.8603100229520351,
+              "hide2T": 0.7533505940809846
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n20",
+          "units": [
+            {
+              "id": "dc46a3c1-4800-4b3d-9e78-ef35749f2033",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n1z",
+              "type": "pendulumStimulus",
+              "theta0Deg": -71.7467531003,
+              "omega0DegPerSec": -56.5487366474,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.304214962737315,
+              "show1T": 1.0243008552351967,
+              "hide1T": 0.9673941867658868,
+              "show2T": 0.8999926964752376,
+              "hide2T": 0.7883851380320266
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n22",
+          "units": [
+            {
+              "id": "5f05eb99-ac0a-4be0-a2d3-c4d61e94e658",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n21",
+              "type": "pendulumStimulus",
+              "theta0Deg": 7.4036189821,
+              "omega0DegPerSec": -118.7899973789,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.2339443183930983,
+              "show1T": 0.9811370329698548,
+              "hide1T": 0.9294252329273149,
+              "show2T": 0.8465368383331224,
+              "hide2T": 0.9481242564506829
             }
           ]
         }
       ]
     },
     {
+      "kind": "rest",
+      "id": "a9608c49-8566-43c3-aa7c-b9d471aa5d81",
+      "units": [
+        {
+          "id": "0ce6758b-15be-4144-881f-6eb334d370e6",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 7 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
       "kind": "block",
-      "id": "stim-f2-s91002-n2s",
+      "id": "stim-f2-s91002-n2e",
       "children": [
-        {
-          "id": "stim-f2-s91002-n1z",
-          "units": [
-            {
-              "id": "cf83cab1-be61-4444-8bf6-4767949c2dd7",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n1y",
-              "type": "pendulumStimulus",
-              "theta0Deg": -58.7009119894,
-              "omega0DegPerSec": 76.0454875568,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n21",
-          "units": [
-            {
-              "id": "cc38e2b5-d770-45b3-ac74-51c8d25fde9f",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n20",
-              "type": "pendulumStimulus",
-              "theta0Deg": 26.976287663,
-              "omega0DegPerSec": 110.5244682309,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n23",
-          "units": [
-            {
-              "id": "f56b281c-f3dd-40d7-9ae3-eb5f39ade893",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n22",
-              "type": "pendulumStimulus",
-              "theta0Deg": 19.9564601853,
-              "omega0DegPerSec": -115.9905763926,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
         {
           "id": "stim-f2-s91002-n25",
           "units": [
             {
-              "id": "8e4aa040-3cc6-45ce-8f39-c33d49adcaaf",
+              "id": "f32103f9-678e-450c-9429-5a89f2e0e22c",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -941,15 +1007,15 @@
             {
               "id": "stim-f2-s91002-n24",
               "type": "pendulumStimulus",
-              "theta0Deg": 33.6253164243,
-              "omega0DegPerSec": 110.3723378181,
+              "theta0Deg": -91.1746965721,
+              "omega0DegPerSec": -16.5361273458,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.403645579280372,
+              "show1T": 1.0024036112008616,
+              "hide1T": 0.707342128851451,
+              "show2T": 1.0738757901126519,
+              "hide2T": 0.857320623123087
             }
           ]
         },
@@ -957,7 +1023,7 @@
           "id": "stim-f2-s91002-n27",
           "units": [
             {
-              "id": "744254ad-1f24-4415-83ed-69471ee7e69d",
+              "id": "5e1cdb90-ca8d-453e-a8c1-d9c52bf60733",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -965,15 +1031,15 @@
             {
               "id": "stim-f2-s91002-n26",
               "type": "pendulumStimulus",
-              "theta0Deg": -79.3896342628,
-              "omega0DegPerSec": 46.9417494403,
+              "theta0Deg": 64.5339931548,
+              "omega0DegPerSec": 86.7161745678,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.323820582481623,
+              "show1T": 0.8984579870011657,
+              "hide1T": 0.8614316374296322,
+              "show2T": 1.1402740601915866,
+              "hide2T": 0.5011630415683612
             }
           ]
         },
@@ -981,7 +1047,7 @@
           "id": "stim-f2-s91002-n29",
           "units": [
             {
-              "id": "3918c632-4c1b-4d9a-b823-49796c4c7293",
+              "id": "3ff8652e-14b3-4b8d-b0a9-a1f7bb4b7141",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -989,15 +1055,15 @@
             {
               "id": "stim-f2-s91002-n28",
               "type": "pendulumStimulus",
-              "theta0Deg": -57.1511560958,
-              "omega0DegPerSec": -91.7650619284,
+              "theta0Deg": 47.0926540252,
+              "omega0DegPerSec": -107.4924780329,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.4979409176864698,
+              "show1T": 1.0492931329645216,
+              "hide1T": 0.5308891150634736,
+              "show2T": 1.1988479520659894,
+              "hide2T": 0.6630414737155661
             }
           ]
         },
@@ -1005,7 +1071,7 @@
           "id": "stim-f2-s91002-n2b",
           "units": [
             {
-              "id": "cbfa7c61-d384-45f6-b9e2-b4e6305f34aa",
+              "id": "e41c70d4-e3a3-455b-af59-aef5bd0e8367",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -1013,15 +1079,15 @@
             {
               "id": "stim-f2-s91002-n2a",
               "type": "pendulumStimulus",
-              "theta0Deg": -43.1470040325,
-              "omega0DegPerSec": -109.0208955795,
+              "theta0Deg": 57.3836304434,
+              "omega0DegPerSec": 96.2996353187,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.564385347246802,
+              "show1T": 1.090203005936928,
+              "hide1T": 0.521507327677682,
+              "show2T": 1.2270379117690027,
+              "hide2T": 0.6597316312836483
             }
           ]
         },
@@ -1029,7 +1095,7 @@
           "id": "stim-f2-s91002-n2d",
           "units": [
             {
-              "id": "c51b5e1c-dcd7-4324-b960-60ea883ab9f4",
+              "id": "656a2725-0be0-4b4a-9ad6-d86955285316",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -1037,167 +1103,179 @@
             {
               "id": "stim-f2-s91002-n2c",
               "type": "pendulumStimulus",
-              "theta0Deg": 53.4845731873,
-              "omega0DegPerSec": 100.8705516157,
+              "theta0Deg": -34.1390054673,
+              "omega0DegPerSec": -117.9705285633,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.6086033826353994,
+              "show1T": 1.0919419787824154,
+              "hide1T": 0.9506364908302203,
+              "show2T": 1.178146904683672,
+              "hide2T": 0.6673102107597515
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "e6d55f37-dd0f-4af5-8a87-88e22758305a",
+      "units": [
         {
-          "id": "stim-f2-s91002-n2f",
+          "id": "72d962ec-ce56-49e4-870d-8b0bf3bd7c5e",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 8 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n2p",
+      "children": [
+        {
+          "id": "stim-f2-s91002-n2g",
           "units": [
             {
-              "id": "ba778bc6-78e5-453b-b346-d898cdb56c46",
+              "id": "7aab4fdb-0dd1-4dbd-9b3f-6d43c049821e",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n2e",
+              "id": "stim-f2-s91002-n2f",
               "type": "pendulumStimulus",
-              "theta0Deg": -64.3399834447,
-              "omega0DegPerSec": -89.5694097789,
+              "theta0Deg": -30.3552980348,
+              "omega0DegPerSec": 130.1058769269,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.152953479885799,
+              "show1T": 1.0642691106768325,
+              "hide1T": 0.8692484642378986,
+              "show2T": 0.7760077294660732,
+              "hide2T": 0.6840149144409224
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n2h",
+          "id": "stim-f2-s91002-n2i",
           "units": [
             {
-              "id": "bae1b8af-5436-4aa2-a38a-8b9f17856ff0",
+              "id": "1ee77c06-f4eb-4bfc-96ab-0c77107c58b8",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n2g",
+              "id": "stim-f2-s91002-n2h",
               "type": "pendulumStimulus",
-              "theta0Deg": 45.1450284664,
-              "omega0DegPerSec": -113.3861891699,
+              "theta0Deg": -43.1835017726,
+              "omega0DegPerSec": -121.5573552962,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.3610126236301197,
+              "show1T": 0.9174402701901272,
+              "hide1T": 0.5897792164469138,
+              "show2T": 1.145607363898307,
+              "hide2T": 0.8904020556947216
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n2j",
+          "id": "stim-f2-s91002-n2k",
           "units": [
             {
-              "id": "96b62df5-7710-4e5a-93f8-4e8a2ee006ec",
+              "id": "bfcc412f-8c0c-4f05-84c3-71513ec4a642",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n2i",
+              "id": "stim-f2-s91002-n2j",
               "type": "pendulumStimulus",
-              "theta0Deg": -6.1968288571,
-              "omega0DegPerSec": 134.0019429138,
+              "theta0Deg": 28.1823236682,
+              "omega0DegPerSec": 131.2470375738,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.57156810620991,
+              "show1T": 1.0144272287143394,
+              "hide1T": 0.9843980848090723,
+              "show2T": 1.1745391169097275,
+              "hide2T": 0.9162277624709532
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n2l",
+          "id": "stim-f2-s91002-n2m",
           "units": [
             {
-              "id": "1cf9b84a-16d2-4309-af0f-29e15906feb7",
+              "id": "23636b9d-dda6-4fe5-8904-a88bae920304",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n2k",
+              "id": "stim-f2-s91002-n2l",
               "type": "pendulumStimulus",
-              "theta0Deg": 1.3747573458,
-              "omega0DegPerSec": 136.0137070999,
+              "theta0Deg": -25.9342883527,
+              "omega0DegPerSec": -132.3361915096,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.328170278129909,
+              "show1T": 0.7933600302785635,
+              "hide1T": 0.8938877716427669,
+              "show2T": 1.2390447544166818,
+              "hide2T": 0.5753672069404274
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n2n",
+          "id": "stim-f2-s91002-n2o",
           "units": [
             {
-              "id": "435a1455-edce-4e18-84b1-086b07c00edc",
+              "id": "cd05850c-efdd-4297-8a74-03a0b81dbdd0",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n2m",
+              "id": "stim-f2-s91002-n2n",
               "type": "pendulumStimulus",
-              "theta0Deg": -25.2192230802,
-              "omega0DegPerSec": 132.0037106721,
+              "theta0Deg": -53.8119816408,
+              "omega0DegPerSec": -112.0028283404,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 1.7935498191088821,
+              "show1T": 0.7643674432765692,
+              "hide1T": 0.6415576080325991,
+              "show2T": 0.7551585180917755,
+              "hide2T": 0.7196928629418835
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "aef92b03-79c6-49d3-9235-df3b26f897cc",
+      "units": [
         {
-          "id": "stim-f2-s91002-n2p",
-          "units": [
-            {
-              "id": "8bb27eec-4c60-4c4f-807c-7fbcdeb3a589",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n2o",
-              "type": "pendulumStimulus",
-              "theta0Deg": 81.1433577351,
-              "omega0DegPerSec": -76.1768304501,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
+          "id": "86aeec14-747e-4256-bf5d-4c28663a9f9a",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 9 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n30",
+      "children": [
         {
           "id": "stim-f2-s91002-n2r",
           "units": [
             {
-              "id": "5a7676cb-48dc-43a5-8420-9c4cf9e63ce1",
+              "id": "1509a359-276c-4b70-8500-8d7f23056501",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -1205,125 +1283,137 @@
             {
               "id": "stim-f2-s91002-n2q",
               "type": "pendulumStimulus",
-              "theta0Deg": -51.2914851867,
-              "omega0DegPerSec": -117.6414671707,
+              "theta0Deg": 16.2534800358,
+              "omega0DegPerSec": 144.6846877322,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.395774108710035,
+              "show1T": 1.1341080487472937,
+              "hide1T": 0.5936973833013326,
+              "show2T": 0.9808174133067951,
+              "hide2T": 0.8663164738100022
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n2t",
+          "units": [
+            {
+              "id": "3eac8919-8d52-4407-b231-e1b01e9ba137",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n2s",
+              "type": "pendulumStimulus",
+              "theta0Deg": 89.4942810573,
+              "omega0DegPerSec": -75.0518999121,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.5965722307507026,
+              "show1T": 1.2047879091696814,
+              "hide1T": 0.9477333935210481,
+              "show2T": 1.0284339346690103,
+              "hide2T": 0.9411722721997648
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n2v",
+          "units": [
+            {
+              "id": "f0e3eb08-97e5-4392-8126-c1fdfa98b0e3",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n2u",
+              "type": "pendulumStimulus",
+              "theta0Deg": -87.4488631636,
+              "omega0DegPerSec": 78.7832632615,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.6119463422991256,
+              "show1T": 1.238384350668639,
+              "hide1T": 0.516247125226073,
+              "show2T": 1.1700856033712626,
+              "hide2T": 0.5415409395936877
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n2x",
+          "units": [
+            {
+              "id": "8a7ca9f7-b61e-4a14-9ad5-bcef07814f09",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n2w",
+              "type": "pendulumStimulus",
+              "theta0Deg": -79.1601667553,
+              "omega0DegPerSec": -92.2819744451,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.0004010360645683,
+              "show1T": 0.897545651299879,
+              "hide1T": 0.9397228425368667,
+              "show2T": 0.8027747235028073,
+              "hide2T": 0.6202701604925096
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n2z",
+          "units": [
+            {
+              "id": "e7b0418a-c7f6-4a49-9cf2-3a298f22bac9",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n2y",
+              "type": "pendulumStimulus",
+              "theta0Deg": 2.5756904483,
+              "omega0DegPerSec": 146.8342922577,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.293318229961251,
+              "show1T": 1.2148652222240344,
+              "hide1T": 0.7500345706939697,
+              "show2T": 0.7796284798532724,
+              "hide2T": 0.8034283238230273
             }
           ]
         }
       ]
     },
     {
+      "kind": "rest",
+      "id": "3578b4fa-dbed-4797-9ef3-9a9c2a8f0b01",
+      "units": [
+        {
+          "id": "b011f225-d269-4249-94d2-b1ce094b9fa6",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 10 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
       "kind": "block",
-      "id": "stim-f2-s91002-n3n",
+      "id": "stim-f2-s91002-n3b",
       "children": [
-        {
-          "id": "stim-f2-s91002-n2u",
-          "units": [
-            {
-              "id": "e5a55d69-8f8e-4ba0-9b69-e0a35ffdae0d",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n2t",
-              "type": "pendulumStimulus",
-              "theta0Deg": -21.1896133237,
-              "omega0DegPerSec": -137.0340629434,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n2w",
-          "units": [
-            {
-              "id": "002e675f-46b7-41df-a99c-0853a6627049",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n2v",
-              "type": "pendulumStimulus",
-              "theta0Deg": -35.2202968765,
-              "omega0DegPerSec": 131.8146555614,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n2y",
-          "units": [
-            {
-              "id": "0860aa49-22f5-46f2-9413-67da8359fc48",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n2x",
-              "type": "pendulumStimulus",
-              "theta0Deg": -66.3817255385,
-              "omega0DegPerSec": -105.5104898817,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n30",
-          "units": [
-            {
-              "id": "8a317781-16ed-4fc0-9beb-cb760ee1b9f4",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n2z",
-              "type": "pendulumStimulus",
-              "theta0Deg": 4.8847332783,
-              "omega0DegPerSec": -145.4957849674,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
         {
           "id": "stim-f2-s91002-n32",
           "units": [
             {
-              "id": "852ee787-12bd-462f-a187-89803e1fbb06",
+              "id": "e01062f4-fa54-4c8e-a662-db67a4231463",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -1331,15 +1421,15 @@
             {
               "id": "stim-f2-s91002-n31",
               "type": "pendulumStimulus",
-              "theta0Deg": -36.9616507553,
-              "omega0DegPerSec": -135.8258887249,
+              "theta0Deg": -32.0882477146,
+              "omega0DegPerSec": -146.843288933,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.213464334577807,
+              "show1T": 0.9748613765696064,
+              "hide1T": 0.6771900593303144,
+              "show2T": 1.0041987840086222,
+              "hide2T": 0.6110223805299029
             }
           ]
         },
@@ -1347,7 +1437,7 @@
           "id": "stim-f2-s91002-n34",
           "units": [
             {
-              "id": "3346a662-aeed-4f5a-bc28-0b86c69d507d",
+              "id": "32fc1602-f94d-4d29-99a7-79f1d9724491",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -1355,15 +1445,15 @@
             {
               "id": "stim-f2-s91002-n33",
               "type": "pendulumStimulus",
-              "theta0Deg": -73.3667985443,
-              "omega0DegPerSec": 103.2174181175,
+              "theta0Deg": 3.1702826265,
+              "omega0DegPerSec": 154.905581825,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.1772890923389765,
+              "show1T": 1.0776904384838417,
+              "hide1T": 0.5944069885881618,
+              "show2T": 0.8630328249419108,
+              "hide2T": 0.7056852343957871
             }
           ]
         },
@@ -1371,7 +1461,7 @@
           "id": "stim-f2-s91002-n36",
           "units": [
             {
-              "id": "c52e1460-9045-4daa-b1a3-27ac33141956",
+              "id": "83c8da4a-8a21-4276-9417-952971d692ea",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -1379,15 +1469,15 @@
             {
               "id": "stim-f2-s91002-n35",
               "type": "pendulumStimulus",
-              "theta0Deg": -39.4425122906,
-              "omega0DegPerSec": -137.5705644499,
+              "theta0Deg": 42.2161709704,
+              "omega0DegPerSec": 140.8827681479,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 1.873041068108554,
+              "show1T": 0.8560608677798882,
+              "hide1T": 0.9250912459101528,
+              "show2T": 0.75228281901218,
+              "hide2T": 0.5296032400801778
             }
           ]
         },
@@ -1395,7 +1485,7 @@
           "id": "stim-f2-s91002-n38",
           "units": [
             {
-              "id": "3dfdc5c1-743b-471f-839f-b6b2335a4d8e",
+              "id": "1d95fabd-1106-4381-a451-8faf5cdf8d31",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -1403,15 +1493,15 @@
             {
               "id": "stim-f2-s91002-n37",
               "type": "pendulumStimulus",
-              "theta0Deg": -104.2040987592,
-              "omega0DegPerSec": 54.8636331966,
+              "theta0Deg": -12.2712022159,
+              "omega0DegPerSec": 153.7947930648,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.337173700691236,
+              "show1T": 1.1658867567311972,
+              "hide1T": 0.7540090666152537,
+              "show2T": 0.9058489598101005,
+              "hide2T": 0.7047555422177538
             }
           ]
         },
@@ -1419,7 +1509,7 @@
           "id": "stim-f2-s91002-n3a",
           "units": [
             {
-              "id": "46ab7a0d-5b8f-472a-85e1-955b1a28dc11",
+              "id": "b26a6702-62b2-4b84-a095-7029ac2bfb73",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -1427,293 +1517,317 @@
             {
               "id": "stim-f2-s91002-n39",
               "type": "pendulumStimulus",
-              "theta0Deg": 0.5115252547,
-              "omega0DegPerSec": -153.2841981163,
+              "theta0Deg": -26.9526543841,
+              "omega0DegPerSec": -149.2419007176,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n3c",
-          "units": [
-            {
-              "id": "0eaae86f-8895-4d33-bbfd-c762df97fad6",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n3b",
-              "type": "pendulumStimulus",
-              "theta0Deg": -3.8744131196,
-              "omega0DegPerSec": -154.6407814947,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n3e",
-          "units": [
-            {
-              "id": "e9120003-0e5c-4ade-a998-0a5c6b7acf6e",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n3d",
-              "type": "pendulumStimulus",
-              "theta0Deg": -83.8373130653,
-              "omega0DegPerSec": -100.2270788476,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n3g",
-          "units": [
-            {
-              "id": "27e45178-a017-4904-a5cb-7cb44496b9e6",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n3f",
-              "type": "pendulumStimulus",
-              "theta0Deg": -106.1638556141,
-              "omega0DegPerSec": -65.5320017818,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n3i",
-          "units": [
-            {
-              "id": "2c4fd6d8-9905-4cf7-8089-bbf318c8e39d",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n3h",
-              "type": "pendulumStimulus",
-              "theta0Deg": 38.9607413672,
-              "omega0DegPerSec": -147.4253610912,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n3k",
-          "units": [
-            {
-              "id": "861c5daa-d27f-4f66-8649-348449a10a80",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n3j",
-              "type": "pendulumStimulus",
-              "theta0Deg": 121.2255425099,
-              "omega0DegPerSec": -36.6222426388,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n3m",
-          "units": [
-            {
-              "id": "f952c23a-58b6-4ab5-87e7-4ea00645dde4",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n3l",
-              "type": "pendulumStimulus",
-              "theta0Deg": 40.4230223782,
-              "omega0DegPerSec": 149.5986255261,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.533736833262707,
+              "show1T": 1.181388508528471,
+              "hide1T": 0.8930405594874173,
+              "show2T": 1.0637439128477126,
+              "hide2T": 0.6930395313538611
             }
           ]
         }
       ]
     },
     {
+      "kind": "rest",
+      "id": "da5bb156-3db3-47a1-b483-2ad99934962d",
+      "units": [
+        {
+          "id": "0191f697-7b95-4642-a20d-30b56b9b8c9f",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 11 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
       "kind": "block",
-      "id": "stim-f2-s91002-n4i",
+      "id": "stim-f2-s91002-n3m",
       "children": [
         {
-          "id": "stim-f2-s91002-n3p",
+          "id": "stim-f2-s91002-n3d",
           "units": [
             {
-              "id": "daf512c1-436a-4b64-801f-d5b41e2b431e",
+              "id": "28045e15-9ad9-4783-b2ef-ed2873e5f656",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n3o",
+              "id": "stim-f2-s91002-n3c",
               "type": "pendulumStimulus",
-              "theta0Deg": 79.1666866187,
-              "omega0DegPerSec": -114.705618561,
+              "theta0Deg": 122.9537872598,
+              "omega0DegPerSec": -40.3529285482,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.60285405221417,
+              "show1T": 1.1660577314905822,
+              "hide1T": 0.8986057983711362,
+              "show2T": 1.1620099229039624,
+              "hide2T": 0.7248367938445881
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n3r",
+          "id": "stim-f2-s91002-n3f",
           "units": [
             {
-              "id": "0c77b111-fc26-400a-951f-7c9cb19e0786",
+              "id": "d1a1e8f7-1d53-482a-acfd-8bc2da0a7a0d",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n3q",
+              "id": "stim-f2-s91002-n3e",
               "type": "pendulumStimulus",
-              "theta0Deg": -31.6596570332,
-              "omega0DegPerSec": -155.8196238225,
+              "theta0Deg": -73.7579976395,
+              "omega0DegPerSec": -121.9733867818,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.4656991523421747,
+              "show1T": 1.0996480154572055,
+              "hide1T": 0.8233948337147012,
+              "show2T": 1.1401981508824974,
+              "hide2T": 0.510948350536637
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n3t",
+          "id": "stim-f2-s91002-n3h",
           "units": [
             {
-              "id": "7de4ca77-0f7e-480b-a221-047ff9d5affe",
+              "id": "0cff6497-25bb-4e7a-bcda-bade0af63eca",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n3s",
+              "id": "stim-f2-s91002-n3g",
               "type": "pendulumStimulus",
-              "theta0Deg": -83.9128276426,
-              "omega0DegPerSec": 112.9047189384,
+              "theta0Deg": 76.49798261,
+              "omega0DegPerSec": -118.886911114,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.279917269876275,
+              "show1T": 0.9264466920867562,
+              "hide1T": 0.7324117027455941,
+              "show2T": 1.061863400042057,
+              "hide2T": 0.9904083360452205
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n3v",
+          "id": "stim-f2-s91002-n3j",
           "units": [
             {
-              "id": "0b7ebfc9-4b74-4599-9412-ad6e331cdabd",
+              "id": "5ff1ed86-160c-439c-a6ef-b55a55c61607",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n3u",
+              "id": "stim-f2-s91002-n3i",
               "type": "pendulumStimulus",
-              "theta0Deg": 104.3592532352,
-              "omega0DegPerSec": 86.638817782,
+              "theta0Deg": -101.6835747287,
+              "omega0DegPerSec": -84.3856186007,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.394727561099297,
+              "show1T": 1.232062743860297,
+              "hide1T": 0.9611751986667514,
+              "show2T": 0.9069963204674423,
+              "hide2T": 0.549318517325446
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n3x",
+          "id": "stim-f2-s91002-n3l",
           "units": [
             {
-              "id": "d884fe7f-042c-478b-ac28-27586530c430",
+              "id": "06b34524-0e47-47c3-8ca7-312899fe3647",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n3w",
+              "id": "stim-f2-s91002-n3k",
               "type": "pendulumStimulus",
-              "theta0Deg": -53.5201954376,
-              "omega0DegPerSec": 146.673201618,
+              "theta0Deg": -25.927774189,
+              "omega0DegPerSec": 157.6231509959,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.527894492275336,
+              "show1T": 1.1526074561988935,
+              "hide1T": 0.9011012433329597,
+              "show2T": 1.1059542669681832,
+              "hide2T": 0.6901212200755253
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "f9f42739-9fe3-4dda-b6c8-fd448d9321f6",
+      "units": [
+        {
+          "id": "8857478e-67d0-4f4a-b776-6e11a0103497",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 12 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n3x",
+      "children": [
+        {
+          "id": "stim-f2-s91002-n3o",
+          "units": [
+            {
+              "id": "3305dca7-ab5e-48ec-ba3e-5a33f2d29408",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n3n",
+              "type": "pendulumStimulus",
+              "theta0Deg": -114.9520634115,
+              "omega0DegPerSec": -77.6934175405,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.1433840501552868,
+              "show1T": 0.7538231170037761,
+              "hide1T": 0.8381515725050122,
+              "show2T": 1.1179311835439876,
+              "hide2T": 0.9467591134598479
             }
           ]
         },
+        {
+          "id": "stim-f2-s91002-n3q",
+          "units": [
+            {
+              "id": "f4c790a6-1b37-4ead-90b5-8d37dea30c02",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n3p",
+              "type": "pendulumStimulus",
+              "theta0Deg": 80.2838612907,
+              "omega0DegPerSec": -124.6472781877,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 1.9878015017475499,
+              "show1T": 0.8339214157313108,
+              "hide1T": 0.8236858193995431,
+              "show2T": 0.9512044942239299,
+              "hide2T": 0.5081190734636039
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n3s",
+          "units": [
+            {
+              "id": "928e836f-581c-47e5-b6b6-507df4fe2fee",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n3r",
+              "type": "pendulumStimulus",
+              "theta0Deg": -107.4636675976,
+              "omega0DegPerSec": 89.413926239,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.041898876553822,
+              "show1T": 0.7616104615153745,
+              "hide1T": 0.8031549579463899,
+              "show2T": 1.0205650432035327,
+              "hide2T": 0.9035175344906747
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n3u",
+          "units": [
+            {
+              "id": "a39ab8a3-74cc-40db-8895-7098fca75c85",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n3t",
+              "type": "pendulumStimulus",
+              "theta0Deg": 21.9302858971,
+              "omega0DegPerSec": -166.5652101663,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.475910433874539,
+              "show1T": 1.1210922948084772,
+              "hide1T": 0.7407951896311715,
+              "show2T": 1.0946053911466151,
+              "hide2T": 0.9690930499928072
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n3w",
+          "units": [
+            {
+              "id": "d09c3309-ceb3-4335-a6eb-3e1ca86feaad",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n3v",
+              "type": "pendulumStimulus",
+              "theta0Deg": 125.4744833708,
+              "omega0DegPerSec": 59.0507369738,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.296012546085697,
+              "show1T": 1.2482690885663033,
+              "hide1T": 0.7143826882820576,
+              "show2T": 0.8486738891806453,
+              "hide2T": 0.593726604944095
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "8b505b1c-718d-4e7b-8449-895630c64ec1",
+      "units": [
+        {
+          "id": "8410ffa1-acab-4a5d-9c20-4f8e37934d0b",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 13 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n48",
+      "children": [
         {
           "id": "stim-f2-s91002-n3z",
           "units": [
             {
-              "id": "0d6c22af-cced-4863-96ac-264e01f59a44",
+              "id": "1045f3d4-58e1-4917-a101-6e5baa5e2a12",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -1721,15 +1835,15 @@
             {
               "id": "stim-f2-s91002-n3y",
               "type": "pendulumStimulus",
-              "theta0Deg": 76.8638854567,
-              "omega0DegPerSec": -126.7240867423,
+              "theta0Deg": -5.8757884707,
+              "omega0DegPerSec": -183.6056440714,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.6918274165867095,
+              "show1T": 1.2179195076460019,
+              "hide1T": 0.6478319469606504,
+              "show2T": 1.0399189498275518,
+              "hide2T": 0.9360473537817597
             }
           ]
         },
@@ -1737,7 +1851,7 @@
           "id": "stim-f2-s91002-n41",
           "units": [
             {
-              "id": "5cb2c2bc-4fac-4623-808e-6dd5669abce7",
+              "id": "5ead19bb-7ae3-4edf-af6b-e5de4d28c892",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -1745,15 +1859,15 @@
             {
               "id": "stim-f2-s91002-n40",
               "type": "pendulumStimulus",
-              "theta0Deg": 16.9811801892,
-              "omega0DegPerSec": -168.0521803608,
+              "theta0Deg": -32.6621919125,
+              "omega0DegPerSec": 176.7819498098,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.5489804060570767,
+              "show1T": 1.2394203828880563,
+              "hide1T": 0.8857376357773319,
+              "show2T": 0.8501470028422773,
+              "hide2T": 0.7909289201488718
             }
           ]
         },
@@ -1761,7 +1875,7 @@
           "id": "stim-f2-s91002-n43",
           "units": [
             {
-              "id": "7140b9a8-15a9-4d14-9482-a1bb127bf731",
+              "id": "94cae014-ef95-41ba-a246-9edccc193808",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -1769,15 +1883,15 @@
             {
               "id": "stim-f2-s91002-n42",
               "type": "pendulumStimulus",
-              "theta0Deg": 4.1579384543,
-              "omega0DegPerSec": -171.3311764988,
+              "theta0Deg": -155.5198157765,
+              "omega0DegPerSec": -55.4082718916,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.7515544052358605,
+              "show1T": 1.2316028581699356,
+              "hide1T": 0.5465059722773731,
+              "show2T": 1.1505690234480426,
+              "hide2T": 0.8015866944333538
             }
           ]
         },
@@ -1785,7 +1899,7 @@
           "id": "stim-f2-s91002-n45",
           "units": [
             {
-              "id": "545e6426-3a0a-4f38-a50e-09f255d64439",
+              "id": "4ecf8cdc-a5c9-4fc2-a22b-098750445ce6",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -1793,15 +1907,15 @@
             {
               "id": "stim-f2-s91002-n44",
               "type": "pendulumStimulus",
-              "theta0Deg": -126.5555934794,
-              "omega0DegPerSec": 64.6845712972,
+              "theta0Deg": -55.2609440591,
+              "omega0DegPerSec": 163.939301714,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.756029682164437,
+              "show1T": 1.1795345053542405,
+              "hide1T": 0.8132338871946558,
+              "show2T": 1.1466259736334905,
+              "hide2T": 0.7556100168731064
             }
           ]
         },
@@ -1809,7 +1923,7 @@
           "id": "stim-f2-s91002-n47",
           "units": [
             {
-              "id": "f38f4cf9-4b30-4ecc-a606-06b5569e9b61",
+              "id": "6896902a-fa48-4df0-a8dc-45e659960157",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -1817,293 +1931,317 @@
             {
               "id": "stim-f2-s91002-n46",
               "type": "pendulumStimulus",
-              "theta0Deg": -127.4392560404,
-              "omega0DegPerSec": -66.6318645846,
+              "theta0Deg": -44.7949162871,
+              "omega0DegPerSec": -170.6598289138,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n49",
-          "units": [
-            {
-              "id": "3cf9eeca-7ccf-44d4-a359-74c15e1ab518",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n48",
-              "type": "pendulumStimulus",
-              "theta0Deg": -109.7620806657,
-              "omega0DegPerSec": -96.0919702672,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n4b",
-          "units": [
-            {
-              "id": "fb729377-3df7-41c9-870e-2deeb2b5580e",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n4a",
-              "type": "pendulumStimulus",
-              "theta0Deg": 35.6094423216,
-              "omega0DegPerSec": -167.9408946349,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n4d",
-          "units": [
-            {
-              "id": "dc0b9092-c35b-40db-be9e-0673da5daa9c",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n4c",
-              "type": "pendulumStimulus",
-              "theta0Deg": 1.877156049,
-              "omega0DegPerSec": -177.9250339977,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n4f",
-          "units": [
-            {
-              "id": "9a5d97de-3ed6-469d-9841-7aaf2f6e9e09",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n4e",
-              "type": "pendulumStimulus",
-              "theta0Deg": -97.1353225596,
-              "omega0DegPerSec": 118.4735580589,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n4h",
-          "units": [
-            {
-              "id": "da940214-3c76-4d86-b18e-f87b4780fb5f",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n4g",
-              "type": "pendulumStimulus",
-              "theta0Deg": -155.7448671944,
-              "omega0DegPerSec": 42.6861745946,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.544101973399009,
+              "show1T": 1.0491968151181936,
+              "hide1T": 0.9987704625818878,
+              "show2T": 1.0073403217829764,
+              "hide2T": 0.7806385202566162
             }
           ]
         }
       ]
     },
     {
+      "kind": "rest",
+      "id": "730c3f40-f965-4b4d-beb0-9fcf60097cec",
+      "units": [
+        {
+          "id": "9baf54de-1f40-4239-9c11-0db4d74804ed",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 14 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
       "kind": "block",
-      "id": "stim-f2-s91002-n5d",
+      "id": "stim-f2-s91002-n4j",
       "children": [
         {
-          "id": "stim-f2-s91002-n4k",
+          "id": "stim-f2-s91002-n4a",
           "units": [
             {
-              "id": "c5ab1c16-7e12-4efd-b162-ded34e7041fd",
+              "id": "b15af77a-ff56-4aa8-93fb-74adb58629be",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n4j",
+              "id": "stim-f2-s91002-n49",
               "type": "pendulumStimulus",
-              "theta0Deg": -60.0839275215,
-              "omega0DegPerSec": 156.5578360339,
+              "theta0Deg": 130.1650248002,
+              "omega0DegPerSec": -98.8858949871,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.4834865520336926,
+              "show1T": 0.9974287666846067,
+              "hide1T": 0.9147690244717523,
+              "show2T": 0.915662444778718,
+              "hide2T": 0.8183661656221375
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n4m",
+          "id": "stim-f2-s91002-n4c",
           "units": [
             {
-              "id": "a4d28420-db3f-4c3e-bbeb-2f56a63308f0",
+              "id": "74d382e7-e376-4871-bb77-c274e90b47c5",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n4l",
+              "id": "stim-f2-s91002-n4b",
               "type": "pendulumStimulus",
-              "theta0Deg": 25.1030575298,
-              "omega0DegPerSec": -177.5053042475,
+              "theta0Deg": -118.6013913341,
+              "omega0DegPerSec": 111.5935887913,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.325681644891074,
+              "show1T": 0.8243126251036301,
+              "hide1T": 0.5101541571784765,
+              "show2T": 1.0581843700492755,
+              "hide2T": 0.83645381371025
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n4o",
+          "id": "stim-f2-s91002-n4e",
           "units": [
             {
-              "id": "c62f3cae-938d-40b6-bd2f-29846a44e193",
+              "id": "ae9cae47-cdbb-47df-a5d3-b63651518b2b",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n4n",
+              "id": "stim-f2-s91002-n4d",
               "type": "pendulumStimulus",
-              "theta0Deg": 2.4124277383,
-              "omega0DegPerSec": -182.9401146319,
+              "theta0Deg": -29.573660586,
+              "omega0DegPerSec": 184.7801943946,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.3528745384043255,
+              "show1T": 0.8245301941642538,
+              "hide1T": 0.6880968096666038,
+              "show2T": 1.047781400498934,
+              "hide2T": 0.7720843832939863
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n4q",
+          "id": "stim-f2-s91002-n4g",
           "units": [
             {
-              "id": "971cbacb-4185-461d-87bd-0d02680b6fc8",
+              "id": "cced2e97-085c-4ff7-8b36-93057cfd4ae8",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n4p",
+              "id": "stim-f2-s91002-n4f",
               "type": "pendulumStimulus",
-              "theta0Deg": -134.6689838078,
-              "omega0DegPerSec": 80.876435634,
+              "theta0Deg": -109.834807422,
+              "omega0DegPerSec": 121.2251739089,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.449885662085999,
+              "show1T": 1.0153245275141671,
+              "hide1T": 0.5490312423789874,
+              "show2T": 1.0096583082340658,
+              "hide2T": 0.7420277623459697
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n4s",
+          "id": "stim-f2-s91002-n4i",
           "units": [
             {
-              "id": "5ef6c06c-e9b8-493f-97cf-a9de9e8696a1",
+              "id": "15a291cb-7cb7-457b-ab52-394f1e2f53cc",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n4r",
+              "id": "stim-f2-s91002-n4h",
               "type": "pendulumStimulus",
-              "theta0Deg": 156.5238144714,
-              "omega0DegPerSec": -59.573668425,
+              "theta0Deg": 134.8036789801,
+              "omega0DegPerSec": 93.9057330441,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.445226789562591,
+              "show1T": 1.1541746056172997,
+              "hide1T": 0.8487037273589522,
+              "show2T": 0.7782144339289516,
+              "hide2T": 0.709543839097023
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "270a0864-5a71-4dba-9c3d-e03dd0c9988d",
+      "units": [
+        {
+          "id": "b90c4c6e-9a24-4b6d-9ca4-f8c8d4fe947c",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 15 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n4u",
+      "children": [
+        {
+          "id": "stim-f2-s91002-n4l",
+          "units": [
+            {
+              "id": "bdf70e14-2c4b-4095-8d14-d84ef4f4dbbd",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n4k",
+              "type": "pendulumStimulus",
+              "theta0Deg": -68.926660018,
+              "omega0DegPerSec": -168.4672739146,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.9066985301879678,
+              "show1T": 1.0512379352003336,
+              "hide1T": 0.8553764369571581,
+              "show2T": 1.2104494579834864,
+              "hide2T": 0.9003181887092069
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n4u",
+          "id": "stim-f2-s91002-n4n",
           "units": [
             {
-              "id": "6079966e-4950-4a8f-9699-8c1124c19a3b",
+              "id": "9e60ed45-ad74-4905-924a-e5fea0ab399f",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n4t",
+              "id": "stim-f2-s91002-n4m",
               "type": "pendulumStimulus",
-              "theta0Deg": 27.6372993831,
-              "omega0DegPerSec": -181.6797469239,
+              "theta0Deg": 15.8025499061,
+              "omega0DegPerSec": 195.1286527623,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.7257039407914787,
+              "show1T": 1.0613219917286187,
+              "hide1T": 0.6784631438786164,
+              "show2T": 1.1840198476566002,
+              "hide2T": 0.6290633644675836
             }
           ]
         },
+        {
+          "id": "stim-f2-s91002-n4p",
+          "units": [
+            {
+              "id": "5d5ed912-a0cf-405f-adde-3392b2e5b9df",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n4o",
+              "type": "pendulumStimulus",
+              "theta0Deg": 154.9019494001,
+              "omega0DegPerSec": 89.6125015368,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.468682107807559,
+              "show1T": 0.8299963874742389,
+              "hide1T": 0.7517996839014813,
+              "show2T": 1.1249965985771269,
+              "hide2T": 0.6464416465023533
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n4r",
+          "units": [
+            {
+              "id": "9ce9afbe-3a53-421b-8fc6-ea64e3017d8f",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n4q",
+              "type": "pendulumStimulus",
+              "theta0Deg": 46.7779039219,
+              "omega0DegPerSec": 183.3394736096,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.5892781748432627,
+              "show1T": 0.8710796214872971,
+              "hide1T": 0.8474682985106483,
+              "show2T": 1.1800713681150228,
+              "hide2T": 0.6172924673883244
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n4t",
+          "units": [
+            {
+              "id": "659f1ebd-26a3-4437-b618-32ec47ef1683",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n4s",
+              "type": "pendulumStimulus",
+              "theta0Deg": -101.3139706012,
+              "omega0DegPerSec": -139.4331376883,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.5226459887691806,
+              "show1T": 1.0935696918750182,
+              "hide1T": 0.8853296235902235,
+              "show2T": 0.7920996606117114,
+              "hide2T": 0.8484954111045226
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "1aaf4f86-e9ec-40c8-a17f-a6c41a842f53",
+      "units": [
+        {
+          "id": "8e7c96a1-c2d7-4202-a3cc-3d5528f3bce0",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 16 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n55",
+      "children": [
         {
           "id": "stim-f2-s91002-n4w",
           "units": [
             {
-              "id": "022f0894-c0b6-4248-8a30-14d332b317b0",
+              "id": "637d24c8-1b1e-4c1e-a962-d5db162c2e4e",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2111,15 +2249,15 @@
             {
               "id": "stim-f2-s91002-n4v",
               "type": "pendulumStimulus",
-              "theta0Deg": -98.7925474439,
-              "omega0DegPerSec": 129.4301292775,
+              "theta0Deg": 11.2164216768,
+              "omega0DegPerSec": -202.0388280746,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.3929921388642854,
+              "show1T": 1.0033360294764861,
+              "hide1T": 0.5015569230308756,
+              "show2T": 0.8444873609114438,
+              "hide2T": 0.8653604229912162
             }
           ]
         },
@@ -2127,7 +2265,7 @@
           "id": "stim-f2-s91002-n4y",
           "units": [
             {
-              "id": "1cf2aa09-9168-4cce-8c00-4b21dba1c91b",
+              "id": "78c0e1d5-c6f3-4198-91ec-a3a0eeb583bb",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2135,15 +2273,15 @@
             {
               "id": "stim-f2-s91002-n4x",
               "type": "pendulumStimulus",
-              "theta0Deg": -28.1140953116,
-              "omega0DegPerSec": -183.9908682954,
+              "theta0Deg": 75.2455153037,
+              "omega0DegPerSec": 170.6981688551,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.486064066452168,
+              "show1T": 1.0485266217729077,
+              "hide1T": 0.6016397937200963,
+              "show2T": 0.9022304626414552,
+              "hide2T": 0.7405508605297655
             }
           ]
         },
@@ -2151,7 +2289,7 @@
           "id": "stim-f2-s91002-n50",
           "units": [
             {
-              "id": "73de3f21-93c9-4b07-aab7-fce43b1d0b8f",
+              "id": "7f6ce0b2-2a0e-4e68-8305-7da31f689135",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2159,15 +2297,15 @@
             {
               "id": "stim-f2-s91002-n4z",
               "type": "pendulumStimulus",
-              "theta0Deg": 129.1861677077,
-              "omega0DegPerSec": -99.7748584403,
+              "theta0Deg": 144.7693046182,
+              "omega0DegPerSec": 109.0952045629,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.799738564953126,
+              "show1T": 1.069930628174916,
+              "hide1T": 0.8744738979730755,
+              "show2T": 1.0882270560832694,
+              "hide2T": 0.7341803712770343
             }
           ]
         },
@@ -2175,7 +2313,7 @@
           "id": "stim-f2-s91002-n52",
           "units": [
             {
-              "id": "98701847-6a43-4937-a54c-6b2e6720b4dd",
+              "id": "e21bd329-c20e-46da-a44e-9ff66282f4a3",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2183,15 +2321,15 @@
             {
               "id": "stim-f2-s91002-n51",
               "type": "pendulumStimulus",
-              "theta0Deg": 142.6494646445,
-              "omega0DegPerSec": -88.234578598,
+              "theta0Deg": -120.1861450262,
+              "omega0DegPerSec": 130.204040299,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.3778771814820656,
+              "show1T": 0.7940326198004186,
+              "hide1T": 0.5526504565495998,
+              "show2T": 1.0403707069344819,
+              "hide2T": 0.8100172334816307
             }
           ]
         },
@@ -2199,7 +2337,7 @@
           "id": "stim-f2-s91002-n54",
           "units": [
             {
-              "id": "7fa2e7d3-287d-45a9-a44d-caaf5b7f203d",
+              "id": "6dae97d6-cbad-4623-836f-c482416a6d9d",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2207,125 +2345,137 @@
             {
               "id": "stim-f2-s91002-n53",
               "type": "pendulumStimulus",
-              "theta0Deg": 173.2602832373,
-              "omega0DegPerSec": -71.0758999834,
+              "theta0Deg": 94.5117255952,
+              "omega0DegPerSec": 154.1941258348,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n56",
-          "units": [
-            {
-              "id": "c6507257-50a7-4838-a21d-f6df439f9eb7",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n55",
-              "type": "pendulumStimulus",
-              "theta0Deg": -76.2597711012,
-              "omega0DegPerSec": 159.0626105876,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n58",
-          "units": [
-            {
-              "id": "023b0ed7-722c-43fc-9b4a-e45b71664ad7",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n57",
-              "type": "pendulumStimulus",
-              "theta0Deg": -30.713667227,
-              "omega0DegPerSec": 189.1123498996,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n5a",
-          "units": [
-            {
-              "id": "4038b83b-f44d-44ff-bdd0-a655cce07031",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n59",
-              "type": "pendulumStimulus",
-              "theta0Deg": 77.2708486486,
-              "omega0DegPerSec": 161.0350690551,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n5c",
-          "units": [
-            {
-              "id": "6c520bc6-cec0-4d42-9e66-2fafb6731844",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n5b",
-              "type": "pendulumStimulus",
-              "theta0Deg": 145.8269438054,
-              "omega0DegPerSec": 97.6386395352,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.7280727377561127,
+              "show1T": 1.0525751231471077,
+              "hide1T": 0.5971697217319161,
+              "show2T": 1.114499386632815,
+              "hide2T": 0.8094373353524134
             }
           ]
         }
       ]
     },
     {
+      "kind": "rest",
+      "id": "9c9c41d9-ae8e-4a80-9dad-5a5399f9a52a",
+      "units": [
+        {
+          "id": "c3435833-3c5f-4ab3-84f0-7d4c28978c94",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 17 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
       "kind": "block",
-      "id": "stim-f2-s91002-n68",
+      "id": "stim-f2-s91002-n5g",
       "children": [
+        {
+          "id": "stim-f2-s91002-n57",
+          "units": [
+            {
+              "id": "de68eca3-b551-4771-85d2-c784dfa85dac",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n56",
+              "type": "pendulumStimulus",
+              "theta0Deg": 130.7520974893,
+              "omega0DegPerSec": -130.324224516,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.674789888802977,
+              "show1T": 0.8131193998269737,
+              "hide1T": 0.6414623099844903,
+              "show2T": 1.226793889887631,
+              "hide2T": 0.8476023331750184
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n59",
+          "units": [
+            {
+              "id": "dbeb8d8f-0cd4-4fb8-b90b-d6da07a89962",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n58",
+              "type": "pendulumStimulus",
+              "theta0Deg": -107.0390394609,
+              "omega0DegPerSec": -150.9022257598,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.6763115264596853,
+              "show1T": 0.7501585833961144,
+              "hide1T": 0.9725957189220935,
+              "show2T": 1.1797895987983793,
+              "hide2T": 0.7779543383512646
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n5b",
+          "units": [
+            {
+              "id": "20c4306b-f55b-4e99-99e9-22b247bb9657",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n5a",
+              "type": "pendulumStimulus",
+              "theta0Deg": -75.8009645808,
+              "omega0DegPerSec": -177.2869750865,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.1750829109738956,
+              "show1T": 0.7504297128180042,
+              "hide1T": 0.5669224561424926,
+              "show2T": 0.9218011434422806,
+              "hide2T": 0.6124866077443585
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n5d",
+          "units": [
+            {
+              "id": "e7be00e8-0d48-430e-8a27-8720e14e232f",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n5c",
+              "type": "pendulumStimulus",
+              "theta0Deg": -78.6688810308,
+              "omega0DegPerSec": -175.0585279866,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.8938283357288563,
+              "show1T": 1.054819568642415,
+              "hide1T": 0.6922762371832505,
+              "show2T": 1.243121363571845,
+              "hide2T": 0.7053416072158143
+            }
+          ]
+        },
         {
           "id": "stim-f2-s91002-n5f",
           "units": [
             {
-              "id": "3ab533b2-cb2e-42a9-ba21-2d7848b8feab",
+              "id": "9267c2d6-e678-46e4-8c01-e9478edb5393",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2333,167 +2483,179 @@
             {
               "id": "stim-f2-s91002-n5e",
               "type": "pendulumStimulus",
-              "theta0Deg": -159.5731923357,
-              "omega0DegPerSec": -88.133460505,
+              "theta0Deg": 39.7212544922,
+              "omega0DegPerSec": 199.6435267291,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.6733727802047365,
+              "show1T": 0.9021879209904,
+              "hide1T": 0.7010108138201758,
+              "show2T": 1.0586616088403389,
+              "hide2T": 0.9701693510869518
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "fe51ce08-4f63-418d-9bec-189fac667e53",
+      "units": [
         {
-          "id": "stim-f2-s91002-n5h",
+          "id": "f9801379-23f7-49d7-afd6-0494e784838b",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 18 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n5r",
+      "children": [
+        {
+          "id": "stim-f2-s91002-n5i",
           "units": [
             {
-              "id": "3acbbcf8-c1ff-4bd0-8afb-4d7e61183c13",
+              "id": "5cb69f4e-d06c-4554-b75d-e4060b886c19",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n5g",
+              "id": "stim-f2-s91002-n5h",
               "type": "pendulumStimulus",
-              "theta0Deg": 64.5339931548,
-              "omega0DegPerSec": 173.8162645616,
+              "theta0Deg": 94.1736295447,
+              "omega0DegPerSec": -169.5820439598,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.711910183364655,
+              "show1T": 1.1711574663640931,
+              "hide1T": 0.8380169528536499,
+              "show2T": 0.8181608560262248,
+              "hide2T": 0.7632488023955375
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n5j",
+          "id": "stim-f2-s91002-n5k",
           "units": [
             {
-              "id": "bf82837d-e407-4dbd-8767-3730f6fe1225",
+              "id": "3cc80f6b-1ff8-4971-b8ea-53b2e4215c42",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n5i",
+              "id": "stim-f2-s91002-n5j",
               "type": "pendulumStimulus",
-              "theta0Deg": -73.1102493592,
-              "omega0DegPerSec": 168.5908430713,
+              "theta0Deg": 78.9771405235,
+              "omega0DegPerSec": -181.6710845194,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.7290316518526785,
+              "show1T": 0.9936518999747932,
+              "hide1T": 0.8489716828335077,
+              "show2T": 1.0635946284746751,
+              "hide2T": 0.6397061878815293
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n5l",
+          "id": "stim-f2-s91002-n5m",
           "units": [
             {
-              "id": "4b73e799-daab-48fd-a2ba-bd3adba3f533",
+              "id": "3d936925-2e5d-46c9-a059-648cd310bfa6",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n5k",
+              "id": "stim-f2-s91002-n5l",
               "type": "pendulumStimulus",
-              "theta0Deg": 100.9973233379,
-              "omega0DegPerSec": -145.3779287742,
+              "theta0Deg": 116.5701073408,
+              "omega0DegPerSec": -150.7771239219,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.8755156708638543,
+              "show1T": 0.9249005330493674,
+              "hide1T": 0.9146147364517674,
+              "show2T": 1.201261222595349,
+              "hide2T": 0.7459558121627197
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n5n",
+          "id": "stim-f2-s91002-n5o",
           "units": [
             {
-              "id": "70e5d0a8-8adf-4428-8c72-474accdbfe84",
+              "id": "12083bb3-1d09-42b7-80bd-3b461329b6bf",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n5m",
+              "id": "stim-f2-s91002-n5n",
               "type": "pendulumStimulus",
-              "theta0Deg": 118.0586781912,
-              "omega0DegPerSec": 130.7318407512,
+              "theta0Deg": -125.7500800118,
+              "omega0DegPerSec": -143.2852552566,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.88794860738333,
+              "show1T": 1.2028928278014064,
+              "hide1T": 0.6975567667977884,
+              "show2T": 1.017299936618656,
+              "hide2T": 0.7821922062430531
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n5p",
+          "id": "stim-f2-s91002-n5q",
           "units": [
             {
-              "id": "d9654988-7698-4f88-a0ee-8a99d3dd0a5a",
+              "id": "838e6bae-080d-459f-8a90-cc9d569a6dfd",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n5o",
+              "id": "stim-f2-s91002-n5p",
               "type": "pendulumStimulus",
-              "theta0Deg": -144.6006486565,
-              "omega0DegPerSec": 109.5397559418,
+              "theta0Deg": 120.0296996534,
+              "omega0DegPerSec": 147.9144407493,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 3.1937838630924755,
+              "show1T": 1.2259205437730998,
+              "hide1T": 0.8990779583109543,
+              "show2T": 1.1658942196518183,
+              "hide2T": 0.8780879986006767
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "becb472a-496b-42ee-afb1-e29660c9aea6",
+      "units": [
         {
-          "id": "stim-f2-s91002-n5r",
-          "units": [
-            {
-              "id": "cc014dca-d59c-4d6b-9fba-19b7139d737f",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n5q",
-              "type": "pendulumStimulus",
-              "theta0Deg": 47.0926540252,
-              "omega0DegPerSec": -191.0923117699,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
+          "id": "b2951b03-7546-4fdc-8503-7be648927426",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 19 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n62",
+      "children": [
         {
           "id": "stim-f2-s91002-n5t",
           "units": [
             {
-              "id": "beed039f-22af-4ae9-9390-35b1a418e809",
+              "id": "c8abe628-5750-4a2c-bcd9-18bfbb37917a",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2501,15 +2663,15 @@
             {
               "id": "stim-f2-s91002-n5s",
               "type": "pendulumStimulus",
-              "theta0Deg": 35.4910557345,
-              "omega0DegPerSec": -197.7771980724,
+              "theta0Deg": 47.9222951364,
+              "omega0DegPerSec": -207.7311838745,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.924902584375391,
+              "show1T": 1.0984965659445152,
+              "hide1T": 0.8052685380680487,
+              "show2T": 1.0411910585826263,
+              "hide2T": 0.8504399200901389
             }
           ]
         },
@@ -2517,7 +2679,7 @@
           "id": "stim-f2-s91002-n5v",
           "units": [
             {
-              "id": "5ecb7c1d-5696-47c1-b3a8-b2cd61e92f22",
+              "id": "762a8248-7ea0-417d-b360-99b2cef5abf6",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2525,15 +2687,15 @@
             {
               "id": "stim-f2-s91002-n5u",
               "type": "pendulumStimulus",
-              "theta0Deg": 143.1705254875,
-              "omega0DegPerSec": -116.6067899284,
+              "theta0Deg": 113.332474865,
+              "omega0DegPerSec": 161.2499763871,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.603271148256286,
+              "show1T": 0.9250676146475598,
+              "hide1T": 0.5997295669512823,
+              "show2T": 1.1538399453274906,
+              "hide2T": 0.5059462959179655
             }
           ]
         },
@@ -2541,7 +2703,7 @@
           "id": "stim-f2-s91002-n5x",
           "units": [
             {
-              "id": "4f2fcb06-0939-4a3b-95bc-ce23d04ede57",
+              "id": "e6e7c052-0c2d-4fb3-a3b4-bd0ffff16d66",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2549,15 +2711,15 @@
             {
               "id": "stim-f2-s91002-n5w",
               "type": "pendulumStimulus",
-              "theta0Deg": -179.1325797234,
-              "omega0DegPerSec": -104.1272810461,
+              "theta0Deg": -141.9929296151,
+              "omega0DegPerSec": -140.3497468777,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.736507925899266,
+              "show1T": 0.849409893155098,
+              "hide1T": 0.763561800471507,
+              "show2T": 1.2271034809527919,
+              "hide2T": 0.6281062364578247
             }
           ]
         },
@@ -2565,7 +2727,7 @@
           "id": "stim-f2-s91002-n5z",
           "units": [
             {
-              "id": "598a36bd-0d99-45d4-a46a-435eb284ff9a",
+              "id": "59da4f56-97af-4664-96ef-70510426c4a9",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2573,15 +2735,15 @@
             {
               "id": "stim-f2-s91002-n5y",
               "type": "pendulumStimulus",
-              "theta0Deg": 57.3836304434,
-              "omega0DegPerSec": 189.8700883709,
+              "theta0Deg": -134.8598015215,
+              "omega0DegPerSec": -145.0037813835,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.3262379867882546,
+              "show1T": 0.7578320350730792,
+              "hide1T": 0.7421339479042217,
+              "show2T": 0.9351123591186479,
+              "hide2T": 0.5932323038578033
             }
           ]
         },
@@ -2589,7 +2751,7 @@
           "id": "stim-f2-s91002-n61",
           "units": [
             {
-              "id": "5c901c75-0e92-4eee-a486-4336f5732cfd",
+              "id": "61bd6392-f1d2-45fa-92cd-c4e1181b23b4",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2597,101 +2759,113 @@
             {
               "id": "stim-f2-s91002-n60",
               "type": "pendulumStimulus",
-              "theta0Deg": 64.9461642746,
-              "omega0DegPerSec": -186.1341499007,
+              "theta0Deg": -73.9223364182,
+              "omega0DegPerSec": 191.9045681868,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n63",
-          "units": [
-            {
-              "id": "0aed66f0-1e9c-42c7-be7e-83639cfb2518",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n62",
-              "type": "pendulumStimulus",
-              "theta0Deg": 163.4672964737,
-              "omega0DegPerSec": -113.4337555398,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n65",
-          "units": [
-            {
-              "id": "99a35e0f-4e07-474f-b220-c87bccffc58a",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n64",
-              "type": "pendulumStimulus",
-              "theta0Deg": -34.1390054673,
-              "omega0DegPerSec": -205.0746699098,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n67",
-          "units": [
-            {
-              "id": "54c102e4-046a-4829-a5f8-f4ea19f727ae",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n66",
-              "type": "pendulumStimulus",
-              "theta0Deg": 66.1982247233,
-              "omega0DegPerSec": 188.9111523824,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.669832105875393,
+              "show1T": 0.9390286131529137,
+              "hide1T": 0.8859394753817469,
+              "show2T": 0.8378054539207369,
+              "hide2T": 0.9970409587258473
             }
           ]
         }
       ]
     },
     {
+      "kind": "rest",
+      "id": "eda16d2a-55e1-4d4b-b7f0-5a3ddd16dd21",
+      "units": [
+        {
+          "id": "3e2eefa9-05c2-4756-8f2c-770e3bc0ef23",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 20 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
       "kind": "block",
-      "id": "stim-f2-s91002-n73",
+      "id": "stim-f2-s91002-n6d",
       "children": [
+        {
+          "id": "stim-f2-s91002-n64",
+          "units": [
+            {
+              "id": "b7edce96-fb44-4c72-b3d9-467bf225df56",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n63",
+              "type": "pendulumStimulus",
+              "theta0Deg": 86.6835840885,
+              "omega0DegPerSec": -189.0685923407,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.7632942420628517,
+              "show1T": 1.0840246285079047,
+              "hide1T": 0.5150893204845488,
+              "show2T": 0.9449530285783112,
+              "hide2T": 0.9661490622675046
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n66",
+          "units": [
+            {
+              "id": "b4d28e54-4a18-43a7-a2b8-14ff6f48b587",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n65",
+              "type": "pendulumStimulus",
+              "theta0Deg": -28.3123473544,
+              "omega0DegPerSec": -221.3094366109,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.29255925388977,
+              "show1T": 0.7874530679546297,
+              "hide1T": 0.6570214908570051,
+              "show2T": 0.7658808911219239,
+              "hide2T": 0.8341185740428045
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n68",
+          "units": [
+            {
+              "id": "6de7a460-765d-4063-adb3-f1b9c6e95931",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n67",
+              "type": "pendulumStimulus",
+              "theta0Deg": -63.2165318169,
+              "omega0DegPerSec": -205.0973714333,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.69280559643061,
+              "show1T": 1.07980077189859,
+              "hide1T": 0.5392512612743303,
+              "show2T": 0.9489334798417985,
+              "hide2T": 0.8002908173948526
+            }
+          ]
+        },
         {
           "id": "stim-f2-s91002-n6a",
           "units": [
             {
-              "id": "c67639c8-c329-4a3d-8bcd-97613db8ac96",
+              "id": "ac45ec50-8c3c-4e25-bc99-5c76375eac25",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2699,15 +2873,15 @@
             {
               "id": "stim-f2-s91002-n69",
               "type": "pendulumStimulus",
-              "theta0Deg": 128.2657713722,
-              "omega0DegPerSec": -138.6851478631,
+              "theta0Deg": 10.0933406968,
+              "omega0DegPerSec": 225.062595306,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 3.108882963090941,
+              "show1T": 1.2459002032410353,
+              "hide1T": 0.5268816899042577,
+              "show2T": 1.236211012583226,
+              "hide2T": 0.7374209123663604
             }
           ]
         },
@@ -2715,7 +2889,7 @@
           "id": "stim-f2-s91002-n6c",
           "units": [
             {
-              "id": "f8c48aa7-3564-438c-a121-f93cdbf69890",
+              "id": "544f47f8-ee3c-4cd0-bd8e-4f98d8941340",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2723,167 +2897,179 @@
             {
               "id": "stim-f2-s91002-n6b",
               "type": "pendulumStimulus",
-              "theta0Deg": -146.3351232558,
-              "omega0DegPerSec": -127.5202360105,
+              "theta0Deg": 90.869996706,
+              "omega0DegPerSec": -185.9358204477,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 3.046061362534601,
+              "show1T": 1.124056379077956,
+              "hide1T": 0.8298815190792084,
+              "show2T": 1.0222440585494041,
+              "hide2T": 0.9850855462718755
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "1db98991-f22b-4776-9fc2-2d7111ab917b",
+      "units": [
         {
-          "id": "stim-f2-s91002-n6e",
+          "id": "9778bedb-15cc-4b5a-be3f-a1e09df1846a",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 21 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n6o",
+      "children": [
+        {
+          "id": "stim-f2-s91002-n6f",
           "units": [
             {
-              "id": "398a7a78-f704-46b3-b113-e0d71979fc35",
+              "id": "f8652f5b-889e-4749-b0a1-baf63bd0e2ce",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n6d",
+              "id": "stim-f2-s91002-n6e",
               "type": "pendulumStimulus",
-              "theta0Deg": 48.7953287736,
-              "omega0DegPerSec": 201.7420027206,
+              "theta0Deg": 108.8550208602,
+              "omega0DegPerSec": 179.0577040974,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.8185022113854896,
+              "show1T": 1.0121343553764746,
+              "hide1T": 0.5712684500031173,
+              "show2T": 1.1044370342278853,
+              "hide2T": 0.7889442507876083
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n6g",
+          "id": "stim-f2-s91002-n6h",
           "units": [
             {
-              "id": "ad58b355-4847-4e90-97bb-1d9dc1186567",
+              "id": "da4cdfe6-5e66-4877-b0b2-92fee8476c57",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n6f",
+              "id": "stim-f2-s91002-n6g",
               "type": "pendulumStimulus",
-              "theta0Deg": 85.8588942513,
-              "omega0DegPerSec": -178.0976779242,
+              "theta0Deg": -167.7869026456,
+              "omega0DegPerSec": -146.7599277162,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 3.111318923523168,
+              "show1T": 1.0115360096096992,
+              "hide1T": 0.9896088085370138,
+              "show2T": 1.0941028986126184,
+              "hide2T": 0.959213906317018
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n6i",
+          "id": "stim-f2-s91002-n6j",
           "units": [
             {
-              "id": "d9cd7433-d5ac-4886-862b-f44f5624ae2d",
+              "id": "614accb5-2c89-483b-9f00-76fd49758e4b",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n6h",
+              "id": "stim-f2-s91002-n6i",
               "type": "pendulumStimulus",
-              "theta0Deg": -47.5092616025,
-              "omega0DegPerSec": -204.637457272,
+              "theta0Deg": -83.9690644294,
+              "omega0DegPerSec": 197.3581107744,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 3.075258102873546,
+              "show1T": 1.1729042155202478,
+              "hide1T": 0.811034717829898,
+              "show2T": 0.9917570546967909,
+              "hide2T": 0.953534294734709
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n6k",
+          "id": "stim-f2-s91002-n6l",
           "units": [
             {
-              "id": "2c85f14d-dbef-4985-839a-a58481cc08dd",
+              "id": "b67b1d4c-c042-4251-8b00-920c5ce9ea57",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n6j",
+              "id": "stim-f2-s91002-n6k",
               "type": "pendulumStimulus",
-              "theta0Deg": -102.1903114021,
-              "omega0DegPerSec": -167.535723858,
+              "theta0Deg": -14.9629857112,
+              "omega0DegPerSec": -229.7835862311,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.671922726300557,
+              "show1T": 1.1054634565953165,
+              "hide1T": 0.5701619426254183,
+              "show2T": 0.8103265673853457,
+              "hide2T": 0.8950840235920623
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n6m",
+          "id": "stim-f2-s91002-n6n",
           "units": [
             {
-              "id": "cd10a909-78a4-4da7-9993-f19ff63500f0",
+              "id": "d48394cc-ee12-4c43-b277-1fa7b855ee37",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n6l",
+              "id": "stim-f2-s91002-n6m",
               "type": "pendulumStimulus",
-              "theta0Deg": -133.692794675,
-              "omega0DegPerSec": -144.2457146599,
+              "theta0Deg": -27.3912461847,
+              "omega0DegPerSec": -227.0296806181,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 3.0900170175680657,
+              "show1T": 1.0428457099478692,
+              "hide1T": 0.6922693264205009,
+              "show2T": 1.2273100906750187,
+              "hide2T": 0.8964707681443542
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "76d31d2f-09f5-41a5-8492-616d24435d30",
+      "units": [
         {
-          "id": "stim-f2-s91002-n6o",
-          "units": [
-            {
-              "id": "66fbbfc0-96e5-4b2b-8c47-bf9fb8831acc",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n6n",
-              "type": "pendulumStimulus",
-              "theta0Deg": -115.3589641582,
-              "omega0DegPerSec": 159.6347055585,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
+          "id": "75f7f3cc-84b3-4e05-b685-da9b09b19f54",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 22 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n6z",
+      "children": [
         {
           "id": "stim-f2-s91002-n6q",
           "units": [
             {
-              "id": "0cd0432b-8e8d-429a-beba-b4932f4cc7a2",
+              "id": "8f77d275-e48f-4417-9d06-1e59deefa763",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2891,15 +3077,15 @@
             {
               "id": "stim-f2-s91002-n6p",
               "type": "pendulumStimulus",
-              "theta0Deg": 101.0894801002,
-              "omega0DegPerSec": 172.4310294432,
+              "theta0Deg": 113.4653486498,
+              "omega0DegPerSec": -182.4793382782,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.998815754953566,
+              "show1T": 1.0712278995197266,
+              "hide1T": 0.9167038396699354,
+              "show2T": 1.0076146299252287,
+              "hide2T": 0.8017483183648437
             }
           ]
         },
@@ -2907,7 +3093,7 @@
           "id": "stim-f2-s91002-n6s",
           "units": [
             {
-              "id": "898299ad-36a3-44b8-b8be-3a138f05d845",
+              "id": "6aaea8f5-ac4b-42f7-8929-4dbe746eb808",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2915,15 +3101,15 @@
             {
               "id": "stim-f2-s91002-n6r",
               "type": "pendulumStimulus",
-              "theta0Deg": 156.5118197165,
-              "omega0DegPerSec": 136.1151978095,
+              "theta0Deg": -49.8980029207,
+              "omega0DegPerSec": 223.7534486787,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.910205759108154,
+              "show1T": 0.8666418039938435,
+              "hide1T": 0.8437637520255521,
+              "show2T": 1.1017835712991655,
+              "hide2T": 0.915422806981951
             }
           ]
         },
@@ -2931,7 +3117,7 @@
           "id": "stim-f2-s91002-n6u",
           "units": [
             {
-              "id": "0d35e729-91fb-432c-b1b9-2cc6c28b9715",
+              "id": "02081b88-a20c-4d57-92bf-531b482204cf",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2939,15 +3125,15 @@
             {
               "id": "stim-f2-s91002-n6t",
               "type": "pendulumStimulus",
-              "theta0Deg": 168.7666210625,
-              "omega0DegPerSec": 134.0020165467,
+              "theta0Deg": 18.5356484726,
+              "omega0DegPerSec": 234.4254341952,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 3.06886541036956,
+              "show1T": 1.1278533897129819,
+              "hide1T": 0.6406057076528668,
+              "show2T": 1.1812042063102126,
+              "hide2T": 0.778667529928498
             }
           ]
         },
@@ -2955,7 +3141,7 @@
           "id": "stim-f2-s91002-n6w",
           "units": [
             {
-              "id": "20c23f7e-48f2-44c7-abd7-3fd4628a13ab",
+              "id": "353f0d83-91fe-45ce-a48d-e621a4bc3d49",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2963,15 +3149,15 @@
             {
               "id": "stim-f2-s91002-n6v",
               "type": "pendulumStimulus",
-              "theta0Deg": 119.6839889791,
-              "omega0DegPerSec": -161.932226825,
+              "theta0Deg": 130.2630053088,
+              "omega0DegPerSec": -171.1951767263,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.3577147436775636,
+              "show1T": 0.9331277603050694,
+              "hide1T": 0.721017635311,
+              "show2T": 0.7505233529955149,
+              "hide2T": 0.5380908562801778
             }
           ]
         },
@@ -2979,7 +3165,7 @@
           "id": "stim-f2-s91002-n6y",
           "units": [
             {
-              "id": "13e0be60-8eb7-4196-acfe-ee17c028726d",
+              "id": "ff4a81fa-6ba3-4c7a-a86f-f2960df0388a",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -2987,77 +3173,89 @@
             {
               "id": "stim-f2-s91002-n6x",
               "type": "pendulumStimulus",
-              "theta0Deg": -161.5058499109,
-              "omega0DegPerSec": -139.2364703152,
+              "theta0Deg": 128.5472766683,
+              "omega0DegPerSec": -172.278742034,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n70",
-          "units": [
-            {
-              "id": "79d791dc-ff23-474f-a884-4286dd792485",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n6z",
-              "type": "pendulumStimulus",
-              "theta0Deg": 103.5991955828,
-              "omega0DegPerSec": 176.9560510013,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n72",
-          "units": [
-            {
-              "id": "f4c5ae42-2f1a-4226-94a9-f400972577cf",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n71",
-              "type": "pendulumStimulus",
-              "theta0Deg": -125.7356110029,
-              "omega0DegPerSec": -161.7241295121,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.360035317834964,
+              "show1T": 0.85454851470422,
+              "hide1T": 0.6990660094888881,
+              "show2T": 0.8523789666360244,
+              "hide2T": 0.520898376358673
             }
           ]
         }
       ]
     },
     {
+      "kind": "rest",
+      "id": "d2f610c8-a61e-4947-b13c-96feb85eb3e3",
+      "units": [
+        {
+          "id": "75197254-f8df-4627-b998-d30ac8632ada",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 23 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
       "kind": "block",
-      "id": "stim-f2-s91002-n7y",
+      "id": "stim-f2-s91002-n7a",
       "children": [
+        {
+          "id": "stim-f2-s91002-n71",
+          "units": [
+            {
+              "id": "4abd5e3b-9e3d-464d-aa30-e373eb5ce4c6",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n70",
+              "type": "pendulumStimulus",
+              "theta0Deg": 41.8686380703,
+              "omega0DegPerSec": 232.6509187281,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.8971209960736344,
+              "show1T": 0.9722029727417976,
+              "hide1T": 0.7706227856688201,
+              "show2T": 1.008711425238289,
+              "hide2T": 0.8837473945459351
+            }
+          ]
+        },
+        {
+          "id": "stim-f2-s91002-n73",
+          "units": [
+            {
+              "id": "463f93e5-a433-4920-9767-7ffa8d1fab8f",
+              "type": "textDisplay",
+              "text": "+",
+              "durationMs": 1000
+            },
+            {
+              "id": "stim-f2-s91002-n72",
+              "type": "pendulumStimulus",
+              "theta0Deg": -87.5918441825,
+              "omega0DegPerSec": 206.9387600323,
+              "rodLengthM": 4,
+              "gravity": 9.8,
+              "totalTimeT": 2.912692478994575,
+              "show1T": 1.1226755225798115,
+              "hide1T": 0.5896292829420418,
+              "show2T": 0.9228684847475961,
+              "hide2T": 0.9761579274199903
+            }
+          ]
+        },
         {
           "id": "stim-f2-s91002-n75",
           "units": [
             {
-              "id": "9bd03c12-79e1-4bf1-9e1a-e91c7e41c9f2",
+              "id": "07ced953-3857-4003-b2b3-d10728c55cae",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -3065,15 +3263,15 @@
             {
               "id": "stim-f2-s91002-n74",
               "type": "pendulumStimulus",
-              "theta0Deg": -37.3972116597,
-              "omega0DegPerSec": -219.8379887235,
+              "theta0Deg": -80.6801601872,
+              "omega0DegPerSec": 211.5485212068,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.9381819902015454,
+              "show1T": 1.1429395282175392,
+              "hide1T": 0.8158915523672476,
+              "show2T": 0.8012871954124421,
+              "hide2T": 0.9788673556176946
             }
           ]
         },
@@ -3081,7 +3279,7 @@
           "id": "stim-f2-s91002-n77",
           "units": [
             {
-              "id": "7e9ce32d-f0ec-4b4f-a2a1-883cf7a5b8c2",
+              "id": "5b0f1bac-18cf-4d31-a754-ec0d33606cb3",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -3089,15 +3287,15 @@
             {
               "id": "stim-f2-s91002-n76",
               "type": "pendulumStimulus",
-              "theta0Deg": -78.0785222165,
-              "omega0DegPerSec": -198.3083639163,
+              "theta0Deg": -113.6917424295,
+              "omega0DegPerSec": 188.9027588285,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 3.055776960834206,
+              "show1T": 1.0331642671953887,
+              "hide1T": 0.6698679601540789,
+              "show2T": 1.1172978188842535,
+              "hide2T": 0.9648353214142844
             }
           ]
         },
@@ -3105,7 +3303,7 @@
           "id": "stim-f2-s91002-n79",
           "units": [
             {
-              "id": "b1d2af4f-613d-4b60-b252-b62b581eea21",
+              "id": "2107b0f8-5658-4c31-9cd0-9910548a03ab",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -3113,167 +3311,179 @@
             {
               "id": "stim-f2-s91002-n78",
               "type": "pendulumStimulus",
-              "theta0Deg": -21.8211386818,
-              "omega0DegPerSec": 226.6944923966,
+              "theta0Deg": -93.3203246444,
+              "omega0DegPerSec": -203.0174970646,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.6883199388652885,
+              "show1T": 0.8497646198375151,
+              "hide1T": 0.7562468049582094,
+              "show2T": 1.0785044074291363,
+              "hide2T": 0.6161571552511305
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "8321ef26-c134-42ae-8f4c-fcd0b8e04289",
+      "units": [
         {
-          "id": "stim-f2-s91002-n7b",
+          "id": "a18009a7-b4e7-445b-b426-18aecc9d607a",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 24 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n7l",
+      "children": [
+        {
+          "id": "stim-f2-s91002-n7c",
           "units": [
             {
-              "id": "57d7fe49-0e15-4f8a-9aac-946bbb6352e8",
+              "id": "3fa22d04-2973-485b-9444-c1b48ed6d2bc",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n7a",
+              "id": "stim-f2-s91002-n7b",
               "type": "pendulumStimulus",
-              "theta0Deg": 144.3968493864,
-              "omega0DegPerSec": 154.376916509,
+              "theta0Deg": -165.9079337586,
+              "omega0DegPerSec": -170.2641941512,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.8399334089605923,
+              "show1T": 1.0581946751335636,
+              "hide1T": 0.9205348107498139,
+              "show2T": 0.912885331781581,
+              "hide2T": 0.5996644879924133
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n7d",
+          "id": "stim-f2-s91002-n7e",
           "units": [
             {
-              "id": "4a160bac-06ac-44de-84e6-04657e5a891f",
+              "id": "714ada0e-4e6b-4efe-8c61-d946be336be2",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n7c",
+              "id": "stim-f2-s91002-n7d",
               "type": "pendulumStimulus",
-              "theta0Deg": -112.537884023,
-              "omega0DegPerSec": -176.6333107608,
+              "theta0Deg": -7.0322564989,
+              "omega0DegPerSec": -246.0819016648,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.636453941178978,
+              "show1T": 0.8339332371251658,
+              "hide1T": 0.8993636158993468,
+              "show2T": 0.7740429947152734,
+              "hide2T": 0.9001241789665073
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n7f",
+          "id": "stim-f2-s91002-n7g",
           "units": [
             {
-              "id": "4f1d5a05-341f-4032-8a41-c4265a2c1d45",
+              "id": "c126dc1c-b69b-467d-aba9-5b6d86f45529",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n7e",
+              "id": "stim-f2-s91002-n7f",
               "type": "pendulumStimulus",
-              "theta0Deg": 83.7478611432,
-              "omega0DegPerSec": 198.9234833286,
+              "theta0Deg": 56.857634671,
+              "omega0DegPerSec": 231.0540625543,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.4312003861577502,
+              "show1T": 0.7840206123655662,
+              "hide1T": 0.9247137879719958,
+              "show2T": 0.7610802230192348,
+              "hide2T": 0.6256604322697967
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n7h",
+          "id": "stim-f2-s91002-n7i",
           "units": [
             {
-              "id": "dae2a3ec-58d9-47a8-95a6-4fde56124bf5",
+              "id": "e5b09f91-642a-42cc-9098-843fd6e6d6d9",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n7g",
+              "id": "stim-f2-s91002-n7h",
               "type": "pendulumStimulus",
-              "theta0Deg": -17.5011233892,
-              "omega0DegPerSec": 231.5464456492,
+              "theta0Deg": -157.422590442,
+              "omega0DegPerSec": 172.448810424,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.6888841592938695,
+              "show1T": 0.834174100891687,
+              "hide1T": 0.7042441389057785,
+              "show2T": 1.1361267091706395,
+              "hide2T": 0.5530334421200678
             }
           ]
         },
         {
-          "id": "stim-f2-s91002-n7j",
+          "id": "stim-f2-s91002-n7k",
           "units": [
             {
-              "id": "a34a1115-57f3-4bec-93e4-8837b1673397",
+              "id": "55f03df4-5dc7-40dd-b74f-bdef42b137e5",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
             },
             {
-              "id": "stim-f2-s91002-n7i",
+              "id": "stim-f2-s91002-n7j",
               "type": "pendulumStimulus",
-              "theta0Deg": 142.3680433352,
-              "omega0DegPerSec": 161.2059176492,
+              "theta0Deg": 108.3464465383,
+              "omega0DegPerSec": -198.8174412638,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.5627082029192283,
+              "show1T": 0.9157737067434937,
+              "hide1T": 0.538152702851221,
+              "show2T": 0.7808978190878406,
+              "hide2T": 0.9771182808326557
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "kind": "rest",
+      "id": "e56e8f1a-9e54-4c78-abd2-108cab60d210",
+      "units": [
         {
-          "id": "stim-f2-s91002-n7l",
-          "units": [
-            {
-              "id": "dc538710-fa8c-481d-af2e-ec1388af190c",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n7k",
-              "type": "pendulumStimulus",
-              "theta0Deg": 137.6440359838,
-              "omega0DegPerSec": 165.2069975164,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
+          "id": "42864382-6306-4adf-9b49-324ad012c025",
+          "type": "textControl",
+          "text": "# 正式实验\n\nBlock 25 / 25\n\n按空格键继续",
+          "key": " "
+        }
+      ]
+    },
+    {
+      "kind": "block",
+      "id": "stim-f2-s91002-n7w",
+      "children": [
         {
           "id": "stim-f2-s91002-n7n",
           "units": [
             {
-              "id": "00731445-f62e-4d0b-8415-41287b77dded",
+              "id": "120d0a50-32be-477d-9e5e-7646ef5acac5",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -3281,15 +3491,15 @@
             {
               "id": "stim-f2-s91002-n7m",
               "type": "pendulumStimulus",
-              "theta0Deg": -87.4488631636,
-              "omega0DegPerSec": 200.8734304495,
+              "theta0Deg": 30.6120457035,
+              "omega0DegPerSec": 246.737340445,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.9891512726721863,
+              "show1T": 1.1487027653492987,
+              "hide1T": 0.9365289052948356,
+              "show2T": 0.8941376653965563,
+              "hide2T": 0.6711282728938386
             }
           ]
         },
@@ -3297,7 +3507,7 @@
           "id": "stim-f2-s91002-n7p",
           "units": [
             {
-              "id": "4c6e107d-74e8-4330-87b3-6b923e31a57e",
+              "id": "aacb32b0-7d83-402f-a8fe-9c4faa7a4b16",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -3305,15 +3515,15 @@
             {
               "id": "stim-f2-s91002-n7o",
               "type": "pendulumStimulus",
-              "theta0Deg": 171.6367324814,
-              "omega0DegPerSec": -155.4776446369,
+              "theta0Deg": -81.9710193761,
+              "omega0DegPerSec": 221.9957558807,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 3.0811525783285587,
+              "show1T": 1.0828532178420573,
+              "hide1T": 0.850290687289089,
+              "show2T": 0.9165537478402257,
+              "hide2T": 0.9874522847821936
             }
           ]
         },
@@ -3321,7 +3531,7 @@
           "id": "stim-f2-s91002-n7r",
           "units": [
             {
-              "id": "d12c2acb-f215-46bf-8953-622763ba0aad",
+              "id": "944693cd-eab5-47de-81fb-dfc038575c20",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -3329,15 +3539,15 @@
             {
               "id": "stim-f2-s91002-n7q",
               "type": "pendulumStimulus",
-              "theta0Deg": 122.4616344273,
-              "omega0DegPerSec": -178.6282624464,
+              "theta0Deg": -145.9685650282,
+              "omega0DegPerSec": 183.5881258803,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.771751625901155,
+              "show1T": 1.044385235523805,
+              "hide1T": 0.6305159400217235,
+              "show2T": 0.8592787982197478,
+              "hide2T": 0.8442502646939829
             }
           ]
         },
@@ -3345,7 +3555,7 @@
           "id": "stim-f2-s91002-n7t",
           "units": [
             {
-              "id": "540d2e65-c135-4ddc-b128-dd50c66f0fe8",
+              "id": "e6935607-2917-451c-944c-b1b329d4a393",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -3353,15 +3563,15 @@
             {
               "id": "stim-f2-s91002-n7s",
               "type": "pendulumStimulus",
-              "theta0Deg": -79.1601667553,
-              "omega0DegPerSec": -209.8114373231,
+              "theta0Deg": 84.5799297374,
+              "omega0DegPerSec": 220.3514634887,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 2.7466361319648542,
+              "show1T": 0.845555427018553,
+              "hide1T": 0.5603335020132363,
+              "show2T": 1.0524217213969678,
+              "hide2T": 0.8814260618528351
             }
           ]
         },
@@ -3369,7 +3579,7 @@
           "id": "stim-f2-s91002-n7v",
           "units": [
             {
-              "id": "4055eb95-9332-4f1c-9d2f-20b1d38b9110",
+              "id": "8f575c15-6ea8-4fa2-b72f-f9161247f957",
               "type": "textDisplay",
               "text": "+",
               "durationMs": 1000
@@ -3377,405 +3587,15 @@
             {
               "id": "stim-f2-s91002-n7u",
               "type": "pendulumStimulus",
-              "theta0Deg": -73.7671310641,
-              "omega0DegPerSec": 214.350591222,
+              "theta0Deg": -135.9116304573,
+              "omega0DegPerSec": -188.365288633,
               "rodLengthM": 4,
               "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n7x",
-          "units": [
-            {
-              "id": "69b2b80b-a5e5-433e-8721-7faa131d9022",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n7w",
-              "type": "pendulumStimulus",
-              "theta0Deg": -142.002199078,
-              "omega0DegPerSec": -170.9598101968,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "kind": "block",
-      "id": "stim-f2-s91002-n8t",
-      "children": [
-        {
-          "id": "stim-f2-s91002-n80",
-          "units": [
-            {
-              "id": "23194655-4eec-4569-a122-fb40a61f1da9",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n7z",
-              "type": "pendulumStimulus",
-              "theta0Deg": 2.5756904483,
-              "omega0DegPerSec": 240.7755838176,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n82",
-          "units": [
-            {
-              "id": "3d4125b7-f49a-47f7-8080-e5123d471a05",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n81",
-              "type": "pendulumStimulus",
-              "theta0Deg": 154.7029600013,
-              "omega0DegPerSec": 166.7753807625,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n84",
-          "units": [
-            {
-              "id": "d8d72289-0bc9-4661-93d2-0a14a84a2f5f",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n83",
-              "type": "pendulumStimulus",
-              "theta0Deg": -158.6674945056,
-              "omega0DegPerSec": 166.8155922326,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n86",
-          "units": [
-            {
-              "id": "9825552e-60bb-4431-8cb6-7c19361e03da",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n85",
-              "type": "pendulumStimulus",
-              "theta0Deg": -32.0882477146,
-              "omega0DegPerSec": -238.5231037325,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n88",
-          "units": [
-            {
-              "id": "a29b845b-1d28-443f-bf57-3b3379ceaed1",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n87",
-              "type": "pendulumStimulus",
-              "theta0Deg": -18.0998088699,
-              "omega0DegPerSec": -242.9167547266,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n8a",
-          "units": [
-            {
-              "id": "345ccb0b-5243-4790-b9ef-7c8190f2edd8",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n89",
-              "type": "pendulumStimulus",
-              "theta0Deg": 3.0231244862,
-              "omega0DegPerSec": -245.4302072146,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n8c",
-          "units": [
-            {
-              "id": "d32ea8b6-45ee-47b0-a37a-f5392855ebba",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n8b",
-              "type": "pendulumStimulus",
-              "theta0Deg": -128.2963283546,
-              "omega0DegPerSec": 186.1656983646,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n8e",
-          "units": [
-            {
-              "id": "f633d316-27a7-4206-aa10-ac9bb4dd8700",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n8d",
-              "type": "pendulumStimulus",
-              "theta0Deg": 178.2296702173,
-              "omega0DegPerSec": 170.3004528459,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n8g",
-          "units": [
-            {
-              "id": "24e5ecda-9661-44a4-92d1-4b1a975d76df",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n8f",
-              "type": "pendulumStimulus",
-              "theta0Deg": -112.0269682165,
-              "omega0DegPerSec": -198.7493842076,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n8i",
-          "units": [
-            {
-              "id": "e897c604-3954-4911-b997-5d14cea60f37",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n8h",
-              "type": "pendulumStimulus",
-              "theta0Deg": -31.906631235,
-              "omega0DegPerSec": 244.2199353734,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n8k",
-          "units": [
-            {
-              "id": "9ae529f3-4287-47ac-a5e9-197b26a87dbd",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n8j",
-              "type": "pendulumStimulus",
-              "theta0Deg": 81.2176906317,
-              "omega0DegPerSec": -221.1285717303,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n8m",
-          "units": [
-            {
-              "id": "f29499b5-898b-4402-ad38-78c9f870c57e",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n8l",
-              "type": "pendulumStimulus",
-              "theta0Deg": 126.0656970553,
-              "omega0DegPerSec": -193.4575574043,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n8o",
-          "units": [
-            {
-              "id": "f77e86ad-8398-4a52-bcad-3134b1cc06e4",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n8n",
-              "type": "pendulumStimulus",
-              "theta0Deg": -158.6856671423,
-              "omega0DegPerSec": -179.9001566327,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n8q",
-          "units": [
-            {
-              "id": "863bee76-eeb4-42d2-81ef-a0079d344932",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n8p",
-              "type": "pendulumStimulus",
-              "theta0Deg": 177.4466314819,
-              "omega0DegPerSec": 178.1393411104,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
-            }
-          ]
-        },
-        {
-          "id": "stim-f2-s91002-n8s",
-          "units": [
-            {
-              "id": "a774563c-9658-46d8-9604-4e945bddc578",
-              "type": "textDisplay",
-              "text": "+",
-              "durationMs": 1000
-            },
-            {
-              "id": "stim-f2-s91002-n8r",
-              "type": "pendulumStimulus",
-              "theta0Deg": 2.886527963,
-              "omega0DegPerSec": -253.6189962729,
-              "rodLengthM": 4,
-              "gravity": 9.8,
-              "totalTimeT": 6,
-              "show1T": 1.9,
-              "hide1T": 1.7,
-              "show2T": 1.3,
-              "hide2T": 1.1
+              "totalTimeT": 3.0296500313788832,
+              "show1T": 1.059554155333899,
+              "hide1T": 0.9345704216975719,
+              "show2T": 0.8901419045869261,
+              "hide2T": 0.9001287885475904
             }
           ]
         }

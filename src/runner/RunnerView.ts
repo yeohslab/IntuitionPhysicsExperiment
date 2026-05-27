@@ -3,8 +3,10 @@ import "jspsych/css/jspsych.css";
 import "../styles/physics.css";
 import type { ExperimentStimulusSet } from "../types/experiment";
 import { buildTimeline } from "./buildTimeline";
+import { exportStimulusTrialsCsv } from "./exportStimulusCsv";
 import { cancelStaleKeyboardListeners, wireRunnerControls } from "./stimulusControl";
 import {
+  isDeveloperModeRun,
   loadStimulusSetFromSession,
   SESSION_STIMULUS_FILE_INDEX_KEY,
   SESSION_SUBJECT_ID_KEY,
@@ -55,9 +57,13 @@ function escapeAttr(s: string): string {
 }
 
 function runExperiment(container: HTMLElement, set: ExperimentStimulusSet): void {
+  const developerMode = isDeveloperModeRun();
   const toolbar = document.createElement("div");
   toolbar.className = "runner-toolbar";
-  toolbar.innerHTML = `<a href="#/start" class="btn btn-ghost">实验首页</a><a href="#/editor" class="btn btn-ghost">刺激编写</a>`;
+  const devBadge = developerMode
+    ? `<span class="runner-toolbar__dev muted">开发者模式：遮挡半透明</span>`
+    : "";
+  toolbar.innerHTML = `${devBadge}<a href="#/start" class="btn btn-ghost">实验首页</a><a href="#/editor" class="btn btn-ghost">刺激编写</a>`;
 
   const target = document.createElement("div");
   target.id = "jspsych-target";
@@ -83,7 +89,7 @@ function runExperiment(container: HTMLElement, set: ExperimentStimulusSet): void
     on_finish: () => {
       activeJsPsych = null;
       try {
-        jsPsych.data.get().localSave("csv", "experiment_data.csv");
+        exportStimulusTrialsCsv(jsPsych.data.get(), "experiment_data.csv");
       } catch (e) {
         console.error(e);
       }
@@ -102,6 +108,6 @@ function runExperiment(container: HTMLElement, set: ExperimentStimulusSet): void
     stimulus_set_index: Number.isFinite(stimulusSetIndex) ? stimulusSetIndex : null,
   });
   wireRunnerControls(jsPsych, target);
-  const timeline = buildTimeline(set);
+  const timeline = buildTimeline(set, { developerMode });
   void jsPsych.run(timeline as Parameters<JsPsych["run"]>[0]);
 }

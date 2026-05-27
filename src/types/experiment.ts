@@ -1,5 +1,5 @@
 /** 当前刺激集格式版本（仅支持本版本导入） */
-export const STIMULUS_SET_SCHEMA_VERSION = 3 as const;
+export const STIMULUS_SET_SCHEMA_VERSION = 5 as const;
 
 export type StimulusUnitType =
   | "textDisplay"
@@ -64,7 +64,9 @@ export interface PendulumStimulusUnit {
   rodLengthM: number;
   gravity: number;
   totalTimeT: number;
+  /** 第一显示段（× 周期 T） */
   show1T: number;
+  /** 第一隐藏段（秒） */
   hide1T: number;
   show2T: number;
   hide2T: number;
@@ -88,7 +90,9 @@ export interface SpringStimulusUnit {
   x0M: number;
   v0Mps: number;
   totalTimeT: number;
+  /** 第一显示段（× 周期 T） */
   show1T: number;
+  /** 第一隐藏段（秒） */
   hide1T: number;
   show2T: number;
   hide2T: number;

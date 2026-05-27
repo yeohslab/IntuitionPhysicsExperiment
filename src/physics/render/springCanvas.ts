@@ -1,3 +1,5 @@
+import { PHYSICS_HIDDEN_FILL, PHYSICS_OCCLUSION_FILL_DEVELOPER } from "./canvasLayout";
+
 /**
  * 横向弹簧振子（显示模型）
  * - 物理：小球在平衡位置 x=0 附近振动，位移 x 相对平衡位置（向右为正）
@@ -159,11 +161,19 @@ export function drawSpringPractice(
   ctx.restore();
 }
 
-export function drawSpringHidden(ctx: CanvasRenderingContext2D, layout: SpringLayout): void {
-  clearCanvas(ctx, layout);
+/** hide 时段叠加于运动画面之上的遮挡层 */
+export function drawSpringOcclusion(
+  ctx: CanvasRenderingContext2D,
+  layout: SpringLayout,
+  semiTransparent: boolean,
+): void {
+  ctx.save();
+  ctx.fillStyle = semiTransparent ? PHYSICS_OCCLUSION_FILL_DEVELOPER : PHYSICS_HIDDEN_FILL;
+  ctx.fillRect(0, 0, layout.canvasW, layout.canvasH);
+  ctx.restore();
 }
 
-/** 汇报：振动轨迹参考线（±A）+ 估计位置上的球与弹簧 */
+/** 阶段 B/C：估计位置 + 可选不确定度区间带 */
 export function drawSpringEstimate(
   ctx: CanvasRenderingContext2D,
   layout: SpringLayout,
@@ -196,6 +206,43 @@ export function drawSpringEstimate(
   drawZigzagSpring(ctx, anchorX, anchorY, ballX, anchorY, turns, 10);
   drawSpringBall(ctx, ballX, anchorY, "#f97316", "#c2410c", ballRadius);
   ctx.restore();
+}
+
+export function drawSpringEstimateInterval(
+  ctx: CanvasRenderingContext2D,
+  layout: SpringLayout,
+  xEstMeters: number,
+  halfWidthM: number,
+): void {
+  if (halfWidthM <= 0) return;
+  const { anchorY } = layout;
+  const xClamped = clampSpringXMeters(layout, xEstMeters);
+  const cx = ballCenterX(layout, xClamped);
+  const wPx = halfWidthM * layout.pixelsPerMeter;
+  const y0 = anchorY - layout.ballRadius - 4;
+  const h = layout.ballRadius * 2 + 8;
+  ctx.save();
+  ctx.fillStyle = "rgba(249, 115, 22, 0.28)";
+  ctx.strokeStyle = "rgba(194, 65, 12, 0.55)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.rect(cx - wPx, y0, 2 * wPx, h);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+export function drawSpringEstimateWithInterval(
+  ctx: CanvasRenderingContext2D,
+  layout: SpringLayout,
+  xEstMeters: number,
+  halfWidthM: number,
+  showInterval: boolean,
+): void {
+  drawSpringEstimate(ctx, layout, xEstMeters);
+  if (showInterval && halfWidthM > 0) {
+    drawSpringEstimateInterval(ctx, layout, xEstMeters, halfWidthM);
+  }
 }
 
 /** 汇报引导：仅显示 ±A 轨迹与平衡位置，不显示估计球 */

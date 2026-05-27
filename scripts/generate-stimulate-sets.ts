@@ -1,14 +1,21 @@
 /**
- * 生成 5 份固定种子的摆球刺激集（schema 3）到 stimulate/。
+ * 生成 5 份固定种子的摆球刺激集（schema 5，连续估计）到 stimulate/。
  * 运行：npm run generate-stimulate
  *
- * 规则：全局能量 [1.96, 156.8] J；Practice 段（在全部 Block 之前）3 个 Trial，能量 1.96 / 79.38 / 156.8 J；
- * 10 个 Block 平分全局能量为 10 段；每 Block 15 个 Trial，能量在该段内 k/14 等距；每 Trial 一个 pendulumStimulus；
- * rodLengthM=4, g=9.8；生成后做 θ、ω 符号平衡；能量校验容差 1e-3 J。
+ * 规则：全局能量 [1.96, 156.8] J 等分为 26 段，剔除含临界能量 Ec=2mgl 的 1 段；
+ * 剩余 25 段各对应 1 个 Block，每 Block 5 个 Trial，目标能量为段中点；
+ * Practice 段 4 个 Trial，能量 1.96 / 40.67 / 118.09 / 159.8 J；
+ * 每 Trial 一个 pendulumStimulus（rodLengthM=4, g=9.8）；时序随机；θ、ω 符号平衡；能量容差 1e-3 J。
+ * 叠加欢迎/任务 Rest、练习说明、Block 前休息、注视点（见 stimulate/instruction-template.json）。
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  assembleFullSequence,
+  loadInstructionTemplate,
+  type PhysicsOnlySet,
+} from "./lib/stimulateSequenceOverlay.ts";
 import {
   STIMULUS_SET_SCHEMA_VERSION,
   type BlockSegment,
@@ -17,8 +24,14 @@ import {
   type PracticeSegment,
   type Trial,
 } from "../src/types/experiment.ts";
-import { pendulumEnergy, type PendulumParams } from "../src/physics/pendulum.ts";
-import { withSyncedTotalTimeT } from "../src/physics/timePhases.ts";
+import {
+  analyzePendulum,
+  pendulumCriticalEnergy,
+  pendulumEnergy,
+  pendulumRegime,
+  type PendulumParams,
+} from "../src/physics/pendulum.ts";
+import { randomStimulusTiming, withSyncedTotalTimeT } from "../src/physics/timePhases.ts";
 import { parseExperimentStimulusSet, validateRunnableSet } from "../src/shared/storage.ts";
 
 const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "stimulate");
@@ -28,8 +41,18 @@ const GLOBAL_E_MAX = 156.8;
 const ROD_LENGTH_M = 4;
 const GRAVITY = 9.8;
 const M = 1;
+const NUM_SEGMENTS = 26;
+const TRIALS_PER_BLOCK = 5;
+const NUM_BLOCKS = 25;
 
-const PRACTICE_ENERGIES = [1.96, 79.38, 156.8] as const;
+const PRACTICE_ENERGIES = [1.96, 40.67, 118.09, 159.8] as const;
+
+export interface KeptEnergySegment {
+  index: number;
+  Emin: number;
+  Emax: number;
+  Emid: number;
+}
 
 /** Mulberry32 PRNG */
 function mulberry32(seed: number): () => number {
@@ -54,6 +77,39 @@ function energyFromUnit(u: PendulumStimulusUnit): number {
     gravity: u.gravity,
   };
   return pendulumEnergy(p);
+}
+
+function buildEnergyEdges(): number[] {
+  return Array.from(
+    { length: NUM_SEGMENTS + 1 },
+    (_, i) => GLOBAL_E_MIN + (i / NUM_SEGMENTS) * (GLOBAL_E_MAX - GLOBAL_E_MIN),
+  );
+}
+
+/** 26 等分后剔除含 Ec 的段，保留 25 段及其中点能量 */
+export function buildKeptEnergySegments(): KeptEnergySegment[] {
+  const edges = buildEnergyEdges();
+  const Ec = pendulumCriticalEnergy(ROD_LENGTH_M, GRAVITY);
+  const kept: KeptEnergySegment[] = [];
+  for (let i = 0; i < NUM_SEGMENTS; i++) {
+    const Emin = edges[i]!;
+    const Emax = edges[i + 1]!;
+    const spansCritical = Emin <= Ec && Ec <= Emax;
+    if (!spansCritical) {
+      kept.push({ index: i, Emin, Emax, Emid: 0.5 * (Emin + Emax) });
+    }
+  }
+  if (kept.length !== NUM_BLOCKS) {
+    throw new Error(
+      `保留能量段应为 ${NUM_BLOCKS}，实际 ${kept.length}（Ec=${Ec} J，全局 [${GLOBAL_E_MIN}, ${GLOBAL_E_MAX}]）`,
+    );
+  }
+  for (const seg of kept) {
+    if (pendulumRegime(seg.Emid, ROD_LENGTH_M, GRAVITY) === "critical") {
+      throw new Error(`段 ${seg.index} 中点 ${seg.Emid} J 仍为临界能量`);
+    }
+  }
+  return kept;
 }
 
 /**
@@ -83,20 +139,28 @@ function makePendulumStimulus(
   omegaRad: number,
   l: number,
   g: number,
+  rng: () => number,
 ): PendulumStimulusUnit {
-  return withSyncedTotalTimeT({
+  const theta0Deg = Math.round(((thetaRad * 180) / Math.PI) * 1e10) / 1e10;
+  const omega0DegPerSec = Math.round(((omegaRad * 180) / Math.PI) * 1e10) / 1e10;
+  const p: PendulumParams = {
+    theta0Rad: (theta0Deg * Math.PI) / 180,
+    omega0RadPerSec: (omega0DegPerSec * Math.PI) / 180,
+    rodLengthM: l,
+    gravity: g,
+  };
+  const periodSec = analyzePendulum(p).T;
+  const draft = {
     id,
-    type: "pendulumStimulus",
-    theta0Deg: Math.round(((thetaRad * 180) / Math.PI) * 1e10) / 1e10,
-    omega0DegPerSec: Math.round(((omegaRad * 180) / Math.PI) * 1e10) / 1e10,
+    type: "pendulumStimulus" as const,
+    theta0Deg,
+    omega0DegPerSec,
     rodLengthM: l,
     gravity: g,
     totalTimeT: 0,
-    show1T: 1.9,
-    hide1T: 1.7,
-    show2T: 1.3,
-    hide2T: 1.1,
-  });
+    ...randomStimulusTiming(rng),
+  };
+  return withSyncedTotalTimeT(draft, periodSec);
 }
 
 function balancePendulumSigns(units: PendulumStimulusUnit[]): void {
@@ -159,55 +223,101 @@ function collectPendulumStimuli(set: ExperimentStimulusSet): PendulumStimulusUni
 
 type ExpectedRow = { unit: PendulumStimulusUnit; expectedE: number };
 
-function assertSetShapeAndTargets(set: ExperimentStimulusSet, edges: number[]): void {
-  if (set.sequence.length !== 11) {
-    throw new Error(`sequence 长度应为 11（1 Practice + 10 Block），实际 ${set.sequence.length}`);
+function pendulumInTrial(trial: Trial): PendulumStimulusUnit | null {
+  const u = trial.units.find((x) => x.type === "pendulumStimulus");
+  return u?.type === "pendulumStimulus" ? u : null;
+}
+
+function assertPhysicsTargets(physics: PhysicsOnlySet, kept: KeptEnergySegment[]): void {
+  if (physics.practice.children.length !== PRACTICE_ENERGIES.length) {
+    throw new Error(`Practice 应含 ${PRACTICE_ENERGIES.length} 个 Trial`);
   }
-  const p = set.sequence[0];
-  if (!p || p.kind !== "practice" || p.children.length !== 3) {
-    throw new Error("首段应为 Practice 且含 3 个 Trial");
-  }
-  for (let j = 0; j < 3; j++) {
-    const t = p.children[j]!;
-    if (t.units.length !== 1 || t.units[0]!.type !== "pendulumStimulus") {
-      throw new Error(`Practice Trial ${j + 1} 应仅含一个 pendulumStimulus`);
-    }
-    const u = t.units[0] as PendulumStimulusUnit;
+  for (let j = 0; j < PRACTICE_ENERGIES.length; j++) {
+    const u = pendulumInTrial(physics.practice.children[j]!);
+    if (!u) throw new Error(`Practice Trial ${j + 1} 缺少 pendulumStimulus`);
     const want = PRACTICE_ENERGIES[j]!;
     if (Math.abs(energyFromUnit(u) - want) > 2e-3) {
       throw new Error(`Practice Trial ${j + 1} 能量应对准 ${want} J`);
     }
   }
-  for (let b = 0; b < 10; b++) {
-    const seg = set.sequence[b + 1];
-    if (!seg || seg.kind !== "block" || seg.children.length !== 15) {
-      throw new Error(`Block ${b + 1} 应含 15 个 Trial`);
+  if (physics.blocks.length !== NUM_BLOCKS) {
+    throw new Error(`应有 ${NUM_BLOCKS} 个 Block，实际 ${physics.blocks.length}`);
+  }
+  for (let b = 0; b < NUM_BLOCKS; b++) {
+    const seg = physics.blocks[b]!;
+    const segMeta = kept[b]!;
+    if (seg.children.length !== TRIALS_PER_BLOCK) {
+      throw new Error(`Block ${b + 1} 应含 ${TRIALS_PER_BLOCK} 个 Trial`);
     }
-    const Emin = edges[b]!;
-    const Emax = edges[b + 1]!;
-    for (let k = 0; k < 15; k++) {
-      const want = Emin + (k / 14) * (Emax - Emin);
-      const t = seg.children[k]!;
-      const u = t.units[0] as PendulumStimulusUnit;
-      if (t.units.length !== 1 || t.units[0]!.type !== "pendulumStimulus") {
-        throw new Error(`Block ${b + 1} Trial ${k + 1} 应仅含一个 pendulumStimulus`);
-      }
+    const want = segMeta.Emid;
+    for (let k = 0; k < TRIALS_PER_BLOCK; k++) {
+      const u = pendulumInTrial(seg.children[k]!);
+      if (!u) throw new Error(`Block ${b + 1} Trial ${k + 1} 缺少 pendulumStimulus`);
       if (Math.abs(energyFromUnit(u) - want) > 2e-3) {
-        throw new Error(`Block ${b + 1} Trial ${k + 1} 能量应对准 ${want} J`);
+        throw new Error(`Block ${b + 1} Trial ${k + 1} 能量应对准 ${want} J（段 ${segMeta.index}）`);
       }
     }
   }
 }
 
-function buildSet(fileIdx: number, seed: number): ExperimentStimulusSet {
+function assertFullSequenceShape(set: ExperimentStimulusSet): void {
+  const expectedLen = 3 + NUM_BLOCKS * 2;
+  if (set.sequence.length !== expectedLen) {
+    throw new Error(
+      `sequence 长度应为 ${expectedLen}（欢迎 Rest + Practice + 任务 Rest + ${NUM_BLOCKS}×(BlockRest+Block)），实际 ${set.sequence.length}`,
+    );
+  }
+  if (set.sequence[0]?.kind !== "rest") throw new Error("sequence[0] 应为欢迎 Rest");
+  const practice = set.sequence[1];
+  if (!practice || practice.kind !== "practice") throw new Error("sequence[1] 应为 Practice");
+  if (practice.children.length !== PRACTICE_ENERGIES.length) {
+    throw new Error(`Practice 应含 ${PRACTICE_ENERGIES.length} 个 Trial`);
+  }
+  if (set.sequence[2]?.kind !== "rest") throw new Error("sequence[2] 应为任务 Rest");
+
+  for (let j = 0; j < PRACTICE_ENERGIES.length; j++) {
+    const units = practice.children[j]!.units;
+    const pIdx = units.findIndex((u) => u.type === "pendulumStimulus");
+    if (pIdx < 1) throw new Error(`Practice Trial ${j + 1} 缺少注视点或摆球刺激`);
+    if (units[pIdx - 1]?.type !== "textDisplay" || units[pIdx - 1]?.text !== "+") {
+      throw new Error(`Practice Trial ${j + 1} 注视点应为 textDisplay "+"`);
+    }
+  }
+
+  for (let b = 0; b < NUM_BLOCKS; b++) {
+    const restIdx = 3 + b * 2;
+    const blockIdx = restIdx + 1;
+    if (set.sequence[restIdx]?.kind !== "rest") {
+      throw new Error(`Block ${b + 1} 前应为 Rest（进度提示）`);
+    }
+    const block = set.sequence[blockIdx];
+    if (!block || block.kind !== "block" || block.children.length !== TRIALS_PER_BLOCK) {
+      throw new Error(`Block ${b + 1} 应含 ${TRIALS_PER_BLOCK} 个 Trial`);
+    }
+    for (const t of block.children) {
+      const units = t.units;
+      const pIdx = units.findIndex((u) => u.type === "pendulumStimulus");
+      if (pIdx < 1 || units[pIdx - 1]?.text !== "+") {
+        throw new Error(`Block ${b + 1} 某 Trial 缺少注视点 "+"`);
+      }
+    }
+  }
+}
+
+function buildPhysicsSet(fileIdx: number, seed: number): {
+  physics: PhysicsOnlySet;
+  expected: ExpectedRow[];
+  kept: KeptEnergySegment[];
+} {
   const rng = mulberry32(seed >>> 0);
   const id = createIdFactory(fileIdx, seed);
   const expected: ExpectedRow[] = [];
+  const kept = buildKeptEnergySegments();
 
   const pushTrial = (E: number): Trial => {
     const { thetaRad, omegaRad } = sampleStateForEnergy(E, ROD_LENGTH_M, GRAVITY, rng);
     const uid = id();
-    const unit = makePendulumStimulus(uid, thetaRad, omegaRad, ROD_LENGTH_M, GRAVITY);
+    const unit = makePendulumStimulus(uid, thetaRad, omegaRad, ROD_LENGTH_M, GRAVITY, rng);
     expected.push({ unit, expectedE: E });
     return { id: id(), units: [unit] };
   };
@@ -216,31 +326,22 @@ function buildSet(fileIdx: number, seed: number): ExperimentStimulusSet {
   const practiceChildren: Trial[] = PRACTICE_ENERGIES.map((E) => pushTrial(E));
   const practice: PracticeSegment = { kind: "practice", id: practiceId, children: practiceChildren };
 
-  const edges: number[] = [];
-  for (let i = 0; i <= 10; i++) {
-    edges.push(GLOBAL_E_MIN + (i / 10) * (GLOBAL_E_MAX - GLOBAL_E_MIN));
-  }
-
-  const blocks: BlockSegment[] = [];
-  for (let b = 0; b < 10; b++) {
-    const Emin = edges[b]!;
-    const Emax = edges[b + 1]!;
+  const blocks: BlockSegment[] = kept.map((seg) => {
     const trials: Trial[] = [];
-    for (let k = 0; k < 15; k++) {
-      const Etarget = Emin + (k / 14) * (Emax - Emin);
-      trials.push(pushTrial(Etarget));
+    for (let k = 0; k < TRIALS_PER_BLOCK; k++) {
+      trials.push(pushTrial(seg.Emid));
     }
-    blocks.push({ kind: "block", id: id(), children: trials });
-  }
+    return { kind: "block", id: id(), children: trials };
+  });
 
-  const set: ExperimentStimulusSet = {
+  const physics: PhysicsOnlySet = { practice, blocks };
+
+  const tempSet: ExperimentStimulusSet = {
     schemaVersion: STIMULUS_SET_SCHEMA_VERSION,
     sequence: [practice, ...blocks],
   };
-
-  balancePendulumSigns(collectPendulumStimuli(set));
-
-  assertSetShapeAndTargets(set, edges);
+  balancePendulumSigns(collectPendulumStimuli(tempSet));
+  assertPhysicsTargets(physics, kept);
 
   const TOL = 1e-3;
   for (const { unit, expectedE } of expected) {
@@ -252,6 +353,18 @@ function buildSet(fileIdx: number, seed: number): ExperimentStimulusSet {
     }
   }
 
+  return { physics, expected, kept };
+}
+
+function buildSet(fileIdx: number, seed: number): ExperimentStimulusSet {
+  const tpl = loadInstructionTemplate();
+  const { physics } = buildPhysicsSet(fileIdx, seed);
+  const sequence = assembleFullSequence(physics, tpl);
+  const set: ExperimentStimulusSet = {
+    schemaVersion: STIMULUS_SET_SCHEMA_VERSION,
+    sequence,
+  };
+  assertFullSequenceShape(set);
   return set;
 }
 

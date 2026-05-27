@@ -16,10 +16,19 @@ import {
   parseExperimentStimulusSet,
   saveDraftToLocal,
   saveStimulusSetToSession,
+  setDeveloperModeForRun,
   validateDesignWarnings,
   validateRunnableSet,
 } from "../shared/storage";
-import { sumSegmentMultiples, withSyncedTotalTimeT } from "../physics/timePhases";
+import { analyzePendulum } from "../physics/pendulum";
+import { springAnalysis } from "../physics/spring";
+import {
+  randomStimulusTiming,
+  stimulusTotalSec,
+  stimulusTotalTimeT,
+  withSyncedTotalTimeT,
+} from "../physics/timePhases";
+import type { PendulumStimulusUnit, SpringStimulusUnit } from "../types/experiment";
 import type { SortableEvent } from "sortablejs";
 import { bindSortableList, type SortableListOptions } from "./sortable";
 import {
@@ -543,6 +552,7 @@ function render(): void {
         <a class="btn btn-ghost" href="#/start">实验首页</a>
         <a class="btn btn-ghost" href="#/runner">运行页</a>
         <button type="button" class="btn btn-primary" id="btn-run">运行实验</button>
+        <button type="button" class="btn btn-secondary" id="btn-run-dev">开发者模式运行</button>
         <button type="button" class="btn btn-secondary" id="btn-export">导出 JSON</button>
         <button type="button" class="btn btn-secondary" id="btn-import">导入 JSON</button>
         <input type="file" id="input-import" accept=".json,application/json" hidden />
@@ -627,10 +637,19 @@ function unitListPreview(u: StimulusUnit): string {
   if (u.type === "imageDisplay" || u.type === "imageControl") {
     return u.imageDataUrl ? "已上传图片" : "未上传图片";
   }
-  if (u.type === "pendulumPractice" || u.type === "pendulumStimulus") {
+  if (u.type === "pendulumPractice") {
     return `θ₀=${u.theta0Deg}° l=${u.rodLengthM}m`;
   }
-  return `m=${u.massKg} k=${u.stiffness} x₀=${u.x0M}m`;
+  if (u.type === "pendulumStimulus") {
+    return `θ₀=${u.theta0Deg}° · 连续估计`;
+  }
+  if (u.type === "springPractice") {
+    return `m=${u.massKg} k=${u.stiffness} x₀=${u.x0M}m`;
+  }
+  if (u.type === "springStimulus") {
+    return `x₀=${u.x0M}m · 连续估计`;
+  }
+  return "";
 }
 
 function escapeHtml(s: string): string {
@@ -639,6 +658,33 @@ function escapeHtml(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function pendulumPeriodSec(u: { theta0Deg: number; omega0DegPerSec: number; rodLengthM: number; gravity: number }): number {
+  return analyzePendulum({
+    theta0Rad: (u.theta0Deg * Math.PI) / 180,
+    omega0RadPerSec: (u.omega0DegPerSec * Math.PI) / 180,
+    rodLengthM: u.rodLengthM,
+    gravity: u.gravity,
+  }).T;
+}
+
+function springPeriodSec(u: { massKg: number; stiffness: number; x0M: number; v0Mps: number }): number {
+  return springAnalysis({
+    massKg: u.massKg,
+    stiffness: u.stiffness,
+    x0M: u.x0M,
+    v0Mps: u.v0Mps,
+  }).T;
+}
+
+function stimulusTotalLabel(
+  u: { show1T: number; hide1T: number; show2T: number; hide2T: number },
+  periodSec: number,
+): string {
+  const sec = stimulusTotalSec(u, periodSec);
+  const tMult = stimulusTotalTimeT(u, periodSec);
+  return `${sec.toFixed(2)} s（${tMult.toFixed(2)} T）`;
 }
 
 function renderUnitForm(u: StimulusUnit): string {
@@ -710,6 +756,7 @@ function renderUnitForm(u: StimulusUnit): string {
     `;
   }
   if (u.type === "pendulumStimulus") {
+    const pT = pendulumPeriodSec(u);
     return `
       <h3>编辑：摆球刺激</h3>
       <div class="unit-form unit-form--physics">
@@ -722,16 +769,16 @@ function renderUnitForm(u: StimulusUnit): string {
           <input type="number" id="f-len" step="0.01" min="0.01" value="${u.rodLengthM}" />
           <label for="f-g">重力加速度 g（m/s²）</label>
           <input type="number" id="f-g" step="0.01" min="0.01" value="${u.gravity}" />
-          <label for="f-tt">总时长（T 的倍数，自动）</label>
-          <input type="text" id="f-tt" readonly class="input-readonly" value="${(u.show1T + u.hide1T + u.show2T + u.hide2T).toFixed(2)}" />
-          <label for="f-s1">第一显示（×T）</label>
-          <input type="number" id="f-s1" step="0.01" value="${u.show1T}" />
-          <label for="f-h1">第一隐藏（×T）</label>
-          <input type="number" id="f-h1" step="0.01" value="${u.hide1T}" />
-          <label for="f-s2">第二显示（×T）</label>
-          <input type="number" id="f-s2" step="0.01" value="${u.show2T}" />
-          <label for="f-h2">第二隐藏（×T）</label>
-          <input type="number" id="f-h2" step="0.01" value="${u.hide2T}" />
+          <label for="f-tt">总时长（自动）</label>
+          <input type="text" id="f-tt" readonly class="input-readonly" value="${stimulusTotalLabel(u, pT)}" />
+          <label for="f-s1">第一显示（×T，0.75–1.25）</label>
+          <input type="number" id="f-s1" step="0.01" min="0.01" value="${u.show1T}" />
+          <label for="f-h1">第一隐藏（秒，0.5–1）</label>
+          <input type="number" id="f-h1" step="0.01" min="0.01" value="${u.hide1T}" />
+          <label for="f-s2">第二显示（×T，0.75–1.25）</label>
+          <input type="number" id="f-s2" step="0.01" min="0.01" value="${u.show2T}" />
+          <label for="f-h2">第二隐藏（秒，0.5–1）</label>
+          <input type="number" id="f-h2" step="0.01" min="0.01" value="${u.hide2T}" />
         </div>
         ${physicsReadonlyBlock(u)}
       </div>
@@ -760,6 +807,7 @@ function renderUnitForm(u: StimulusUnit): string {
     `;
   }
   if (u.type === "springStimulus") {
+    const sT = springPeriodSec(u);
     return `
       <h3>编辑：弹簧刺激</h3>
       <div class="unit-form unit-form--physics">
@@ -772,16 +820,16 @@ function renderUnitForm(u: StimulusUnit): string {
           <input type="number" id="f-x0" step="0.001" value="${u.x0M}" />
           <label for="f-v0">初始速度 v₀（m/s）</label>
           <input type="number" id="f-v0" step="0.001" value="${u.v0Mps}" />
-          <label for="f-tt">总时长（T 的倍数，自动）</label>
-          <input type="text" id="f-tt" readonly class="input-readonly" value="${(u.show1T + u.hide1T + u.show2T + u.hide2T).toFixed(2)}" />
-          <label for="f-s1">第一显示（×T）</label>
-          <input type="number" id="f-s1" step="0.01" value="${u.show1T}" />
-          <label for="f-h1">第一隐藏（×T）</label>
-          <input type="number" id="f-h1" step="0.01" value="${u.hide1T}" />
-          <label for="f-s2">第二显示（×T）</label>
-          <input type="number" id="f-s2" step="0.01" value="${u.show2T}" />
-          <label for="f-h2">第二隐藏（×T）</label>
-          <input type="number" id="f-h2" step="0.01" value="${u.hide2T}" />
+          <label for="f-tt">总时长（自动）</label>
+          <input type="text" id="f-tt" readonly class="input-readonly" value="${stimulusTotalLabel(u, sT)}" />
+          <label for="f-s1">第一显示（×T，0.75–1.25）</label>
+          <input type="number" id="f-s1" step="0.01" min="0.01" value="${u.show1T}" />
+          <label for="f-h1">第一隐藏（秒，0.5–1）</label>
+          <input type="number" id="f-h1" step="0.01" min="0.01" value="${u.hide1T}" />
+          <label for="f-s2">第二显示（×T，0.75–1.25）</label>
+          <input type="number" id="f-s2" step="0.01" min="0.01" value="${u.show2T}" />
+          <label for="f-h2">第二隐藏（秒，0.5–1）</label>
+          <input type="number" id="f-h2" step="0.01" min="0.01" value="${u.hide2T}" />
         </div>
         ${physicsReadonlyBlock(u)}
       </div>
@@ -919,10 +967,12 @@ function wireUnitForm(container: HTMLElement, unitList: StimulusUnit[], u: Stimu
       pu.hide1T = Number((container.querySelector("#f-h1") as HTMLInputElement).value) || 0;
       pu.show2T = Number((container.querySelector("#f-s2") as HTMLInputElement).value) || 0;
       pu.hide2T = Number((container.querySelector("#f-h2") as HTMLInputElement).value) || 0;
-      pu.totalTimeT = sumSegmentMultiples(pu);
+      const pT = pendulumPeriodSec(pu);
+      Object.assign(pu, withSyncedTotalTimeT(pu, pT));
       const ttEl = container.querySelector("#f-tt") as HTMLInputElement | null;
-      if (ttEl) ttEl.value = pu.totalTimeT.toFixed(2);
+      if (ttEl) ttEl.value = stimulusTotalLabel(pu, pT);
       refreshPhysicsReadonly(container, pu as PhysicsEditableUnit);
+      refreshTreeAndEditor();
       scheduleDraftSave();
     };
     container
@@ -957,10 +1007,12 @@ function wireUnitForm(container: HTMLElement, unitList: StimulusUnit[], u: Stimu
       su.hide1T = Number((container.querySelector("#f-h1") as HTMLInputElement).value) || 0;
       su.show2T = Number((container.querySelector("#f-s2") as HTMLInputElement).value) || 0;
       su.hide2T = Number((container.querySelector("#f-h2") as HTMLInputElement).value) || 0;
-      su.totalTimeT = sumSegmentMultiples(su);
+      const sT = springPeriodSec(su);
+      Object.assign(su, withSyncedTotalTimeT(su, sT));
       const ttEl = container.querySelector("#f-tt") as HTMLInputElement | null;
-      if (ttEl) ttEl.value = su.totalTimeT.toFixed(2);
+      if (ttEl) ttEl.value = stimulusTotalLabel(su, sT);
       refreshPhysicsReadonly(container, su as PhysicsEditableUnit);
+      refreshTreeAndEditor();
       scheduleDraftSave();
     };
     container
@@ -1065,23 +1117,27 @@ function applyFirstSelectionFromSet(set: ExperimentStimulusSet): void {
   }
 }
 
+function tryRunFromEditor(developerMode: boolean): void {
+  const runErr = validateRunnableSet(state.set);
+  if (runErr) {
+    state.banner = runErr;
+    render();
+    return;
+  }
+  const warns = validateDesignWarnings(state.set);
+  if (warns.length > 0) {
+    const ok = confirm(`${warns.join("\n")}\n\n仍要继续运行吗？`);
+    if (!ok) return;
+  }
+  setDeveloperModeForRun(developerMode);
+  saveStimulusSetToSession(state.set);
+  state.banner = null;
+  location.hash = "#/runner";
+}
+
 function wireHeader(root: HTMLElement): void {
-  root.querySelector("#btn-run")?.addEventListener("click", () => {
-    const runErr = validateRunnableSet(state.set);
-    if (runErr) {
-      state.banner = runErr;
-      render();
-      return;
-    }
-    const warns = validateDesignWarnings(state.set);
-    if (warns.length > 0) {
-      const ok = confirm(`${warns.join("\n")}\n\n仍要继续运行吗？`);
-      if (!ok) return;
-    }
-    saveStimulusSetToSession(state.set);
-    state.banner = null;
-    location.hash = "#/runner";
-  });
+  root.querySelector("#btn-run")?.addEventListener("click", () => tryRunFromEditor(false));
+  root.querySelector("#btn-run-dev")?.addEventListener("click", () => tryRunFromEditor(true));
 
   root.querySelector("#btn-export")?.addEventListener("click", () => {
     const blob = new Blob([JSON.stringify(state.set, null, 2)], { type: "application/json" });
@@ -1105,7 +1161,7 @@ function wireHeader(root: HTMLElement): void {
       try {
         const parsed = parseExperimentStimulusSet(JSON.parse(String(reader.result)) as unknown);
         if (!parsed) {
-          alert("无法导入：JSON 无效、或 schemaVersion 不为 3、或 sequence 为空。");
+          alert("无法导入：JSON 无效、或 schemaVersion 不为 5、或 sequence 为空。");
           return;
         }
         if (!confirm("导入将覆盖当前设计（含草稿）。确定继续？")) return;
@@ -1225,7 +1281,7 @@ function wireHeader(root: HTMLElement): void {
   });
 
   root.querySelector("#btn-add-pendulum-stimulus")?.addEventListener("click", () => {
-    const unit: StimulusUnit = withSyncedTotalTimeT({
+    const base = {
       id: newId(),
       type: "pendulumStimulus" as const,
       theta0Deg: 45,
@@ -1233,11 +1289,9 @@ function wireHeader(root: HTMLElement): void {
       rodLengthM: 4,
       gravity: 9.8,
       totalTimeT: 0,
-      show1T: 1.9,
-      hide1T: 1.7,
-      show2T: 1.3,
-      hide2T: 1.1,
-    });
+      ...randomStimulusTiming(),
+    };
+    const unit = withSyncedTotalTimeT(base, pendulumPeriodSec(base)) as PendulumStimulusUnit;
     pushNewUnitToSelection(unit);
   });
 
@@ -1255,7 +1309,7 @@ function wireHeader(root: HTMLElement): void {
   });
 
   root.querySelector("#btn-add-spring-stimulus")?.addEventListener("click", () => {
-    const unit: StimulusUnit = withSyncedTotalTimeT({
+    const base = {
       id: newId(),
       type: "springStimulus" as const,
       massKg: 1,
@@ -1263,11 +1317,9 @@ function wireHeader(root: HTMLElement): void {
       x0M: 0.5,
       v0Mps: 0,
       totalTimeT: 0,
-      show1T: 1.9,
-      hide1T: 1.7,
-      show2T: 1.3,
-      hide2T: 1.1,
-    });
+      ...randomStimulusTiming(),
+    };
+    const unit = withSyncedTotalTimeT(base, springPeriodSec(base)) as SpringStimulusUnit;
     pushNewUnitToSelection(unit);
   });
 }

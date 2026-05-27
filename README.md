@@ -2,9 +2,9 @@
 
 基于 [Vite](https://vitejs.dev/) 与 [jsPsych 8](https://www.jspsych.org/) 的双界面应用：
 
-- **刺激编写**（`#/editor`）：顶层为 **顺序列表**（`sequence`），可穿插 **Block**、**Rest**、**Practice**；Block / Practice 内为 Trial → 单元，**Rest** 段只有单元、无 Trial；支持拖拽排序、导入/导出 JSON、本地草稿、一键进入运行。
+- **刺激编写**（`#/editor`）：顶层为 **顺序列表**（`sequence`），可穿插 **Block**、**Rest**、**Practice**；Block / Practice 内为 Trial → 单元，**Rest** 段只有单元、无 Trial；支持拖拽排序、导入/导出 JSON、本地草稿、「运行实验」与「开发者模式运行」（hide 时段遮挡半透明，便于调试）。
 - **实验首页**（`#/start` 或根路径）：输入**纯数字**被试编号（1–9999，存为四位前导零如 `0001`），按 **编号数值 mod 5** 从 5 份 `stimulate/stimulus-*.json` 中选一份加载并运行（构建时由 Vite 打包为资源，**不删除**仓库内 `stimulate/` 源文件）。
-- **运行**（`#/runner`）：从会话中读取当前设计并执行；结束后自动下载 CSV 数据（含 `subject_id`、`stimulus_set_index` 等）。
+- **运行**（`#/runner`）：从会话中读取当前设计并执行；仿真全程推进物理运动，hide 时段仅叠加不透明遮挡（被试不可见摆球/弹簧）；结束后自动下载 `experiment_data.csv`，**仅含** `physics-stimulus` 试次（摆球/弹簧点估计 + 不确定度），不含指导语等 html 试次，也不含 `unitId` / `segmentId` 等编排元数据列（详见 `src/runner/exportStimulusCsv.ts`）。
 
 ## 环境要求
 
@@ -58,15 +58,15 @@ npm run preview
 
 ## 刺激集 JSON
 
-根字段（当前为 **schemaVersion 3**）：
+根字段（当前为 **schemaVersion 5**）：
 
-- `schemaVersion`：`3`
+- `schemaVersion`：`5`
 - `sequence`：顶层顺序数组，元素为以下之一：
   - **Block**：`{ "kind": "block", "id": "...", "children": [ { "id": "...", "units": [ ... ] } ] }`（`children` 仅含 Trial）
   - **Practice 段**：`{ "kind": "practice", "id": "...", "children": [ { "id": "...", "units": [ ... ] } ] }`（与 Block 同级；子级为 Trial，再挂刺激单元）
   - **休息**：`{ "kind": "rest", "id": "...", "units": [ ... ] }`（无 Trial 层，直接挂单元）
 
-仅支持 **`schemaVersion: 3`** 的 JSON；旧版（v1 `blocks` / v2 `sequence` 等）需自行在外部转换为 v3 后再导入。
+仅支持 **`schemaVersion: 5`** 的 JSON；旧版（v1–v4）需重新运行 `npm run generate-stimulate` 后再导入。
 
 预置示例刺激集见 [`stimulate/`](stimulate/)（`npm run generate-stimulate` 可重新生成并覆盖）。
 
@@ -79,10 +79,9 @@ npm run preview
   - `imageControl`：`imageDataUrl`, `key`（结束按键，默认空格 `" "`）
   - **物理直觉（摆球 / 弹簧）**（Canvas + 自定义 jsPsych 插件，详见 [TODO.md](TODO.md)）：
     - `pendulumPractice`：`theta0Deg`, `omega0DegPerSec`, `rodLengthM`, `gravity`；`displayTimeT` 为练习时长的 **T 倍数**
-    - `pendulumStimulus`：上述摆参 + `totalTimeT`, `show1T`, `hide1T`, `show2T`, `hide2T`（均为 **T 的倍数**；总时历以 `totalTimeT×T` 秒截断）
+    - `pendulumStimulus` / `springStimulus`：上述物理参 + `show1T`/`show2T`（**×T**）、`hide1T`/`hide2T`（**秒**）、`totalTimeT`（自动同步）；运行端为**点击+拖动点估计**与**不确定度滑块**（见 [TODO.md](TODO.md)）
     - `springPractice`：`massKg`, `stiffness`, `x0M`, `v0Mps`；`displayTimeT` 为 **T 倍数**
-    - `springStimulus`：弹簧参 + 与摆球刺激相同含义的五个时间倍数字段
-    - 物理单元的 **能量 E、周期 T** 由参数即时算出，**不写入 JSON**；运行 CSV 中含试次数据（如 `delta_theta_*`、`delta_x_m`）
+    - 物理单元的 **能量 E、周期 T** 由参数即时算出，**不写入 JSON**；运行 CSV 含 `theta_*_deg` / `x_*_m`、`arc_half_width_*`、`trial_score` 等（`response_mode: estimate_arc`）
 
 文本类单元在 **运行页** 由 Markdown 转为 HTML 后展示；输出经白名单消毒，**链接仅保留 `http`/`https`**；引用、表格、图片等标签会被剥离（不建议在内容中依赖这些语法）。
 

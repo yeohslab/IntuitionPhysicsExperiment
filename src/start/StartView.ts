@@ -9,6 +9,7 @@ import {
   saveStimulusSetToSession,
   SESSION_STIMULUS_FILE_INDEX_KEY,
   SESSION_SUBJECT_ID_KEY,
+  setDeveloperModeForRun,
 } from "../shared/storage";
 
 export function disposeStart(): void {}
@@ -90,6 +91,7 @@ export function mountStart(container: HTMLElement): void {
 
       sessionStorage.setItem(SESSION_SUBJECT_ID_KEY, normalized);
       sessionStorage.setItem(SESSION_STIMULUS_FILE_INDEX_KEY, String(idx));
+      setDeveloperModeForRun(false);
       saveStimulusSetToSession(set);
       dialog.close();
       location.hash = "#/runner";

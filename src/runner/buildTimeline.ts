@@ -24,7 +24,11 @@ function stimulusHtmlForUnit(unit: StimulusUnit): string {
   return "";
 }
 
-function unitToTrial(unit: StimulusUnit, ctx: UnitTrialContext): Record<string, unknown> {
+function unitToTrial(
+  unit: StimulusUnit,
+  ctx: UnitTrialContext,
+  developerMode: boolean,
+): Record<string, unknown> {
   const data = {
     unitId: unit.id,
     unitType: unit.type,
@@ -89,6 +93,7 @@ function unitToTrial(unit: StimulusUnit, ctx: UnitTrialContext): Record<string, 
         x0M: 0,
         v0Mps: 0,
         unitMeta: data,
+        developerMode,
       };
     }
     case "springStimulus": {
@@ -116,6 +121,7 @@ function unitToTrial(unit: StimulusUnit, ctx: UnitTrialContext): Record<string, 
         x0M: unit.x0M,
         v0Mps: unit.v0Mps,
         unitMeta: data,
+        developerMode,
       };
     }
     case "textDisplay":
@@ -154,28 +160,39 @@ function buildSegmentWithTrialsTimeline(
   segmentId: string,
   segmentKind: "block" | "practice",
   children: Trial[],
+  developerMode: boolean,
 ): Record<string, unknown> {
   return {
     timeline: children.map((trial) => ({
       timeline: trial.units.map((unit) =>
-        unitToTrial(unit, {
-          segmentKind,
-          segmentId,
-          blockChildKind: "trial",
-          blockChildId: trial.id,
-        }),
+        unitToTrial(
+          unit,
+          {
+            segmentKind,
+            segmentId,
+            blockChildKind: "trial",
+            blockChildId: trial.id,
+          },
+          developerMode,
+        ),
       ),
     })),
   };
 }
 
-export function buildTimeline(set: ExperimentStimulusSet): Record<string, unknown>[] {
+export function buildTimeline(
+  set: ExperimentStimulusSet,
+  options?: { developerMode?: boolean },
+): Record<string, unknown>[] {
+  const developerMode = options?.developerMode ?? false;
   const timeline: Record<string, unknown>[] = [];
   for (const item of set.sequence) {
     if (item.kind === "block") {
-      timeline.push(buildSegmentWithTrialsTimeline(item.id, "block", item.children));
+      timeline.push(buildSegmentWithTrialsTimeline(item.id, "block", item.children, developerMode));
     } else if (item.kind === "practice") {
-      timeline.push(buildSegmentWithTrialsTimeline(item.id, "practice", item.children));
+      timeline.push(
+        buildSegmentWithTrialsTimeline(item.id, "practice", item.children, developerMode),
+      );
     } else {
       const ctx: UnitTrialContext = {
         segmentKind: "rest",
@@ -184,7 +201,7 @@ export function buildTimeline(set: ExperimentStimulusSet): Record<string, unknow
         blockChildId: null,
       };
       for (const unit of item.units) {
-        timeline.push(unitToTrial(unit, ctx));
+        timeline.push(unitToTrial(unit, ctx, developerMode));
       }
     }
   }

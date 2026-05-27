@@ -441,6 +441,11 @@
   color: #1a1a1a;
 }
 
+.runner-toolbar__dev {
+  margin-right: auto;
+  font-size: 0.85rem;
+}
+
 .runner-toolbar {
   padding: 0.5rem 1rem;
   background: #fff;

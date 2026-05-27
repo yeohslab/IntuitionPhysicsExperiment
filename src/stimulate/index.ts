@@ -24,7 +24,7 @@ const RAW_SETS = [raw01, raw02, raw03, raw04, raw05] as const;
 function loadStimulusSet(raw: unknown, fileName: string): ExperimentStimulusSet {
   const set = parseExperimentStimulusSet(raw);
   if (!set) {
-    throw new Error(`stimulate/${fileName} 无效或 schema 不是 3`);
+    throw new Error(`stimulate/${fileName} 无效或 schema 不是 5`);
   }
   const err = validateRunnableSet(set);
   if (err) throw new Error(`stimulate/${fileName}: ${err}`);
@@ -42,3 +42,5 @@ export const DEFAULT_STIMULUS_SET: ExperimentStimulusSet = STIMULUS_SETS[0]!;
 export function cloneStimulusSet(set: ExperimentStimulusSet): ExperimentStimulusSet {
   return structuredClone(set);
 }
+
+export { randomStimulusTiming } from "../physics/timePhases";

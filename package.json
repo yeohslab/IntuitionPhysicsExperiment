@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "verify-physics": "npx --yes tsx scripts/verify-pendulum-period.ts && npx --yes tsx scripts/verify-physics-precision.ts",
     "generate-stimulate": "npx --yes tsx scripts/generate-stimulate-sets.ts",
+    "verify-pendulum-arc-score": "npx --yes tsx scripts/verify-pendulum-arc-score.ts",
+    "verify-spring-arc-score": "npx --yes tsx scripts/verify-spring-arc-score.ts",
     "sync-stimulate": "npx --yes tsx scripts/sync-stimulate-from-template.ts"
   },
   "dependencies": {

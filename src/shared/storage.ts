@@ -10,18 +10,50 @@ import {
 } from "../types/experiment";
 import { newId } from "./ids";
 import { sanitizeImageDataUrl } from "./html";
-import { pendulumRegime, pendulumCriticalEnergy, pendulumEnergy } from "../physics/pendulum";
+import { analyzePendulum, pendulumRegime, pendulumCriticalEnergy, pendulumEnergy } from "../physics/pendulum";
 import type { PendulumParams } from "../physics/pendulum";
-import { sumSegmentMultiples, withSyncedTotalTimeT } from "../physics/timePhases";
+import { springAnalysis } from "../physics/spring";
+import { withSyncedTotalTimeT } from "../physics/timePhases";
+import type { PendulumStimulusUnit, SpringStimulusUnit } from "../types/experiment";
 
 export const SESSION_STIMULUS_KEY = "jspsych-stimulus-set-for-run";
 export const SESSION_SUBJECT_ID_KEY = "jspsych-subject-id";
 /** 0..4，对应 stimulate/stimulus-01 … stimulus-05 */
 export const SESSION_STIMULUS_FILE_INDEX_KEY = "jspsych-stimulus-file-index";
+/** 编辑页「开发者模式运行」：hide 遮挡半透明 */
+export const SESSION_DEVELOPER_MODE_KEY = "jspsych-developer-mode";
 export const LOCAL_DRAFT_KEY = "jspsych-stimulus-draft";
+
+export function setDeveloperModeForRun(on: boolean): void {
+  sessionStorage.setItem(SESSION_DEVELOPER_MODE_KEY, on ? "1" : "0");
+}
+
+export function isDeveloperModeRun(): boolean {
+  return sessionStorage.getItem(SESSION_DEVELOPER_MODE_KEY) === "1";
+}
 
 function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null && !Array.isArray(x);
+}
+
+function resyncStimulusTiming(unit: PendulumStimulusUnit | SpringStimulusUnit): void {
+  if (unit.type === "pendulumStimulus") {
+    const T = analyzePendulum({
+      theta0Rad: (unit.theta0Deg * Math.PI) / 180,
+      omega0RadPerSec: (unit.omega0DegPerSec * Math.PI) / 180,
+      rodLengthM: unit.rodLengthM,
+      gravity: unit.gravity,
+    }).T;
+    Object.assign(unit, withSyncedTotalTimeT(unit, T));
+    return;
+  }
+  const T = springAnalysis({
+    massKg: unit.massKg,
+    stiffness: unit.stiffness,
+    x0M: unit.x0M,
+    v0Mps: unit.v0Mps,
+  }).T;
+  Object.assign(unit, withSyncedTotalTimeT(unit, T));
 }
 
 function readFloat(raw: Record<string, unknown>, key: string, fallback: number): number {
@@ -75,19 +107,21 @@ function parseUnit(raw: unknown): StimulusUnit | null {
     };
   }
   if (type === "pendulumStimulus") {
-    return withSyncedTotalTimeT({
+    const unit = withSyncedTotalTimeT({
       id,
       type: "pendulumStimulus" as const,
       theta0Deg: readFloat(raw, "theta0Deg", 45),
       omega0DegPerSec: readFloat(raw, "omega0DegPerSec", 0),
       rodLengthM: readFloat(raw, "rodLengthM", 4),
       gravity: readFloat(raw, "gravity", 9.8),
-      show1T: readFloat(raw, "show1T", 1.9),
-      hide1T: readFloat(raw, "hide1T", 1.7),
-      show2T: readFloat(raw, "show2T", 1.3),
-      hide2T: readFloat(raw, "hide2T", 1.1),
+      show1T: readFloat(raw, "show1T", 1),
+      hide1T: readFloat(raw, "hide1T", 0.75),
+      show2T: readFloat(raw, "show2T", 1),
+      hide2T: readFloat(raw, "hide2T", 0.75),
       totalTimeT: readFloat(raw, "totalTimeT", 0),
     });
+    resyncStimulusTiming(unit);
+    return unit;
   }
   if (type === "springPractice") {
     return {
@@ -101,19 +135,21 @@ function parseUnit(raw: unknown): StimulusUnit | null {
     };
   }
   if (type === "springStimulus") {
-    return withSyncedTotalTimeT({
+    const unit = withSyncedTotalTimeT({
       id,
       type: "springStimulus" as const,
       massKg: readFloat(raw, "massKg", 1),
       stiffness: readFloat(raw, "stiffness", 4),
       x0M: readFloat(raw, "x0M", 0.5),
       v0Mps: readFloat(raw, "v0Mps", 0),
-      show1T: readFloat(raw, "show1T", 1.9),
-      hide1T: readFloat(raw, "hide1T", 1.7),
-      show2T: readFloat(raw, "show2T", 1.3),
-      hide2T: readFloat(raw, "hide2T", 1.1),
+      show1T: readFloat(raw, "show1T", 1),
+      hide1T: readFloat(raw, "hide1T", 0.75),
+      show2T: readFloat(raw, "show2T", 1),
+      hide2T: readFloat(raw, "hide2T", 0.75),
       totalTimeT: readFloat(raw, "totalTimeT", 0),
     });
+    resyncStimulusTiming(unit);
+    return unit;
   }
   return null;
 }
@@ -350,8 +386,11 @@ function pushUnitWarnings(warnings: string[], loc: string, u: StimulusUnit): voi
     warnings.push(`${loc}：显示时长（T 倍数）应大于 0。`);
   }
   if (u.type === "pendulumStimulus" || u.type === "springStimulus") {
-    if (sumSegmentMultiples(u) <= 0) {
-      warnings.push(`${loc}：各显示/隐藏段 T 倍数之和应大于 0。`);
+    if (u.show1T <= 0 || u.show2T <= 0) {
+      warnings.push(`${loc}：显示段（×T）应大于 0。`);
+    }
+    if (u.hide1T <= 0 || u.hide2T <= 0) {
+      warnings.push(`${loc}：隐藏段（秒）应大于 0。`);
     }
   }
 }

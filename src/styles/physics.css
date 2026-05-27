@@ -6,20 +6,41 @@
   padding: 0.5rem 0 1rem;
 }
 
+/* 刺激试次：页脚预留固定高度，避免仿真→作答阶段切换时 Canvas 上下跳动 */
+.physics-trial--stimulus .physics-canvas {
+  flex-shrink: 0;
+}
+
+.physics-trial--stimulus .physics-footer {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 1000px;
+  min-height: 8.75rem;
+  box-sizing: border-box;
+}
+
+/* 仿真阶段隐藏光标，进入作答（estimate/arc/feedback）后恢复 */
+.physics-trial--stimulus.physics-trial--sim,
+.physics-trial--stimulus.physics-trial--sim .physics-canvas,
+.physics-trial--stimulus.physics-trial--sim .physics-footer {
+  cursor: none;
+}
+
 .physics-canvas {
   display: block;
-  width: min(800px, 100%);
+  width: min(1000px, 100%);
   height: auto;
-  aspect-ratio: 800 / 520;
+  aspect-ratio: 1000 / 650;
   border-radius: 8px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   touch-action: none;
+  cursor: crosshair;
 }
 
 .physics-footer {
   width: 100%;
-  max-width: 800px;
+  max-width: 1000px;
 }
 
 .physics-hint {
@@ -27,11 +48,57 @@
   font-size: 0.9rem;
 }
 
-.physics-estimate-ui {
+.physics-estimate-ui,
+.physics-arc-ui,
+.physics-feedback-ui {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  align-items: flex-start;
+  align-items: stretch;
+}
+
+.physics-arc-range {
+  width: 100%;
+  margin: 0.25rem 0;
+  accent-color: #f97316;
+}
+
+.physics-btn {
+  align-self: flex-start;
+  padding: 0.45rem 1rem;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  cursor: pointer;
+}
+
+.physics-btn--primary {
+  background: #0ea5e9;
+  border-color: #0284c7;
+  color: #fff;
+}
+
+.physics-btn--primary:hover {
+  background: #0284c7;
+}
+
+.physics-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.physics-feedback-title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.physics-feedback-ui--hit .physics-feedback-title {
+  color: #15803d;
+}
+
+.physics-feedback-ui--miss .physics-feedback-title {
+  color: #b91c1c;
 }
 
 .physics-readonly {
@@ -44,4 +111,10 @@
 
 .physics-readonly p {
   margin: 0.25rem 0;
+}
+
+@media (max-width: 640px) {
+  .physics-footer {
+    padding-bottom: 0.5rem;
+  }
 }

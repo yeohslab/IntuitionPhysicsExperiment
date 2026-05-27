@@ -7,6 +7,10 @@ import type { SpringParams } from "../../physics/spring";
 import { springAnalysis, springDisplacementAt, springMotion } from "../../physics/spring";
 import { springLayout, drawSpringPractice } from "../../physics/render/springCanvas";
 import { setupHiDpiCanvas } from "../../physics/render/canvasCoords";
+import {
+  PHYSICS_CANVAS_LOGICAL_H,
+  PHYSICS_CANVAS_LOGICAL_W,
+} from "../../physics/render/canvasLayout";
 
 function degToRad(d: number): number {
   return (d * Math.PI) / 180;
@@ -52,7 +56,7 @@ class PhysicsPracticePlugin {
   trial(display_element: HTMLElement, trial: Trial): void {
     display_element.innerHTML = `
       <div class="physics-trial physics-trial--practice">
-        <canvas class="physics-canvas" width="800" height="520"></canvas>
+        <canvas class="physics-canvas" width="${PHYSICS_CANVAS_LOGICAL_W}" height="${PHYSICS_CANVAS_LOGICAL_H}"></canvas>
         <p class="physics-hint muted">练习试次：观看动画，结束后自动进入下一单元。</p>
       </div>`;
     const canvas = display_element.querySelector("canvas") as HTMLCanvasElement;
