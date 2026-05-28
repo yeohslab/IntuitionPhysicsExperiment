@@ -102,14 +102,12 @@ export function drawPendulumOcclusion(
   ctx.restore();
 }
 
-/** 阶段 B/C 汇报：虚线圆 + 估计摆杆（仅摆线，不画摆球） */
-export function drawPendulumEstimate(
+/** 汇报底图：清空 + 虚线圆 + 悬挂点（无摆杆） */
+export function drawPendulumEstimateGuide(
   ctx: CanvasRenderingContext2D,
   layout: PendulumLayout,
-  thetaEstRad: number,
 ): void {
   const { anchorX, anchorY, rodPx } = layout;
-  const bob = pendulumBobPosition(layout, thetaEstRad);
   ctx.save();
   clearCanvas(ctx, layout);
   ctx.strokeStyle = "#94a3b8";
@@ -119,18 +117,76 @@ export function drawPendulumEstimate(
   ctx.arc(anchorX, anchorY, rodPx, 0, Math.PI * 2);
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.strokeStyle = "#f97316";
-  ctx.lineWidth = 3;
-  ctx.lineCap = "round";
   ctx.beginPath();
   ctx.arc(anchorX, anchorY, 5, 0, Math.PI * 2);
   ctx.fillStyle = "#64748b";
   ctx.fill();
+  ctx.restore();
+}
+
+function drawPendulumEstimateRod(
+  ctx: CanvasRenderingContext2D,
+  layout: PendulumLayout,
+  thetaEstRad: number,
+): void {
+  const { anchorX, anchorY } = layout;
+  const bob = pendulumBobPosition(layout, thetaEstRad);
+  ctx.save();
+  ctx.strokeStyle = "#f97316";
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(anchorX, anchorY);
   ctx.lineTo(bob.x, bob.y);
   ctx.stroke();
   ctx.restore();
+}
+
+/** 阶段 B/C 汇报：虚线圆 + 估计摆杆（仅摆线，不画摆球） */
+export function drawPendulumEstimate(
+  ctx: CanvasRenderingContext2D,
+  layout: PendulumLayout,
+  thetaEstRad: number,
+): void {
+  drawPendulumEstimateGuide(ctx, layout);
+  drawPendulumEstimateRod(ctx, layout, thetaEstRad);
+}
+
+/** 阶段 D 反馈：真实摆杆（蓝色，仅摆线） */
+export function drawPendulumTruthRod(
+  ctx: CanvasRenderingContext2D,
+  layout: PendulumLayout,
+  thetaTruthRad: number,
+): void {
+  const { anchorX, anchorY } = layout;
+  const bob = pendulumBobPosition(layout, thetaTruthRad);
+  ctx.save();
+  ctx.strokeStyle = "#2563eb";
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(anchorX, anchorY);
+  ctx.lineTo(bob.x, bob.y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** 阶段 D：保留橙色估计与扇形，叠加蓝色真实摆杆 */
+export function drawPendulumFeedbackCompare(
+  ctx: CanvasRenderingContext2D,
+  layout: PendulumLayout,
+  thetaEstRad: number,
+  arcHalfWidthDeg: number,
+  thetaTruthRad: number,
+  showEstimate: boolean,
+  showArc: boolean,
+): void {
+  if (showEstimate) {
+    drawPendulumEstimateWithArc(ctx, layout, thetaEstRad, arcHalfWidthDeg, showArc);
+  } else {
+    drawPendulumEstimateGuide(ctx, layout);
+  }
+  drawPendulumTruthRod(ctx, layout, thetaTruthRad);
 }
 
 /** 阶段 C：不确定度扇形（半宽为度） */

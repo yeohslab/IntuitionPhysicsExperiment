@@ -38,7 +38,7 @@ function unitToTrial(
     blockChildId: ctx.blockChildId ?? "",
   };
   switch (unit.type) {
-    case "pendulumPractice":
+    case "pendulumDisplay":
       return {
         type: PhysicsPracticePlugin,
         physicsKind: "pendulum",

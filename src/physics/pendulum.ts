@@ -25,6 +25,25 @@ export function pendulumCriticalEnergy(rodLengthM: number, gravity: number): num
   return 2 * m * gravity * rodLengthM;
 }
 
+/** 最低点 θ=0、势能 U=0 时，由目标能量 E 反推角速度 ω（rad/s，取正） */
+export function pendulumOmegaRadForEnergyAtBottom(
+  E: number,
+  rodLengthM: number,
+  massKg: number = PENDULUM_MASS_KG,
+): number {
+  if (E < 0 || !Number.isFinite(E)) throw new Error(`无效能量 E=${E}`);
+  if (rodLengthM <= 0) throw new Error(`无效杆长 l=${rodLengthM}`);
+  return Math.sqrt((2 * E) / (massKg * rodLengthM * rodLengthM));
+}
+
+export function pendulumOmegaDegPerSecForEnergyAtBottom(
+  E: number,
+  rodLengthM: number,
+  massKg: number = PENDULUM_MASS_KG,
+): number {
+  return (pendulumOmegaRadForEnergyAtBottom(E, rodLengthM, massKg) * 180) / Math.PI;
+}
+
 export function pendulumRegime(E: number, rodLengthM: number, gravity: number): PendulumRegime {
   const Ec = pendulumCriticalEnergy(rodLengthM, gravity);
   const rel = E / Ec;

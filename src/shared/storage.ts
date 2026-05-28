@@ -95,15 +95,15 @@ function parseUnit(raw: unknown): StimulusUnit | null {
     const key = typeof raw.key === "string" ? raw.key : " ";
     return { id, type: "imageControl", imageDataUrl, key };
   }
-  if (type === "pendulumPractice") {
+  if (type === "pendulumDisplay" || type === "pendulumPractice") {
     return {
       id,
-      type: "pendulumPractice",
-      theta0Deg: readFloat(raw, "theta0Deg", 45),
+      type: "pendulumDisplay",
+      theta0Deg: readFloat(raw, "theta0Deg", 0),
       omega0DegPerSec: readFloat(raw, "omega0DegPerSec", 0),
       rodLengthM: readFloat(raw, "rodLengthM", 4),
       gravity: readFloat(raw, "gravity", 9.8),
-      displayTimeT: readFloat(raw, "displayTimeT", 4),
+      displayTimeT: readFloat(raw, "displayTimeT", 2),
     };
   }
   if (type === "pendulumStimulus") {
@@ -355,7 +355,7 @@ function pushUnitWarnings(warnings: string[], loc: string, u: StimulusUnit): voi
       warnings.push(`${loc}：请上传有效图片（PNG / JPEG / GIF / WebP）。`);
     }
   }
-  if (u.type === "pendulumPractice" || u.type === "pendulumStimulus") {
+  if (u.type === "pendulumDisplay" || u.type === "pendulumStimulus") {
     if (u.rodLengthM <= 0 || u.gravity <= 0) {
       warnings.push(`${loc}：杆长与重力加速度须为正值。`);
     }
@@ -379,7 +379,7 @@ function pushUnitWarnings(warnings: string[], loc: string, u: StimulusUnit): voi
       warnings.push(`${loc}：质量与劲度系数须为正值。`);
     }
   }
-  if (u.type === "pendulumPractice" && u.displayTimeT <= 0) {
+  if (u.type === "pendulumDisplay" && u.displayTimeT <= 0) {
     warnings.push(`${loc}：显示时长（T 倍数）应大于 0。`);
   }
   if (u.type === "springPractice" && u.displayTimeT <= 0) {

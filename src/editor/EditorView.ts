@@ -450,7 +450,7 @@ function updateAddUnitButtons(
   const enabled = Boolean(trial || rest);
   root
     .querySelectorAll(
-      "#btn-add-display, #btn-add-control, #btn-add-image-display, #btn-add-image-control, #btn-add-pendulum-practice, #btn-add-pendulum-stimulus, #btn-add-spring-practice, #btn-add-spring-stimulus",
+      "#btn-add-display, #btn-add-control, #btn-add-image-display, #btn-add-image-control, #btn-add-pendulum-display, #btn-add-pendulum-stimulus, #btn-add-spring-practice, #btn-add-spring-stimulus",
     )
     .forEach((btn) => {
       (btn as HTMLButtonElement).disabled = !enabled;
@@ -579,7 +579,7 @@ function render(): void {
             <button type="button" class="btn btn-sm" id="btn-add-control" ${trial || rest ? "" : "disabled"}>＋ 文本控制</button>
             <button type="button" class="btn btn-sm" id="btn-add-image-display" ${trial || rest ? "" : "disabled"}>＋ 图像显示</button>
             <button type="button" class="btn btn-sm" id="btn-add-image-control" ${trial || rest ? "" : "disabled"}>＋ 图像控制</button>
-            <button type="button" class="btn btn-sm" id="btn-add-pendulum-practice" ${trial || rest ? "" : "disabled"}>＋ 摆球练习</button>
+            <button type="button" class="btn btn-sm" id="btn-add-pendulum-display" ${trial || rest ? "" : "disabled"}>＋ 摆球显示</button>
             <button type="button" class="btn btn-sm" id="btn-add-pendulum-stimulus" ${trial || rest ? "" : "disabled"}>＋ 摆球刺激</button>
             <button type="button" class="btn btn-sm" id="btn-add-spring-practice" ${trial || rest ? "" : "disabled"}>＋ 弹簧练习</button>
             <button type="button" class="btn btn-sm" id="btn-add-spring-stimulus" ${trial || rest ? "" : "disabled"}>＋ 弹簧刺激</button>
@@ -619,8 +619,8 @@ function unitTypeLabel(u: StimulusUnit): string {
       return "图像显示";
     case "imageControl":
       return "图像控制";
-    case "pendulumPractice":
-      return "摆球练习";
+    case "pendulumDisplay":
+      return "摆球显示";
     case "pendulumStimulus":
       return "摆球刺激";
     case "springPractice":
@@ -637,7 +637,7 @@ function unitListPreview(u: StimulusUnit): string {
   if (u.type === "imageDisplay" || u.type === "imageControl") {
     return u.imageDataUrl ? "已上传图片" : "未上传图片";
   }
-  if (u.type === "pendulumPractice") {
+  if (u.type === "pendulumDisplay") {
     return `θ₀=${u.theta0Deg}° l=${u.rodLengthM}m`;
   }
   if (u.type === "pendulumStimulus") {
@@ -734,9 +734,9 @@ function renderUnitForm(u: StimulusUnit): string {
       <button type="button" class="btn btn-danger" id="f-del-unit">删除此单元</button>
     `;
   }
-  if (u.type === "pendulumPractice") {
+  if (u.type === "pendulumDisplay") {
     return `
-      <h3>编辑：摆球练习</h3>
+      <h3>编辑：摆球显示</h3>
       <div class="unit-form unit-form--physics">
         <div class="form-grid">
           <label for="f-th0">初始角度 θ₀（°）</label>
@@ -941,14 +941,14 @@ function wireUnitForm(container: HTMLElement, unitList: StimulusUnit[], u: Stimu
     return;
   }
 
-  if (u.type === "pendulumPractice") {
+  if (u.type === "pendulumDisplay") {
     const pu = u;
     const apply = () => {
       pu.theta0Deg = Number((container.querySelector("#f-th0") as HTMLInputElement).value) || 0;
       pu.omega0DegPerSec = Number((container.querySelector("#f-w0") as HTMLInputElement).value) || 0;
       pu.rodLengthM = Math.max(1e-6, Number((container.querySelector("#f-len") as HTMLInputElement).value) || 4);
       pu.gravity = Math.max(1e-6, Number((container.querySelector("#f-g") as HTMLInputElement).value) || 9.8);
-      pu.displayTimeT = Math.max(1e-6, Number((container.querySelector("#f-dt") as HTMLInputElement).value) || 4);
+      pu.displayTimeT = Math.max(1e-6, Number((container.querySelector("#f-dt") as HTMLInputElement).value) || 2);
       refreshPhysicsReadonly(container, pu as PhysicsEditableUnit);
       scheduleDraftSave();
     };
@@ -1267,15 +1267,15 @@ function wireHeader(root: HTMLElement): void {
     pushNewUnitToSelection(unit);
   });
 
-  root.querySelector("#btn-add-pendulum-practice")?.addEventListener("click", () => {
+  root.querySelector("#btn-add-pendulum-display")?.addEventListener("click", () => {
     const unit: StimulusUnit = {
       id: newId(),
-      type: "pendulumPractice",
-      theta0Deg: 45,
+      type: "pendulumDisplay",
+      theta0Deg: 0,
       omega0DegPerSec: 0,
       rodLengthM: 4,
       gravity: 9.8,
-      displayTimeT: 4,
+      displayTimeT: 2,
     };
     pushNewUnitToSelection(unit);
   });

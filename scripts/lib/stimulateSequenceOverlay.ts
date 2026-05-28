@@ -6,6 +6,8 @@ import {
   STIMULUS_SET_SCHEMA_VERSION,
   type BlockSegment,
   type ExperimentStimulusSet,
+  type PendulumDisplayUnit,
+  type PendulumStimulusUnit,
   type PracticeSegment,
   type RestSegment,
   type StimulusUnit,
@@ -14,6 +16,11 @@ import {
   type TopLevelSequenceItem,
   type Trial,
 } from "../../src/types/experiment.ts";
+import {
+  pendulumEnergy,
+  pendulumOmegaDegPerSecForEnergyAtBottom,
+  type PendulumParams,
+} from "../../src/physics/pendulum.ts";
 
 const TEMPLATE_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -21,10 +28,15 @@ const TEMPLATE_PATH = join(
 );
 
 const FIXATION_TEXT = "+";
+const ROD_LENGTH_M = 4;
+const GRAVITY = 9.8;
+const DISPLAY_TIME_T = 2;
 
 export type InstructionTemplate = {
   welcomeRest: { type: "textControl"; text: string; key: string };
   taskRest: { type: "textControl"; text: string; key: string };
+  blockObservationIntro: { type: "textControl"; text: string; key: string };
+  blockObservationOutro: { type: "textControl"; text: string; key: string };
   practiceLabels: string[];
   blockRestTemplate: { type: "textControl"; text: string; key: string };
   fixation: { type: "textDisplay"; text: string; durationMs: number };
@@ -88,8 +100,39 @@ export function makeBlockRest(current: number, total: number, tpl: InstructionTe
   };
 }
 
+export function makePendulumDisplayUnit(targetEnergyJ: number, unitId?: string): PendulumDisplayUnit {
+  const omega0DegPerSec = pendulumOmegaDegPerSecForEnergyAtBottom(
+    targetEnergyJ,
+    ROD_LENGTH_M,
+  );
+  return {
+    id: unitId ?? randomUUID(),
+    type: "pendulumDisplay",
+    theta0Deg: 0,
+    omega0DegPerSec,
+    rodLengthM: ROD_LENGTH_M,
+    gravity: GRAVITY,
+    displayTimeT: DISPLAY_TIME_T,
+  };
+}
+
+export function buildBlockObservationTrial(targetEnergyJ: number, tpl: InstructionTemplate): Trial {
+  return {
+    id: randomUUID(),
+    units: [
+      makeTextControl(tpl.blockObservationIntro),
+      makePendulumDisplayUnit(targetEnergyJ),
+      makeTextControl(tpl.blockObservationOutro),
+    ],
+  };
+}
+
 function isFixation(u: StimulusUnit): boolean {
   return u.type === "textDisplay" && u.text === FIXATION_TEXT;
+}
+
+function isFormalPendulumTrial(trial: Trial): boolean {
+  return trial.units.some((u) => u.type === "pendulumStimulus");
 }
 
 function pendulumUnits(units: StimulusUnit[]): StimulusUnit[] {
@@ -130,6 +173,38 @@ export function stripOverlayUnits(trial: Trial): void {
   trial.units = pendulumUnits(trial.units);
 }
 
+export function energyFromPendulumStimulus(u: PendulumStimulusUnit): number {
+  const p: PendulumParams = {
+    theta0Rad: (u.theta0Deg * Math.PI) / 180,
+    omega0RadPerSec: (u.omega0DegPerSec * Math.PI) / 180,
+    rodLengthM: u.rodLengthM,
+    gravity: u.gravity,
+  };
+  return pendulumEnergy(p);
+}
+
+export function energyFromPendulumDisplay(u: PendulumDisplayUnit): number {
+  const p: PendulumParams = {
+    theta0Rad: (u.theta0Deg * Math.PI) / 180,
+    omega0RadPerSec: (u.omega0DegPerSec * Math.PI) / 180,
+    rodLengthM: u.rodLengthM,
+    gravity: u.gravity,
+  };
+  return pendulumEnergy(p);
+}
+
+function prependBlockObservationTrials(blocks: BlockSegment[], tpl: InstructionTemplate): void {
+  for (const block of blocks) {
+    const formal = block.children.find((t) => isFormalPendulumTrial(t));
+    const stim = formal?.units.find((u): u is PendulumStimulusUnit => u.type === "pendulumStimulus");
+    if (!stim) {
+      throw new Error(`Block ${block.id} 缺少正式 pendulumStimulus，无法生成观察 Trial`);
+    }
+    const E = energyFromPendulumStimulus(stim);
+    block.children.unshift(buildBlockObservationTrial(E, tpl));
+  }
+}
+
 export function applyTrialOverlays(
   practice: PracticeSegment,
   blocks: BlockSegment[],
@@ -138,10 +213,12 @@ export function applyTrialOverlays(
   applyPracticeLabels(practice, tpl.practiceLabels, tpl);
   for (const block of blocks) {
     for (const trial of block.children) {
+      if (!isFormalPendulumTrial(trial)) continue;
       stripOverlayUnits(trial);
       ensureFixation(trial, tpl);
     }
   }
+  prependBlockObservationTrials(blocks, tpl);
 }
 
 export type PhysicsOnlySet = {
@@ -205,10 +282,12 @@ export function extractPhysicsOnly(set: ExperimentStimulusSet): PhysicsOnlySet |
   const blocksCopy = blocks.map((b) => ({
     kind: "block" as const,
     id: b.id,
-    children: b.children.map((t) => ({
-      id: t.id,
-      units: pendulumUnits(t.units),
-    })),
+    children: b.children
+      .filter((t) => isFormalPendulumTrial(t))
+      .map((t) => ({
+        id: t.id,
+        units: pendulumUnits(t.units),
+      })),
   }));
 
   return { practice: practiceCopy, blocks: blocksCopy };

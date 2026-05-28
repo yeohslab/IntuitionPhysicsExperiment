@@ -8,6 +8,7 @@ import {
   drawPendulumStimulusVisible,
   drawPendulumEstimate,
   drawPendulumEstimateWithArc,
+  drawPendulumFeedbackCompare,
   pendulumAngleFromPointer,
 } from "../../physics/render/pendulumCanvas";
 import type { SpringParams } from "../../physics/spring";
@@ -120,10 +121,12 @@ function mountFeedbackFooter(footer: HTMLElement, hit: boolean, score: number): 
   const panel = document.createElement("div");
   panel.className = `physics-feedback-ui physics-feedback-ui--${hit ? "hit" : "miss"}`;
   const shown = hit ? trialScoreDisplay(score) : 0;
+  const truthHint =
+    '<p class="physics-hint muted"><strong>蓝色摆杆</strong>为该试次结束瞬间的真实指向（不显示角度数值）。</p>';
   if (hit) {
-    panel.innerHTML = `<h3 class="physics-feedback-title">命中!</h3><p class="physics-hint">本次得分 ${shown} / ${SCORE_MAX}</p><p class="physics-hint muted">按空格键继续</p>`;
+    panel.innerHTML = `<h3 class="physics-feedback-title">命中!</h3><p class="physics-hint">本次得分 ${shown} / ${SCORE_MAX}</p>${truthHint}<p class="physics-hint muted">按空格键继续</p>`;
   } else {
-    panel.innerHTML = `<h3 class="physics-feedback-title">未命中!</h3><p class="physics-hint">本次得分 0</p><p class="physics-hint muted">按空格键继续</p>`;
+    panel.innerHTML = `<h3 class="physics-feedback-title">未命中!</h3><p class="physics-hint">本次得分 0</p>${truthHint}<p class="physics-hint muted">按空格键继续</p>`;
   }
   footer.appendChild(panel);
 }
@@ -504,6 +507,18 @@ class PhysicsStimulusPlugin {
       submitBtn.addEventListener("click", submit);
     };
 
+    const redrawFeedback = () => {
+      drawPendulumFeedbackCompare(
+        ctx,
+        layout,
+        thetaEstRad,
+        arcHalfWidthDeg,
+        thetaActualRad,
+        estimateInteracted,
+        arcInteracted && arcHalfWidthDeg > 0,
+      );
+    };
+
     const startFeedback = (
       hit: boolean,
       trialScore: number,
@@ -511,6 +526,7 @@ class PhysicsStimulusPlugin {
     ) => {
       opts.setPhase("feedback");
       mountFeedbackFooter(footer, hit, trialScore);
+      redrawFeedback();
       opts.setKb(
         listenSpaceAfterBlur(opts.jsPsych, () => {
           opts.finish(payload);

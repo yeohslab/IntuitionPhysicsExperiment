@@ -11,7 +11,8 @@
     "generate-stimulate": "npx --yes tsx scripts/generate-stimulate-sets.ts",
     "verify-pendulum-arc-score": "npx --yes tsx scripts/verify-pendulum-arc-score.ts",
     "verify-spring-arc-score": "npx --yes tsx scripts/verify-spring-arc-score.ts",
-    "sync-stimulate": "npx --yes tsx scripts/sync-stimulate-from-template.ts"
+    "sync-stimulate": "npx --yes tsx scripts/sync-stimulate-from-template.ts",
+    "verify-pendulum-display-energy": "npx --yes tsx scripts/verify-pendulum-display-energy.ts"
   },
   "dependencies": {
     "@jspsych/plugin-html-keyboard-response": "^2.1.0",

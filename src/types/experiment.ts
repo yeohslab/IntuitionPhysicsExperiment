@@ -6,7 +6,7 @@ export type StimulusUnitType =
   | "textControl"
   | "imageDisplay"
   | "imageControl"
-  | "pendulumPractice"
+  | "pendulumDisplay"
   | "pendulumStimulus"
   | "springPractice"
   | "springStimulus";
@@ -45,10 +45,10 @@ export interface ImageControlUnit {
   key: string;
 }
 
-/** 摆球：角度制；时长为 T 的倍数；质量固定为 1 kg（不入模） */
-export interface PendulumPracticeUnit {
+/** 摆球显示：角度制；时长为 T 的倍数；质量固定为 1 kg（不入模） */
+export interface PendulumDisplayUnit {
   id: string;
-  type: "pendulumPractice";
+  type: "pendulumDisplay";
   theta0Deg: number;
   omega0DegPerSec: number;
   rodLengthM: number;
@@ -103,7 +103,7 @@ export type StimulusUnit =
   | TextControlUnit
   | ImageDisplayUnit
   | ImageControlUnit
-  | PendulumPracticeUnit
+  | PendulumDisplayUnit
   | PendulumStimulusUnit
   | SpringPracticeUnit
   | SpringStimulusUnit;

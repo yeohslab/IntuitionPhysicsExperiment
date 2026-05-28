@@ -1,4 +1,5 @@
 import { cloneStimulusSet, STIMULUS_SETS } from "../stimulate";
+import { shuffleFormalBlocks } from "../stimulate/shuffleFormalBlocks";
 import {
   normalizeSubjectId,
   stimulusIndexForNormalizedSubjectId,
@@ -87,7 +88,7 @@ export function mountStart(container: HTMLElement): void {
     }
 
     try {
-      const set = cloneStimulusSet(template);
+      const set = shuffleFormalBlocks(cloneStimulusSet(template));
 
       sessionStorage.setItem(SESSION_SUBJECT_ID_KEY, normalized);
       sessionStorage.setItem(SESSION_STIMULUS_FILE_INDEX_KEY, String(idx));

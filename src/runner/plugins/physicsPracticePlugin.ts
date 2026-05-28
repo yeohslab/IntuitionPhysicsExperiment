@@ -17,15 +17,15 @@ function degToRad(d: number): number {
 }
 
 const info = {
-  name: "physics-practice",
+  name: "physics-display",
   version: "0.1.0",
   parameters: {
     physicsKind: { type: ParameterType.STRING, default: "pendulum" },
-    theta0Deg: { type: ParameterType.FLOAT, default: 45 },
+    theta0Deg: { type: ParameterType.FLOAT, default: 0 },
     omega0DegPerSec: { type: ParameterType.FLOAT, default: 0 },
     rodLengthM: { type: ParameterType.FLOAT, default: 4 },
     gravity: { type: ParameterType.FLOAT, default: 9.8 },
-    displayTimeT: { type: ParameterType.FLOAT, default: 4 },
+    displayTimeT: { type: ParameterType.FLOAT, default: 2 },
     massKg: { type: ParameterType.FLOAT, default: 1 },
     stiffness: { type: ParameterType.FLOAT, default: 4 },
     x0M: { type: ParameterType.FLOAT, default: 0.5 },
@@ -55,9 +55,9 @@ class PhysicsPracticePlugin {
 
   trial(display_element: HTMLElement, trial: Trial): void {
     display_element.innerHTML = `
-      <div class="physics-trial physics-trial--practice">
+      <div class="physics-trial physics-trial--stimulus">
         <canvas class="physics-canvas" width="${PHYSICS_CANVAS_LOGICAL_W}" height="${PHYSICS_CANVAS_LOGICAL_H}"></canvas>
-        <p class="physics-hint muted">练习试次：观看动画，结束后自动进入下一单元。</p>
+        <p class="physics-hint muted">观看单摆运动，结束后自动继续。</p>
       </div>`;
     const canvas = display_element.querySelector("canvas") as HTMLCanvasElement;
     const logicalW = canvas.width;

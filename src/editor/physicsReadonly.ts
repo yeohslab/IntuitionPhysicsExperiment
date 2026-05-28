@@ -1,5 +1,5 @@
 import type {
-  PendulumPracticeUnit,
+  PendulumDisplayUnit,
   PendulumStimulusUnit,
   SpringPracticeUnit,
   SpringStimulusUnit,
@@ -18,9 +18,9 @@ function degToRad(d: number): number {
 }
 
 export function physicsReadonlyBlock(
-  u: PendulumPracticeUnit | PendulumStimulusUnit | SpringPracticeUnit | SpringStimulusUnit,
+  u: PendulumDisplayUnit | PendulumStimulusUnit | SpringPracticeUnit | SpringStimulusUnit,
 ): string {
-  if (u.type === "pendulumPractice" || u.type === "pendulumStimulus") {
+  if (u.type === "pendulumDisplay" || u.type === "pendulumStimulus") {
     const p: PendulumParams = {
       theta0Rad: degToRad(u.theta0Deg),
       omega0RadPerSec: degToRad(u.omega0DegPerSec),
@@ -38,8 +38,8 @@ export function physicsReadonlyBlock(
         <p><strong>周期 T</strong>：${a.T.toFixed(4)} s</p>
         <p><strong>动力学</strong>：${regimeLabel}</p>
         ${
-          u.type === "pendulumPractice"
-            ? `<p><strong>练习时长</strong>：${(u.displayTimeT * a.T).toFixed(2)} s（${u.displayTimeT} T）</p>`
+          u.type === "pendulumDisplay"
+            ? `<p><strong>显示时长</strong>：${(u.displayTimeT * a.T).toFixed(2)} s（${u.displayTimeT} T）</p>`
             : `<p><strong>总时历</strong>：${(totalSec ?? 0).toFixed(2)} s（${(totalT ?? 0).toFixed(2)} T；隐藏段为秒）</p>
         <p><strong>不确定度上限 w<sub>max</sub></strong>：${pendulumWMaxDeg(a.E, a.regime, u.rodLengthM, u.gravity).toFixed(2)}°</p>
         <p class="muted">仿真终态 θ≈${pendulumAngleDegFromRad(pendulumThetaAtSimEnd(p, u)).toFixed(2)}°</p>`
@@ -56,7 +56,7 @@ export function physicsReadonlyBlock(
       <p><strong>周期 T</strong>：${T.toFixed(4)} s</p>
       ${
         u.type === "springPractice"
-          ? `<p><strong>练习时长</strong>：${(u.displayTimeT * T).toFixed(2)} s（${u.displayTimeT} T）</p>`
+          ? `<p><strong>显示时长</strong>：${(u.displayTimeT * T).toFixed(2)} s（${u.displayTimeT} T）</p>`
           : `<p><strong>总时历</strong>：${(totalSec ?? 0).toFixed(2)} s（${(totalT ?? 0).toFixed(2)} T；隐藏段为秒）</p>
         <p><strong>不确定度上限 w<sub>max</sub></strong>：${springWMaxM(sp).toFixed(4)} m</p>
         <p class="muted">仿真终态 x≈${springDisplacementAtSimEnd(sp, u).toFixed(4)} m</p>`
@@ -65,7 +65,7 @@ export function physicsReadonlyBlock(
 }
 
 export type PhysicsEditableUnit =
-  | PendulumPracticeUnit
+  | PendulumDisplayUnit
   | PendulumStimulusUnit
   | SpringPracticeUnit
   | SpringStimulusUnit;
