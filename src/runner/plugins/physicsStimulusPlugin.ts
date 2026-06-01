@@ -7,8 +7,8 @@ import {
   drawPendulumOcclusion,
   drawPendulumStimulusVisible,
   drawPendulumEstimate,
-  drawPendulumEstimateWithArc,
-  drawPendulumFeedbackCompare,
+  drawPendulumEstimateGuide,
+  drawPendulumFeedbackTruth,
   pendulumAngleFromPointer,
 } from "../../physics/render/pendulumCanvas";
 import type { SpringParams } from "../../physics/spring";
@@ -17,8 +17,9 @@ import {
   springLayout,
   drawSpringPractice,
   drawSpringOcclusion,
+  drawSpringEstimate,
   drawSpringEstimateGuide,
-  drawSpringEstimateWithInterval,
+  drawSpringFeedbackTruth,
   springDisplacementFromLogicalX,
 } from "../../physics/render/springCanvas";
 import { setupHiDpiCanvas, pointerToLogical } from "../../physics/render/canvasCoords";
@@ -28,20 +29,12 @@ import {
 } from "../../physics/render/canvasLayout";
 import {
   pendulumAngularErrorDeg,
-  pendulumIntervalHit,
-  pendulumTrialScore,
   pendulumWMaxDeg,
   pendulumAngleDegFromRad,
   degToRad,
   wrapDeltaThetaDeg,
-  SCORE_MAX,
 } from "../../physics/pendulumArcScore";
-import {
-  springIntervalHit,
-  springPositionErrorM,
-  springTrialScore,
-  springWMaxM,
-} from "../../physics/springArcScore";
+import { springPositionErrorM } from "../../physics/springArcScore";
 import {
   buildTimePhases,
   stimulusTotalSec,
@@ -53,7 +46,7 @@ import { normalizeKeyForJsPsych } from "../../shared/keys";
 import { cancelStaleKeyboardListeners } from "../stimulusControl";
 
 type KeyboardHandler = (e: KeyboardEvent) => void;
-type TrialPhase = "sim" | "estimate" | "arc" | "feedback";
+type TrialPhase = "sim" | "estimate" | "feedback";
 
 const SPACE_KEY = normalizeKeyForJsPsych(" ");
 
@@ -66,20 +59,12 @@ function phaseKindAt(phases: TimePhase[], tSec: number): "show" | "hide" {
   return k;
 }
 
-function valueFromRangePointer(range: HTMLInputElement, clientX: number): number {
-  const rect = range.getBoundingClientRect();
-  const ratio = rect.width > 0 ? Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) : 0;
-  const min = Number(range.min);
-  const max = Number(range.max);
-  return min + ratio * (max - min);
-}
-
 function mountEstimateFooter(footer: HTMLElement, simHint: HTMLElement, label: string): HTMLButtonElement {
   simHint.textContent = "仿真已结束。";
   footer.innerHTML = "";
   const panel = document.createElement("div");
   panel.className = "physics-estimate-ui";
-  panel.innerHTML = `<p class="physics-hint">在画面上<strong>点击</strong>${label}方向，<strong>拖动</strong>微调，然后确认。</p>`;
+  panel.innerHTML = `<p class="physics-hint">在<strong>圆环/轨道</strong>上<strong>点击</strong>您认为${label}在试次结束瞬间的位置，可<strong>拖动</strong>微调，然后确认。</p>`;
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "physics-btn physics-btn--primary";
@@ -89,45 +74,15 @@ function mountEstimateFooter(footer: HTMLElement, simHint: HTMLElement, label: s
   return btn;
 }
 
-function mountArcFooter(
-  footer: HTMLElement,
-  hint: string,
-): { range: HTMLInputElement; submitBtn: HTMLButtonElement } {
+function mountTruthOnlyFeedbackFooter(footer: HTMLElement, physicsKind: "pendulum" | "spring"): void {
   footer.innerHTML = "";
   const panel = document.createElement("div");
-  panel.className = "physics-arc-ui";
-  panel.innerHTML = `<p class="physics-hint">${hint}</p>`;
-  const range = document.createElement("input");
-  range.type = "range";
-  range.className = "physics-arc-range";
-  range.min = "0";
-  range.value = "0";
-  const submitBtn = document.createElement("button");
-  submitBtn.type = "button";
-  submitBtn.className = "physics-btn physics-btn--primary";
-  submitBtn.textContent = "提交";
-  panel.append(range, submitBtn);
-  footer.appendChild(panel);
-  return { range, submitBtn };
-}
-
-/** 被试所见得分（四舍五入）；CSV 仍记录原始 trial_score */
-function trialScoreDisplay(score: number): number {
-  return Math.round(score);
-}
-
-function mountFeedbackFooter(footer: HTMLElement, hit: boolean, score: number): void {
-  footer.innerHTML = "";
-  const panel = document.createElement("div");
-  panel.className = `physics-feedback-ui physics-feedback-ui--${hit ? "hit" : "miss"}`;
-  const shown = hit ? trialScoreDisplay(score) : 0;
-  const truthHint =
-    '<p class="physics-hint muted"><strong>蓝色摆杆</strong>为该试次结束瞬间的真实指向（不显示角度数值）。</p>';
-  if (hit) {
-    panel.innerHTML = `<h3 class="physics-feedback-title">命中!</h3><p class="physics-hint">本次得分 ${shown} / ${SCORE_MAX}</p>${truthHint}<p class="physics-hint muted">按空格键继续</p>`;
-  } else {
-    panel.innerHTML = `<h3 class="physics-feedback-title">未命中!</h3><p class="physics-hint">本次得分 0</p>${truthHint}<p class="physics-hint muted">按空格键继续</p>`;
-  }
+  panel.className = "physics-feedback-ui";
+  const hint =
+    physicsKind === "pendulum"
+      ? "<strong>橙色摆杆</strong>为您的选择，<strong>蓝色摆杆</strong>为该试次结束瞬间的真实位置。"
+      : "<strong>橙色物块</strong>为您的选择，<strong>蓝色物块</strong>为该试次结束瞬间的真实位置。";
+  panel.innerHTML = `<p class="physics-hint muted">${hint}</p><p class="physics-hint muted">按空格键继续</p>`;
   footer.appendChild(panel);
 }
 
@@ -156,7 +111,7 @@ function listenSpaceAfterBlur(jsPsych: JsPsych, onSpace: () => void): KeyboardHa
 
 const info = {
   name: "physics-stimulus",
-  version: "0.3.0",
+  version: "0.5.0",
   parameters: {
     physicsKind: { type: ParameterType.STRING, default: "pendulum" },
     theta0Deg: { type: ParameterType.FLOAT, default: 45 },
@@ -348,15 +303,13 @@ class PhysicsStimulusPlugin {
     const rot = analysis.regime === "rotation" ? new PendulumRotationIntegrator(p) : null;
     const layout = pendulumLayout(cssW, cssH);
     const wMaxDeg = pendulumWMaxDeg(analysis.E, analysis.regime, trial.rodLengthM, trial.gravity);
+    const motionRange = { regime: analysis.regime, wMaxDeg };
 
     let thetaActualRad = 0;
     let thetaEstRad = 0;
     let estimateInteracted = false;
-    let arcHalfWidthDeg = 0;
-    let arcInteracted = false;
     let dragging = false;
     let estimateStartMs = 0;
-    let arcStartMs = 0;
 
     const thetaActualAtEnd = () => {
       if (rot) return rot.theta;
@@ -365,15 +318,52 @@ class PhysicsStimulusPlugin {
 
     const redrawEstimate = () => {
       if (!estimateInteracted) {
-        drawPendulumEstimate(ctx, layout, 0);
+        drawPendulumEstimateGuide(ctx, layout, motionRange);
         return;
       }
-      drawPendulumEstimateWithArc(ctx, layout, thetaEstRad, arcHalfWidthDeg, false);
+      drawPendulumEstimate(ctx, layout, thetaEstRad, motionRange);
     };
 
-    const redrawArc = () => {
-      if (!estimateInteracted) return;
-      drawPendulumEstimateWithArc(ctx, layout, thetaEstRad, arcHalfWidthDeg, arcInteracted);
+    const buildPayload = (): Record<string, unknown> => {
+      const rtEstimateSec = (performance.now() - estimateStartMs) / 1000;
+      const thetaActualDeg = pendulumAngleDegFromRad(thetaActualRad);
+      const thetaEstimatedDeg = pendulumAngleDegFromRad(thetaEstRad);
+      const eDeg = pendulumAngularErrorDeg(thetaEstRad, thetaActualRad, analysis.regime, wMaxDeg);
+      const deltaThetaDeg = wrapDeltaThetaDeg(
+        thetaEstimatedDeg,
+        thetaActualDeg,
+        analysis.regime,
+        wMaxDeg,
+      );
+      return {
+        response_mode: "estimate_point",
+        physicsKind: trial.physicsKind,
+        pendulum_E_J: analysis.E,
+        pendulum_T_sec: T,
+        pendulum_regime: analysis.regime,
+        stimulus_time_phases_json: JSON.stringify(phases),
+        total_time_T: totalTimeT,
+        theta_actual_deg: thetaActualDeg,
+        theta_estimated_deg: thetaEstimatedDeg,
+        delta_theta_deg: deltaThetaDeg,
+        abs_delta_theta_deg: eDeg,
+        theta_actual_rad: degToRad(thetaActualDeg),
+        theta_estimated_rad: degToRad(thetaEstimatedDeg),
+        delta_theta_rad: degToRad(deltaThetaDeg),
+        abs_delta_theta_rad: degToRad(eDeg),
+        rt_estimate_sec: rtEstimateSec,
+      };
+    };
+
+    const startFeedback = (payload: Record<string, unknown>) => {
+      opts.setPhase("feedback");
+      mountTruthOnlyFeedbackFooter(footer, "pendulum");
+      drawPendulumFeedbackTruth(ctx, layout, thetaEstRad, thetaActualRad, motionRange);
+      opts.setKb(
+        listenSpaceAfterBlur(opts.jsPsych, () => {
+          opts.finish(payload);
+        }),
+      );
     };
 
     const startEstimate = () => {
@@ -393,7 +383,7 @@ class PhysicsStimulusPlugin {
         canvas.removeEventListener("pointercancel", onUp);
         confirmBtn.removeEventListener("click", confirm);
         opts.setKb(null);
-        startArc();
+        startFeedback(buildPayload());
       };
       confirmBtn.addEventListener("click", confirm);
       opts.setKb(listenSpace(opts.jsPsych, confirm));
@@ -423,117 +413,6 @@ class PhysicsStimulusPlugin {
       canvas.addEventListener("pointercancel", onUp);
     };
 
-    const startArc = () => {
-      opts.setPhase("arc");
-      arcStartMs = performance.now();
-      arcHalfWidthDeg = 0;
-      arcInteracted = false;
-      redrawArc();
-      const { range, submitBtn } = mountArcFooter(
-        footer,
-        "拖动下方滑块，调节您认为真值可能落在的范围（越宽表示越不确定），然后提交。",
-      );
-      range.max = String(wMaxDeg);
-      range.step = "0.1";
-
-      const applyRange = (w: number) => {
-        arcHalfWidthDeg = Math.max(0, Math.min(wMaxDeg, w));
-        redrawArc();
-      };
-
-      const onRangePointerDown = (e: PointerEvent) => {
-        if (!arcInteracted) {
-          arcInteracted = true;
-          const v = valueFromRangePointer(range, e.clientX);
-          range.value = String(v);
-          applyRange(v);
-        }
-      };
-
-      const onRangeInput = () => {
-        if (!arcInteracted) arcInteracted = true;
-        applyRange(Number(range.value));
-      };
-
-      range.addEventListener("pointerdown", onRangePointerDown);
-      range.addEventListener("input", onRangeInput);
-
-      const submit = () => {
-        range.removeEventListener("pointerdown", onRangePointerDown);
-        range.removeEventListener("input", onRangeInput);
-        submitBtn.removeEventListener("click", submit);
-        const rtEstimateSec = (arcStartMs - estimateStartMs) / 1000;
-        const rtArcSec = (performance.now() - arcStartMs) / 1000;
-        const thetaActualDeg = pendulumAngleDegFromRad(thetaActualRad);
-        const thetaEstimatedDeg = pendulumAngleDegFromRad(thetaEstRad);
-        const eDeg = pendulumAngularErrorDeg(thetaEstRad, thetaActualRad, analysis.regime, wMaxDeg);
-        const deltaThetaDeg = wrapDeltaThetaDeg(
-          thetaEstimatedDeg,
-          thetaActualDeg,
-          analysis.regime,
-          wMaxDeg,
-        );
-        const hit = pendulumIntervalHit(eDeg, arcHalfWidthDeg);
-        const trialScore = pendulumTrialScore(arcHalfWidthDeg, wMaxDeg, hit);
-        startFeedback(hit, trialScore, {
-          response_mode: "estimate_arc",
-          physicsKind: trial.physicsKind,
-          pendulum_E_J: analysis.E,
-          pendulum_T_sec: T,
-          pendulum_regime: analysis.regime,
-          stimulus_time_phases_json: JSON.stringify(phases),
-          total_time_T: totalTimeT,
-          theta_actual_deg: thetaActualDeg,
-          theta_estimated_deg: thetaEstimatedDeg,
-          delta_theta_deg: deltaThetaDeg,
-          abs_delta_theta_deg: eDeg,
-          theta_actual_rad: degToRad(thetaActualDeg),
-          theta_estimated_rad: degToRad(thetaEstimatedDeg),
-          delta_theta_rad: degToRad(deltaThetaDeg),
-          abs_delta_theta_rad: degToRad(eDeg),
-          rt_estimate_sec: rtEstimateSec,
-          arc_half_width_deg: arcHalfWidthDeg,
-          arc_span_deg: 2 * arcHalfWidthDeg,
-          w_max_deg: wMaxDeg,
-          interval_hit: hit ? 1 : 0,
-          interval_overflow_deg: Math.max(0, eDeg - arcHalfWidthDeg),
-          arc_half_width_rad: degToRad(arcHalfWidthDeg),
-          interval_overflow_rad: degToRad(Math.max(0, eDeg - arcHalfWidthDeg)),
-          rt_arc_sec: rtArcSec,
-          trial_score: trialScore,
-          score_max: SCORE_MAX,
-        });
-      };
-      submitBtn.addEventListener("click", submit);
-    };
-
-    const redrawFeedback = () => {
-      drawPendulumFeedbackCompare(
-        ctx,
-        layout,
-        thetaEstRad,
-        arcHalfWidthDeg,
-        thetaActualRad,
-        estimateInteracted,
-        arcInteracted && arcHalfWidthDeg > 0,
-      );
-    };
-
-    const startFeedback = (
-      hit: boolean,
-      trialScore: number,
-      payload: Record<string, unknown>,
-    ) => {
-      opts.setPhase("feedback");
-      mountFeedbackFooter(footer, hit, trialScore);
-      redrawFeedback();
-      opts.setKb(
-        listenSpaceAfterBlur(opts.jsPsych, () => {
-          opts.finish(payload);
-        }),
-      );
-    };
-
     const simTick = (now: number) => {
       if (opts.getPhase() !== "sim") return;
       const elapsed = (now - t0) / 1000;
@@ -545,7 +424,7 @@ class PhysicsStimulusPlugin {
       } else {
         theta = pendulumThetaOscillationAt(t, p, analysis);
       }
-      drawPendulumStimulusVisible(ctx, layout, theta);
+      drawPendulumStimulusVisible(ctx, layout, theta, motionRange);
       if (phaseKindAt(phases, t) === "hide") {
         drawPendulumOcclusion(ctx, layout, trial.developerMode);
       }
@@ -594,27 +473,48 @@ class PhysicsStimulusPlugin {
     const simEndSec = stimulusTotalSec(synced, T);
     const { amplitudeM } = springMotion(sp);
     const layout = springLayout(cssW, cssH, amplitudeM);
-    const wMaxM = springWMaxM(sp);
 
     let xActualM = 0;
     let xEstM = 0;
     let estimateInteracted = false;
-    let intervalHalfWidthM = 0;
-    let arcInteracted = false;
     let dragging = false;
     let estimateStartMs = 0;
-    let arcStartMs = 0;
 
     const redrawEstimate = () => {
       if (!estimateInteracted) {
         drawSpringEstimateGuide(ctx, layout);
         return;
       }
-      drawSpringEstimateWithInterval(ctx, layout, xEstM, intervalHalfWidthM, false);
+      drawSpringEstimate(ctx, layout, xEstM);
     };
 
-    const redrawArc = () => {
-      drawSpringEstimateWithInterval(ctx, layout, xEstM, intervalHalfWidthM, arcInteracted);
+    const buildPayload = (): Record<string, unknown> => {
+      const rtEstimateSec = (performance.now() - estimateStartMs) / 1000;
+      const eM = springPositionErrorM(xEstM, xActualM);
+      return {
+        response_mode: "estimate_point",
+        physicsKind: trial.physicsKind,
+        spring_E_J: E,
+        spring_T_sec: T,
+        stimulus_time_phases_json: JSON.stringify(phases),
+        total_time_T: totalTimeT,
+        x_actual_m: xActualM,
+        x_estimated_m: xEstM,
+        delta_x_m: xEstM - xActualM,
+        abs_delta_x_m: eM,
+        rt_estimate_sec: rtEstimateSec,
+      };
+    };
+
+    const startFeedback = (payload: Record<string, unknown>) => {
+      opts.setPhase("feedback");
+      mountTruthOnlyFeedbackFooter(footer, "spring");
+      drawSpringFeedbackTruth(ctx, layout, xEstM, xActualM);
+      opts.setKb(
+        listenSpaceAfterBlur(opts.jsPsych, () => {
+          opts.finish(payload);
+        }),
+      );
     };
 
     const startEstimate = () => {
@@ -634,7 +534,7 @@ class PhysicsStimulusPlugin {
         canvas.removeEventListener("pointercancel", onUp);
         confirmBtn.removeEventListener("click", confirm);
         opts.setKb(null);
-        startArc();
+        startFeedback(buildPayload());
       };
       confirmBtn.addEventListener("click", confirm);
       opts.setKb(listenSpace(opts.jsPsych, confirm));
@@ -662,83 +562,6 @@ class PhysicsStimulusPlugin {
       canvas.addEventListener("pointermove", onMove);
       canvas.addEventListener("pointerup", onUp);
       canvas.addEventListener("pointercancel", onUp);
-    };
-
-    const startArc = () => {
-      opts.setPhase("arc");
-      arcStartMs = performance.now();
-      intervalHalfWidthM = 0;
-      arcInteracted = false;
-      redrawArc();
-      const { range, submitBtn } = mountArcFooter(
-        footer,
-        "拖动下方滑块，调节您认为真值可能落在的范围（越宽表示越不确定），然后提交。",
-      );
-      const stepM = Math.max(0.001, wMaxM / 200);
-      range.max = String(wMaxM);
-      range.step = String(stepM);
-
-      const applyRange = (w: number) => {
-        intervalHalfWidthM = Math.max(0, Math.min(wMaxM, w));
-        redrawArc();
-      };
-
-      const onRangePointerDown = (e: PointerEvent) => {
-        if (!arcInteracted) {
-          arcInteracted = true;
-          const v = valueFromRangePointer(range, e.clientX);
-          range.value = String(v);
-          applyRange(v);
-        }
-      };
-
-      const onRangeInput = () => {
-        if (!arcInteracted) arcInteracted = true;
-        applyRange(Number(range.value));
-      };
-
-      range.addEventListener("pointerdown", onRangePointerDown);
-      range.addEventListener("input", onRangeInput);
-
-      const submit = () => {
-        range.removeEventListener("pointerdown", onRangePointerDown);
-        range.removeEventListener("input", onRangeInput);
-        submitBtn.removeEventListener("click", submit);
-        const rtEstimateSec = (arcStartMs - estimateStartMs) / 1000;
-        const rtArcSec = (performance.now() - arcStartMs) / 1000;
-        const eM = springPositionErrorM(xEstM, xActualM);
-        const hit = springIntervalHit(eM, intervalHalfWidthM);
-        const trialScore = springTrialScore(intervalHalfWidthM, wMaxM, hit);
-        opts.setPhase("feedback");
-        mountFeedbackFooter(footer, hit, trialScore);
-        const payload: Record<string, unknown> = {
-          response_mode: "estimate_arc",
-          physicsKind: trial.physicsKind,
-          spring_E_J: E,
-          spring_T_sec: T,
-          stimulus_time_phases_json: JSON.stringify(phases),
-          total_time_T: totalTimeT,
-          x_actual_m: xActualM,
-          x_estimated_m: xEstM,
-          delta_x_m: xEstM - xActualM,
-          abs_delta_x_m: eM,
-          rt_estimate_sec: rtEstimateSec,
-          interval_half_width_m: intervalHalfWidthM,
-          interval_span_m: 2 * intervalHalfWidthM,
-          w_max_m: wMaxM,
-          interval_hit: hit ? 1 : 0,
-          interval_overflow_m: Math.max(0, eM - intervalHalfWidthM),
-          rt_arc_sec: rtArcSec,
-          trial_score: trialScore,
-          score_max: SCORE_MAX,
-        };
-        opts.setKb(
-          listenSpaceAfterBlur(opts.jsPsych, () => {
-            opts.finish(payload);
-          }),
-        );
-      };
-      submitBtn.addEventListener("click", submit);
     };
 
     const simTick = (now: number) => {

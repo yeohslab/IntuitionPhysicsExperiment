@@ -3,6 +3,7 @@ import { ParameterType } from "jspsych";
 import { analyzePendulum, pendulumThetaOscillationAt, PendulumRotationIntegrator } from "../../physics/pendulum";
 import type { PendulumParams } from "../../physics/pendulum";
 import { pendulumLayout, drawPendulumPractice } from "../../physics/render/pendulumCanvas";
+import { pendulumWMaxDeg } from "../../physics/pendulumArcScore";
 import type { SpringParams } from "../../physics/spring";
 import { springAnalysis, springDisplacementAt, springMotion } from "../../physics/spring";
 import { springLayout, drawSpringPractice } from "../../physics/render/springCanvas";
@@ -77,6 +78,8 @@ class PhysicsPracticePlugin {
       const durationSec = trial.displayTimeT * analysis.T;
       const rot = analysis.regime === "rotation" ? new PendulumRotationIntegrator(p) : null;
       const layout = pendulumLayout(cssW, cssH);
+      const wMaxDeg = pendulumWMaxDeg(analysis.E, analysis.regime, trial.rodLengthM, trial.gravity);
+      const motionRange = { regime: analysis.regime, wMaxDeg };
 
       const tick = (now: number) => {
         const elapsed = (now - t0) / 1000;
@@ -88,7 +91,7 @@ class PhysicsPracticePlugin {
         } else {
           theta = pendulumThetaOscillationAt(t, p, analysis);
         }
-        drawPendulumPractice(ctx, layout, theta);
+        drawPendulumPractice(ctx, layout, theta, motionRange);
         if (elapsed >= durationSec) {
           this.jsPsych.finishTrial({
             ...trial.unitMeta,

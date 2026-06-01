@@ -273,3 +273,24 @@ export function springDisplacementFromLogicalX(layout: SpringLayout, logicalX: n
   const raw = (logicalX - springEquilibriumPx(layout)) / layout.pixelsPerMeter;
   return clampSpringXMeters(layout, raw);
 }
+
+/** 反馈：轨道引导 + 橙色估计物块 + 蓝色真实物块 */
+export function drawSpringFeedbackTruth(
+  ctx: CanvasRenderingContext2D,
+  layout: SpringLayout,
+  xEstM: number,
+  xActualM: number,
+): void {
+  const { anchorX, anchorY, ballRadius } = layout;
+  drawSpringEstimate(ctx, layout, xEstM);
+  const xClamped = clampSpringXMeters(layout, xActualM);
+  const ballX = ballCenterX(layout, xClamped);
+  const springLen = springLengthPx(layout, xClamped);
+  const turns = Math.max(8, Math.round(12 + springLen / 28));
+  ctx.save();
+  ctx.strokeStyle = "#64748b";
+  ctx.lineWidth = 2;
+  drawZigzagSpring(ctx, anchorX, anchorY, ballX, anchorY, turns, 10);
+  drawSpringBall(ctx, ballX, anchorY, "#2563eb", "#1d4ed8", ballRadius);
+  ctx.restore();
+}

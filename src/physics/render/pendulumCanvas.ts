@@ -1,4 +1,14 @@
+import type { PendulumRegime } from "../pendulum";
 import { PHYSICS_HIDDEN_FILL, PHYSICS_OCCLUSION_FILL_DEVELOPER } from "./canvasLayout";
+
+/** 仿真阶段：摆球可达角度范围示意 */
+export type PendulumMotionRange = {
+  regime: PendulumRegime;
+  wMaxDeg: number;
+};
+
+const MOTION_RANGE_STROKE = "#94a3b8";
+const MOTION_RANGE_DASH: [number, number] = [8, 6];
 
 /** 摆球 Canvas：θ=0 向下，顺时针为正（与 TODO 屏幕映射一致） */
 
@@ -54,7 +64,8 @@ export function pendulumAngleFromPointer(
   return Math.atan2(dx, dy);
 }
 
-export function drawPendulumPractice(
+/** 摆杆 + 摆球（不清屏） */
+export function drawPendulumRodAndBob(
   ctx: CanvasRenderingContext2D,
   layout: PendulumLayout,
   thetaRad: number,
@@ -62,7 +73,6 @@ export function drawPendulumPractice(
   const { anchorX, anchorY } = layout;
   const bob = pendulumBobPosition(layout, thetaRad);
   ctx.save();
-  clearCanvas(ctx, layout);
   ctx.strokeStyle = "#334155";
   ctx.fillStyle = "#64748b";
   ctx.lineWidth = 3;
@@ -82,12 +92,65 @@ export function drawPendulumPractice(
   ctx.restore();
 }
 
+/** 仿真底层：虚线角度范围（往复扇形 / 转圈整圆） */
+export function drawPendulumMotionRangeGuide(
+  ctx: CanvasRenderingContext2D,
+  layout: PendulumLayout,
+  range: PendulumMotionRange,
+): void {
+  const { anchorX, anchorY, rodPx } = layout;
+  const { regime, wMaxDeg } = range;
+  if (wMaxDeg <= 0) return;
+
+  ctx.save();
+  ctx.strokeStyle = MOTION_RANGE_STROKE;
+  ctx.lineWidth = 2;
+  ctx.setLineDash(MOTION_RANGE_DASH);
+
+  if (regime === "rotation") {
+    ctx.beginPath();
+    ctx.arc(anchorX, anchorY, rodPx, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  const halfRad = (wMaxDeg * Math.PI) / 180;
+  const thetaLo = -halfRad;
+  const thetaHi = halfRad;
+  const steps = Math.max(8, Math.ceil((wMaxDeg / 90) * 24));
+  ctx.beginPath();
+  ctx.moveTo(anchorX, anchorY);
+  for (let i = 0; i <= steps; i++) {
+    const t = thetaLo + ((thetaHi - thetaLo) * i) / steps;
+    const bob = pendulumBobPosition(layout, t);
+    ctx.lineTo(bob.x, bob.y);
+  }
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+}
+
+export function drawPendulumPractice(
+  ctx: CanvasRenderingContext2D,
+  layout: PendulumLayout,
+  thetaRad: number,
+  motionRange?: PendulumMotionRange,
+): void {
+  ctx.save();
+  clearCanvas(ctx, layout);
+  if (motionRange) drawPendulumMotionRangeGuide(ctx, layout, motionRange);
+  drawPendulumRodAndBob(ctx, layout, thetaRad);
+  ctx.restore();
+}
+
 export function drawPendulumStimulusVisible(
   ctx: CanvasRenderingContext2D,
   layout: PendulumLayout,
   thetaRad: number,
+  motionRange?: PendulumMotionRange,
 ): void {
-  drawPendulumPractice(ctx, layout, thetaRad);
+  drawPendulumPractice(ctx, layout, thetaRad, motionRange);
 }
 
 /** hide 时段叠加于运动画面之上的遮挡层 */
@@ -102,21 +165,26 @@ export function drawPendulumOcclusion(
   ctx.restore();
 }
 
-/** 汇报底图：清空 + 虚线圆 + 悬挂点（无摆杆） */
+/** 汇报底图：清空 + 角度范围示意 + 悬挂点（无摆杆） */
 export function drawPendulumEstimateGuide(
   ctx: CanvasRenderingContext2D,
   layout: PendulumLayout,
+  motionRange?: PendulumMotionRange,
 ): void {
   const { anchorX, anchorY, rodPx } = layout;
   ctx.save();
   clearCanvas(ctx, layout);
-  ctx.strokeStyle = "#94a3b8";
-  ctx.lineWidth = 2;
-  ctx.setLineDash([8, 6]);
-  ctx.beginPath();
-  ctx.arc(anchorX, anchorY, rodPx, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.setLineDash([]);
+  if (motionRange) {
+    drawPendulumMotionRangeGuide(ctx, layout, motionRange);
+  } else {
+    ctx.strokeStyle = MOTION_RANGE_STROKE;
+    ctx.lineWidth = 2;
+    ctx.setLineDash(MOTION_RANGE_DASH);
+    ctx.beginPath();
+    ctx.arc(anchorX, anchorY, rodPx, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
   ctx.beginPath();
   ctx.arc(anchorX, anchorY, 5, 0, Math.PI * 2);
   ctx.fillStyle = "#64748b";
@@ -142,13 +210,14 @@ function drawPendulumEstimateRod(
   ctx.restore();
 }
 
-/** 阶段 B/C 汇报：虚线圆 + 估计摆杆（仅摆线，不画摆球） */
+/** 阶段 B 汇报：角度范围示意 + 估计摆杆（仅摆线，不画摆球） */
 export function drawPendulumEstimate(
   ctx: CanvasRenderingContext2D,
   layout: PendulumLayout,
   thetaEstRad: number,
+  motionRange?: PendulumMotionRange,
 ): void {
-  drawPendulumEstimateGuide(ctx, layout);
+  drawPendulumEstimateGuide(ctx, layout, motionRange);
   drawPendulumEstimateRod(ctx, layout, thetaEstRad);
 }
 
@@ -230,4 +299,16 @@ export function drawPendulumEstimateWithArc(
   if (showArc && halfWidthDeg > 0) {
     drawPendulumEstimateArc(ctx, layout, thetaEstRad, halfWidthDeg);
   }
+}
+
+/** 反馈：角度范围示意 + 橙色估计摆杆 + 蓝色真实摆杆 */
+export function drawPendulumFeedbackTruth(
+  ctx: CanvasRenderingContext2D,
+  layout: PendulumLayout,
+  thetaEstRad: number,
+  thetaTruthRad: number,
+  motionRange?: PendulumMotionRange,
+): void {
+  drawPendulumEstimate(ctx, layout, thetaEstRad, motionRange);
+  drawPendulumTruthRod(ctx, layout, thetaTruthRad);
 }

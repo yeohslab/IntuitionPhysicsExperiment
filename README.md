@@ -4,7 +4,7 @@
 
 - **刺激编写**（`#/editor`）：顶层为 **顺序列表**（`sequence`），可穿插 **Block**、**Rest**、**Practice**；Block / Practice 内为 Trial → 单元，**Rest** 段只有单元、无 Trial；支持拖拽排序、导入/导出 JSON、本地草稿、「运行实验」与「开发者模式运行」（hide 时段遮挡半透明，便于调试）。
 - **实验首页**（`#/start` 或根路径）：输入**纯数字**被试编号（1–9999，存为四位前导零如 `0001`），按 **编号数值 mod 5** 从 5 份 `stimulate/stimulus-*.json` 中选一份加载并运行（构建时由 Vite 打包为资源，**不删除**仓库内 `stimulate/` 源文件）。加载后会对其中 **25 个正式 Block** 即时随机打乱顺序（欢迎/练习/任务说明 Rest 不变，Block 内 Trial 参数不变；Block 前进度 Rest 随 Block 成对移动并重编号为 1…25）；**每次点击开始**顺序可能不同。编辑页「运行实验」不打乱，保持设计顺序。
-- **运行**（`#/runner`）：从会话中读取当前设计并执行；仿真全程推进物理运动，hide 时段仅叠加不透明遮挡（被试不可见摆球/弹簧）；结束后自动下载 `experiment_data.csv`，**仅含** `physics-stimulus` 试次（摆球/弹簧点估计 + 不确定度），不含指导语等 html 试次，也不含 `unitId` / `segmentId` 等编排元数据列（详见 `src/runner/exportStimulusCsv.ts`）。
+- **运行**（`#/runner`）：从会话中读取当前设计并执行；仿真全程推进物理运动，hide 时段仅叠加不透明遮挡（被试不可见摆球/弹簧）；结束后自动下载 `experiment_data.csv`，**仅含** `physics-stimulus` 试次（摆球/弹簧**点估计**，`response_mode: estimate_point`），不含指导语等 html 试次，也不含 `unitId` / `segmentId` 等编排元数据列（详见 `src/runner/exportStimulusCsv.ts`）。
 
 ## 环境要求
 
@@ -79,9 +79,9 @@ npm run preview
   - `imageControl`：`imageDataUrl`, `key`（结束按键，默认空格 `" "`）
   - **物理直觉（摆球 / 弹簧）**（Canvas + 自定义 jsPsych 插件，详见 [TODO.md](TODO.md)）：
     - `pendulumDisplay`：`theta0Deg`, `omega0DegPerSec`, `rodLengthM`, `gravity`；`displayTimeT` 为显示时长的 **T 倍数**（默认 2）；全程可见、无作答
-    - `pendulumStimulus` / `springStimulus`：上述物理参 + `show1T`/`show2T`（**×T**）、`hide1T`/`hide2T`（**秒**）、`totalTimeT`（自动同步）；运行端为**点击+拖动点估计**与**不确定度滑块**（见 [TODO.md](TODO.md)）
+    - `pendulumStimulus` / `springStimulus`：上述物理参 + `show1T`/`show2T`（**×T**）、`hide1T`/`hide2T`（**秒**）、`totalTimeT`（自动同步）；运行端为**点击+拖动点估计**，确认后反馈仅显示蓝色真值
     - `springPractice`：`massKg`, `stiffness`, `x0M`, `v0Mps`；`displayTimeT` 为 **T 倍数**
-    - 物理单元的 **能量 E、周期 T** 由参数即时算出，**不写入 JSON**；运行 CSV 含 `theta_*_deg` / `x_*_m`、`arc_half_width_*`、`trial_score` 等（`response_mode: estimate_arc`）
+    - 物理单元的 **能量 E、周期 T** 由参数即时算出，**不写入 JSON**；运行 CSV 含 `theta_*_deg` / `x_*_m`、`abs_delta_*`、`rt_estimate_sec` 等（`response_mode: estimate_point`；区间/得分列保留但为空）
 
 文本类单元在 **运行页** 由 Markdown 转为 HTML 后展示；输出经白名单消毒，**链接仅保留 `http`/`https`**；引用、表格、图片等标签会被剥离（不建议在内容中依赖这些语法）。
 

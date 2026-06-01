@@ -3,7 +3,7 @@
  * 运行：npm run generate-stimulate
  *
  * 规则：全局能量 [1.96, 156.8] J 等分为 26 段，剔除含临界能量 Ec=2mgl 的 1 段；
- * 剩余 25 段各对应 1 个 Block，每 Block 1 个观察 Trial + 5 个正式 Trial，目标能量为段中点；
+ * 剩余 25 段各对应 1 个 Block，每 Block 1 个观察 Trial + 4 个正式 Trial，目标能量为段中点；
  * Practice 段：同区间等分 11 段、剔除含 Ec 的 1 段，10 个 Trial 各取保留段中点；
  * 每 Trial 一个 pendulumStimulus（rodLengthM=4, g=9.8）；时序随机；θ、ω 符号平衡；能量容差 1e-3 J。
  * 叠加欢迎/任务 Rest、练习说明、Block 前休息、注视点（见 stimulate/instruction-template.json）。
@@ -44,7 +44,7 @@ const ROD_LENGTH_M = 4;
 const GRAVITY = 9.8;
 const M = 1;
 const NUM_BLOCK_SEGMENTS = 26;
-const FORMAL_TRIALS_PER_BLOCK = 5;
+const FORMAL_TRIALS_PER_BLOCK = 4;
 const TRIALS_PER_BLOCK = FORMAL_TRIALS_PER_BLOCK + 1;
 const NUM_BLOCKS = 25;
 const NUM_PRACTICE_SEGMENTS = 11;
