@@ -3,18 +3,17 @@ import type { DataCollection } from "jspsych";
 /** 仅导出 physics-stimulus 试次（含练习段与正式 block） */
 export const PHYSICS_STIMULUS_TRIAL_TYPE = "physics-stimulus";
 
-/** 分析用 CSV 列顺序（摆球 + 弹簧并表，非本类型字段为空） */
+/** 分析用 CSV 列顺序（摆球点估计；仅导出下列字段） */
 export const STIMULUS_CSV_COLUMNS = [
   "subject_id",
-  "stimulus_set_index",
-  "trial_index",
-  "response_mode",
+  "unit_type",
+  "segment_kind",
   "physicsKind",
   "pendulum_E_J",
   "pendulum_T_sec",
   "pendulum_regime",
-  "stimulus_time_phases_json",
   "total_time_T",
+  "w_max_deg",
   "theta_actual_deg",
   "theta_estimated_deg",
   "delta_theta_deg",
@@ -24,27 +23,14 @@ export const STIMULUS_CSV_COLUMNS = [
   "delta_theta_rad",
   "abs_delta_theta_rad",
   "rt_estimate_sec",
-  "arc_half_width_deg",
-  "arc_span_deg",
-  "w_max_deg",
-  "interval_hit",
-  "interval_overflow_deg",
-  "arc_half_width_rad",
-  "interval_overflow_rad",
-  "rt_arc_sec",
-  "spring_E_J",
-  "spring_T_sec",
-  "x_actual_m",
-  "x_estimated_m",
-  "delta_x_m",
-  "abs_delta_x_m",
-  "interval_half_width_m",
-  "interval_span_m",
-  "w_max_m",
-  "interval_overflow_m",
-  "trial_score",
-  "score_max",
 ] as const;
+
+/** 实验结束下载文件名；无被试编号时回退通用名 */
+export function experimentDataFilename(subjectId: string): string {
+  const id = subjectId.trim();
+  if (!id) return "experiment_data.csv";
+  return `experiment_data_subject${id}.csv`;
+}
 
 function escapeCsvCell(value: unknown): string {
   if (value === null || value === undefined) return "";
@@ -62,7 +48,7 @@ function rowToCsvLine(row: Record<string, unknown>, columns: readonly string[]):
  */
 export function exportStimulusTrialsCsv(
   data: DataCollection,
-  filename = "experiment_data.csv",
+  filename = experimentDataFilename(""),
 ): void {
   const rows = data
     .filter({ trial_type: PHYSICS_STIMULUS_TRIAL_TYPE })

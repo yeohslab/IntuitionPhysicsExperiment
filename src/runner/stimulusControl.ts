@@ -1,6 +1,7 @@
 import type { JsPsych } from "jspsych";
 import { escapeHtml } from "../shared/html";
 import { labelForKey } from "../shared/keys";
+import { primeEstimateCueAudio } from "../shared/playEstimateCue";
 
 const DIV = "div";
 
@@ -23,10 +24,15 @@ export function controlTrialPrompt(key: string): string {
 }
 
 export function wireRunnerControls(jsPsych: JsPsych, root: HTMLElement): void {
+  root.addEventListener("keydown", () => {
+    primeEstimateCueAudio();
+  }, { capture: true });
+
   root.addEventListener("click", (e) => {
     const btn = (e.target as HTMLElement).closest(".jspsych-stimulus-continue");
     if (!btn || !(btn instanceof HTMLButtonElement)) return;
     e.preventDefault();
+    primeEstimateCueAudio();
     const key = btn.dataset.stimulusKey ?? " ";
     jsPsych.pluginAPI.pressKey(key);
   });

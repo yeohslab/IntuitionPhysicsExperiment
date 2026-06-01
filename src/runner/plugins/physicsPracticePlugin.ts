@@ -2,7 +2,11 @@ import type { JsPsych } from "jspsych";
 import { ParameterType } from "jspsych";
 import { analyzePendulum, pendulumThetaOscillationAt, PendulumRotationIntegrator } from "../../physics/pendulum";
 import type { PendulumParams } from "../../physics/pendulum";
-import { pendulumLayout, drawPendulumPractice } from "../../physics/render/pendulumCanvas";
+import {
+  pendulumLayout,
+  drawPendulumStimulusFrame,
+  PENDULUM_GUIDE_BLUE,
+} from "../../physics/render/pendulumCanvas";
 import { pendulumWMaxDeg } from "../../physics/pendulumArcScore";
 import type { SpringParams } from "../../physics/spring";
 import { springAnalysis, springDisplacementAt, springMotion } from "../../physics/spring";
@@ -55,10 +59,14 @@ class PhysicsPracticePlugin {
   constructor(private jsPsych: JsPsych) {}
 
   trial(display_element: HTMLElement, trial: Trial): void {
+    const trialClass =
+      trial.physicsKind === "pendulum"
+        ? "physics-trial physics-trial--stimulus physics-trial--sim"
+        : "physics-trial physics-trial--stimulus";
     display_element.innerHTML = `
-      <div class="physics-trial physics-trial--stimulus">
+      <div class="${trialClass}">
         <canvas class="physics-canvas" width="${PHYSICS_CANVAS_LOGICAL_W}" height="${PHYSICS_CANVAS_LOGICAL_H}"></canvas>
-        <p class="physics-hint muted">观看单摆运动，结束后自动继续。</p>
+        <p class="physics-hint muted">观看运动，结束后自动继续。</p>
       </div>`;
     const canvas = display_element.querySelector("canvas") as HTMLCanvasElement;
     const logicalW = canvas.width;
@@ -91,7 +99,7 @@ class PhysicsPracticePlugin {
         } else {
           theta = pendulumThetaOscillationAt(t, p, analysis);
         }
-        drawPendulumPractice(ctx, layout, theta, motionRange);
+        drawPendulumStimulusFrame(ctx, layout, theta, motionRange, 1, PENDULUM_GUIDE_BLUE);
         if (elapsed >= durationSec) {
           this.jsPsych.finishTrial({
             ...trial.unitMeta,

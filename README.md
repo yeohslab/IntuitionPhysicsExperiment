@@ -3,8 +3,8 @@
 基于 [Vite](https://vitejs.dev/) 与 [jsPsych 8](https://www.jspsych.org/) 的双界面应用：
 
 - **刺激编写**（`#/editor`）：顶层为 **顺序列表**（`sequence`），可穿插 **Block**、**Rest**、**Practice**；Block / Practice 内为 Trial → 单元，**Rest** 段只有单元、无 Trial；支持拖拽排序、导入/导出 JSON、本地草稿、「运行实验」与「开发者模式运行」（hide 时段遮挡半透明，便于调试）。
-- **实验首页**（`#/start` 或根路径）：输入**纯数字**被试编号（1–9999，存为四位前导零如 `0001`），按 **编号数值 mod 5** 从 5 份 `stimulate/stimulus-*.json` 中选一份加载并运行（构建时由 Vite 打包为资源，**不删除**仓库内 `stimulate/` 源文件）。加载后会对其中 **25 个正式 Block** 即时随机打乱顺序（欢迎/练习/任务说明 Rest 不变，Block 内 Trial 参数不变；Block 前进度 Rest 随 Block 成对移动并重编号为 1…25）；**每次点击开始**顺序可能不同。编辑页「运行实验」不打乱，保持设计顺序。
-- **运行**（`#/runner`）：从会话中读取当前设计并执行；仿真全程推进物理运动，hide 时段仅叠加不透明遮挡（被试不可见摆球/弹簧）；结束后自动下载 `experiment_data.csv`，**仅含** `physics-stimulus` 试次（摆球/弹簧**点估计**，`response_mode: estimate_point`），不含指导语等 html 试次，也不含 `unitId` / `segmentId` 等编排元数据列（详见 `src/runner/exportStimulusCsv.ts`）。
+- **实验首页**（`#/start` 或根路径）：输入**纯数字**被试编号（1–9999，存为四位前导零如 `0001`），按 **编号数值 mod 5** 从 5 份 `stimulate/stimulus-*.json` 中选一份加载并运行（首页**不打乱**）。**运行页**构建时间线时，将 **25 个正式 Block** 按**被试编号 + 刺激集索引**确定性打乱（同被试可复现；欢迎/练习/任务 Rest 与 Block 前进度 Rest 顺序、文案 1/25…25/25 **不变**）。编辑页「运行实验」使用会话中刺激集，**不打乱** Block（除非会话里仍保留被试编号与刺激集索引且从首页进入运行页）。
+- **运行**（`#/runner`）：从会话中读取当前设计并执行；仿真全程推进物理运动，hide 时段仅叠加不透明遮挡（被试不可见摆球/弹簧）；结束后自动下载 **`experiment_data_subject0001.csv`**（四位被试编号，如 `0001`；编辑页无编号试跑时为 `experiment_data.csv`）。CSV **仅含** `physics-stimulus` 摆球试次（练习与正式 block），**18 列**固定顺序：`subject_id`、`unit_type`、`segment_kind`、`physicsKind`、摆球 E/T/regime、`total_time_T`、`w_max_deg`、θ 估计/真值/误差（度与弧度）、`rt_estimate_sec`（详见 `src/runner/exportStimulusCsv.ts`）。
 
 ## 环境要求
 
@@ -77,11 +77,13 @@ npm run preview
   - `textControl`：`text`（基础 Markdown）, `key`
   - `imageDisplay`：`imageDataUrl`（PNG/JPEG/GIF/WebP 的 Base64 data URL）, `durationMs`（呈现时间，毫秒）
   - `imageControl`：`imageDataUrl`, `key`（结束按键，默认空格 `" "`）
-  - **物理直觉（摆球 / 弹簧）**（Canvas + 自定义 jsPsych 插件，详见 [TODO.md](TODO.md)）：
+  - **物理直觉（摆球 / 弹簧）**（Canvas + 自定义 jsPsych 插件，详见 [`physicsStimulusPlugin.ts`](src/runner/plugins/physicsStimulusPlugin.ts) 与 [`stimulate/README.md`](stimulate/README.md)）：
     - `pendulumDisplay`：`theta0Deg`, `omega0DegPerSec`, `rodLengthM`, `gravity`；`displayTimeT` 为显示时长的 **T 倍数**（默认 2）；全程可见、无作答
-    - `pendulumStimulus` / `springStimulus`：上述物理参 + `show1T`/`show2T`（**×T**）、`hide1T`/`hide2T`（**秒**）、`totalTimeT`（自动同步）；运行端为**点击+拖动点估计**，确认后反馈仅显示蓝色真值
+    - `pendulumStimulus`：可见 1–2T（蓝）→ 淡出 150 ms → 遮挡 **0.5 s**（黑虚线）→ 提示音 + 橙框/橙虚线点估计；反馈为橙/蓝对比杆
+    - `pendulumPractice`：与 `pendulumStimulus` 相同时序与作答；hide 时段摆杆/球半透明可见（预生成集每段首 Trial 使用）
+    - `springStimulus`：弹簧正式试次时序与绘制（hide 为秒级随机）
     - `springPractice`：`massKg`, `stiffness`, `x0M`, `v0Mps`；`displayTimeT` 为 **T 倍数**
-    - 物理单元的 **能量 E、周期 T** 由参数即时算出，**不写入 JSON**；运行 CSV 含 `theta_*_deg` / `x_*_m`、`abs_delta_*`、`rt_estimate_sec` 等（`response_mode: estimate_point`；区间/得分列保留但为空）
+    - 物理单元的 **能量 E、周期 T** 由参数即时算出，**不写入 JSON**；运行 CSV 含摆角 `theta_*`（度/弧度）、`abs_delta_theta_*`、`w_max_deg`、`rt_estimate_sec` 等（点估计 `estimate_point`）
 
 文本类单元在 **运行页** 由 Markdown 转为 HTML 后展示；输出经白名单消毒，**链接仅保留 `http`/`https`**；引用、表格、图片等标签会被剥离（不建议在内容中依赖这些语法）。
 

@@ -1,5 +1,6 @@
 import type {
   PendulumDisplayUnit,
+  PendulumPracticeUnit,
   PendulumStimulusUnit,
   SpringPracticeUnit,
   SpringStimulusUnit,
@@ -11,16 +12,21 @@ import { springAnalysis } from "../physics/spring";
 import type { SpringParams } from "../physics/spring";
 import { springWMaxM } from "../physics/springArcScore";
 import { pendulumThetaAtSimEnd, springDisplacementAtSimEnd } from "../physics/simEndState";
-import { stimulusTotalSec, stimulusTotalTimeT } from "../physics/timePhases";
+import { PENDULUM_HIDE_SEC, stimulusTotalSec, stimulusTotalTimeT } from "../physics/timePhases";
 
 function degToRad(d: number): number {
   return (d * Math.PI) / 180;
 }
 
 export function physicsReadonlyBlock(
-  u: PendulumDisplayUnit | PendulumStimulusUnit | SpringPracticeUnit | SpringStimulusUnit,
+  u:
+    | PendulumDisplayUnit
+    | PendulumStimulusUnit
+    | PendulumPracticeUnit
+    | SpringPracticeUnit
+    | SpringStimulusUnit,
 ): string {
-  if (u.type === "pendulumDisplay" || u.type === "pendulumStimulus") {
+  if (u.type === "pendulumDisplay" || u.type === "pendulumStimulus" || u.type === "pendulumPractice") {
     const p: PendulumParams = {
       theta0Rad: degToRad(u.theta0Deg),
       omega0RadPerSec: degToRad(u.omega0DegPerSec),
@@ -28,8 +34,14 @@ export function physicsReadonlyBlock(
       gravity: u.gravity,
     };
     const a = analyzePendulum(p);
-    const totalT = u.type === "pendulumStimulus" ? stimulusTotalTimeT(u, a.T) : null;
-    const totalSec = u.type === "pendulumStimulus" ? stimulusTotalSec(u, a.T) : null;
+    const totalT =
+      u.type === "pendulumStimulus" || u.type === "pendulumPractice"
+        ? stimulusTotalTimeT(u, a.T)
+        : null;
+    const totalSec =
+      u.type === "pendulumStimulus" || u.type === "pendulumPractice"
+        ? stimulusTotalSec(u, a.T)
+        : null;
     const regimeLabel =
       a.regime === "oscillation" ? "往复摆动" : a.regime === "rotation" ? "绕圈旋转" : "临界附近";
     return `
@@ -40,9 +52,12 @@ export function physicsReadonlyBlock(
         ${
           u.type === "pendulumDisplay"
             ? `<p><strong>显示时长</strong>：${(u.displayTimeT * a.T).toFixed(2)} s（${u.displayTimeT} T）</p>`
-            : `<p><strong>总时历</strong>：${(totalSec ?? 0).toFixed(2)} s（${(totalT ?? 0).toFixed(2)} T；隐藏段为秒）</p>
-        <p><strong>不确定度上限 w<sub>max</sub></strong>：${pendulumWMaxDeg(a.E, a.regime, u.rodLengthM, u.gravity).toFixed(2)}°</p>
-        <p class="muted">仿真终态 θ≈${pendulumAngleDegFromRad(pendulumThetaAtSimEnd(p, u)).toFixed(2)}°</p>`
+            : `<p><strong>总时历</strong>：${(totalSec ?? 0).toFixed(2)} s（${(totalT ?? 0).toFixed(2)} T；含淡出 ms，遮挡为秒）</p>
+        <p><strong>遮挡 hide1T</strong>：${u.hide1T.toFixed(4)} s（固定 ${PENDULUM_HIDE_SEC} s）</p>
+        <p><strong>淡出</strong>：${(u.fadeMs ?? 0).toFixed(0)} ms（不计入遮挡）</p>
+        ${u.type === "pendulumPractice" ? `<p class="muted">练习：hide 时段摆杆/球半透明可见</p>` : ""}
+        <p><strong>角度上限 w<sub>max</sub></strong>：${pendulumWMaxDeg(a.E, a.regime, u.rodLengthM, u.gravity).toFixed(2)}°</p>
+        <p><strong>仿真终态</strong> θ：${pendulumAngleDegFromRad(pendulumThetaAtSimEnd(p, u)).toFixed(2)}°</p>`
         }
       </div>`;
   }
@@ -57,9 +72,10 @@ export function physicsReadonlyBlock(
       ${
         u.type === "springPractice"
           ? `<p><strong>显示时长</strong>：${(u.displayTimeT * T).toFixed(2)} s（${u.displayTimeT} T）</p>`
-          : `<p><strong>总时历</strong>：${(totalSec ?? 0).toFixed(2)} s（${(totalT ?? 0).toFixed(2)} T；隐藏段为秒）</p>
-        <p><strong>不确定度上限 w<sub>max</sub></strong>：${springWMaxM(sp).toFixed(4)} m</p>
-        <p class="muted">仿真终态 x≈${springDisplacementAtSimEnd(sp, u).toFixed(4)} m</p>`
+          : `<p><strong>总时历</strong>：${(totalSec ?? 0).toFixed(2)} s（${(totalT ?? 0).toFixed(2)} T；含淡出 ms，遮挡为秒）</p>
+        <p><strong>淡出</strong>：${(u.fadeMs ?? 0).toFixed(0)} ms（不计入遮挡）</p>
+        <p><strong>角度上限 w<sub>max</sub></strong>：${springWMaxM(sp).toFixed(4)} m</p>
+        <p><strong>仿真终态</strong> x：${springDisplacementAtSimEnd(sp, u).toFixed(4)} m</p>`
       }
     </div>`;
 }
@@ -67,6 +83,7 @@ export function physicsReadonlyBlock(
 export type PhysicsEditableUnit =
   | PendulumDisplayUnit
   | PendulumStimulusUnit
+  | PendulumPracticeUnit
   | SpringPracticeUnit
   | SpringStimulusUnit;
 

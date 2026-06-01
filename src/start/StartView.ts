@@ -1,5 +1,4 @@
 import { cloneStimulusSet, STIMULUS_SETS } from "../stimulate";
-import { shuffleFormalBlocks } from "../stimulate/shuffleFormalBlocks";
 import {
   normalizeSubjectId,
   stimulusIndexForNormalizedSubjectId,
@@ -12,6 +11,7 @@ import {
   SESSION_SUBJECT_ID_KEY,
   setDeveloperModeForRun,
 } from "../shared/storage";
+import { primeExperimentAudioInUserGesture } from "../shared/playEstimateCue";
 
 export function disposeStart(): void {}
 
@@ -30,7 +30,6 @@ export function mountStart(container: HTMLElement): void {
   container.innerHTML = `
     <div class="start-panel">
       <h1 class="start-panel__title">直觉物理实验</h1>
-      <p class="muted start-panel__intro">点击下方按钮开始；须输入<strong>纯数字被试编号</strong>（${SUBJECT_ID_NUM_MIN}–${SUBJECT_ID_NUM_MAX}，四位前导零如 0001）。系统按<strong>编号 ÷ 5 的余数</strong>在 5 份预置刺激集中分配，同一数值编号始终同一份。</p>
       <div class="start-panel__actions">
         <button type="button" class="btn btn-primary btn-lg" id="btn-start-exp">开始实验</button>
         <a class="btn btn-secondary btn-lg" href="#/editor">刺激编写</a>
@@ -40,9 +39,7 @@ export function mountStart(container: HTMLElement): void {
     <dialog class="start-dialog" id="dialog-subject">
       <form class="start-dialog__form" id="form-subject">
         <h2>输入被试编号</h2>
-        <p class="muted">请输入<strong>纯数字</strong>（${SUBJECT_ID_NUM_MIN}–${SUBJECT_ID_NUM_MAX}）。提交后存为<strong>四位前导零</strong>（如 1 → 0001，12 → 0012）；刺激集按<strong>编号数值 ÷ 5 的余数</strong>分配。</p>
-        <label class="start-dialog__label" for="input-subject-id">被试编号（数字）</label>
-        <input type="text" id="input-subject-id" class="start-dialog__input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="4" required placeholder="例如 0001" />
+        <input type="text" id="input-subject-id" class="start-dialog__input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="4" required placeholder="例如 0001" aria-label="被试编号" />
         <div class="start-dialog__buttons">
           <button type="submit" class="btn btn-primary" id="btn-confirm-subject">确定并开始</button>
           <button type="button" class="btn btn-ghost" id="btn-cancel-subject">取消</button>
@@ -87,20 +84,23 @@ export function mountStart(container: HTMLElement): void {
       return;
     }
 
-    try {
-      const set = shuffleFormalBlocks(cloneStimulusSet(template));
+    void (async () => {
+      try {
+        const set = cloneStimulusSet(template);
 
-      sessionStorage.setItem(SESSION_SUBJECT_ID_KEY, normalized);
-      sessionStorage.setItem(SESSION_STIMULUS_FILE_INDEX_KEY, String(idx));
-      setDeveloperModeForRun(false);
-      saveStimulusSetToSession(set);
-      dialog.close();
-      location.hash = "#/runner";
-    } catch (ex) {
-      const msg = ex instanceof Error ? ex.message : String(ex);
-      errEl.textContent = `加载失败：${escapeAttr(msg)}`;
-      errEl.hidden = false;
-      dialog.close();
-    }
+        sessionStorage.setItem(SESSION_SUBJECT_ID_KEY, normalized);
+        sessionStorage.setItem(SESSION_STIMULUS_FILE_INDEX_KEY, String(idx));
+        setDeveloperModeForRun(false);
+        saveStimulusSetToSession(set);
+        dialog.close();
+        await primeExperimentAudioInUserGesture();
+        location.hash = "#/runner";
+      } catch (ex) {
+        const msg = ex instanceof Error ? ex.message : String(ex);
+        errEl.textContent = `加载失败：${escapeAttr(msg)}`;
+        errEl.hidden = false;
+        dialog.close();
+      }
+    })();
   });
 }

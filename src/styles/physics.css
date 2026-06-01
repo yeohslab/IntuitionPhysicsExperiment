@@ -36,6 +36,12 @@
   border: 1px solid #e2e8f0;
   touch-action: none;
   cursor: crosshair;
+  transition: none;
+}
+
+.physics-canvas.physics-canvas--estimate {
+  border-color: #f97316;
+  border-width: 2px;
 }
 
 .physics-footer {

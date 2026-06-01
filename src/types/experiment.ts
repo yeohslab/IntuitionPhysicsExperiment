@@ -8,6 +8,7 @@ export type StimulusUnitType =
   | "imageControl"
   | "pendulumDisplay"
   | "pendulumStimulus"
+  | "pendulumPractice"
   | "springPractice"
   | "springStimulus";
 
@@ -70,6 +71,24 @@ export interface PendulumStimulusUnit {
   hide1T: number;
   show2T: number;
   hide2T: number;
+  /** show→hide 淡出（ms），不计入 hide1T */
+  fadeMs?: number;
+}
+
+/** 摆球练习：与摆球刺激相同时序与作答；hide 时段半透明可见 */
+export interface PendulumPracticeUnit {
+  id: string;
+  type: "pendulumPractice";
+  theta0Deg: number;
+  omega0DegPerSec: number;
+  rodLengthM: number;
+  gravity: number;
+  totalTimeT: number;
+  show1T: number;
+  hide1T: number;
+  show2T: number;
+  hide2T: number;
+  fadeMs?: number;
 }
 
 export interface SpringPracticeUnit {
@@ -96,6 +115,7 @@ export interface SpringStimulusUnit {
   hide1T: number;
   show2T: number;
   hide2T: number;
+  fadeMs?: number;
 }
 
 export type StimulusUnit =
@@ -105,6 +125,7 @@ export type StimulusUnit =
   | ImageControlUnit
   | PendulumDisplayUnit
   | PendulumStimulusUnit
+  | PendulumPracticeUnit
   | SpringPracticeUnit
   | SpringStimulusUnit;
 

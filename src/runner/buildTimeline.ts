@@ -1,4 +1,6 @@
 import HtmlKeyboardResponsePlugin from "@jspsych/plugin-html-keyboard-response";
+import { analyzePendulum } from "../physics/pendulum";
+import { springAnalysis } from "../physics/spring";
 import { withSyncedTotalTimeT } from "../physics/timePhases";
 import type { ExperimentStimulusSet, StimulusUnit, Trial } from "../types/experiment";
 import { wrapImageStimulus, wrapStimulus } from "../shared/html";
@@ -6,6 +8,7 @@ import { normalizeKeyForJsPsych } from "../shared/keys";
 import { controlTrialPrompt } from "./stimulusControl";
 import PhysicsPracticePlugin from "./plugins/physicsPracticePlugin";
 import PhysicsStimulusPlugin from "./plugins/physicsStimulusPlugin";
+import { applySubjectBlockShuffle } from "./shuffleSequence";
 
 export type UnitTrialContext = {
   segmentId: string;
@@ -68,14 +71,25 @@ function unitToTrial(
         v0Mps: unit.v0Mps,
         unitMeta: data,
       };
-    case "pendulumStimulus": {
-      const timing = withSyncedTotalTimeT({
-        totalTimeT: unit.totalTimeT,
-        show1T: unit.show1T,
-        hide1T: unit.hide1T,
-        show2T: unit.show2T,
-        hide2T: unit.hide2T,
-      });
+    case "pendulumStimulus":
+    case "pendulumPractice": {
+      const periodSec = analyzePendulum({
+        theta0Rad: (unit.theta0Deg * Math.PI) / 180,
+        omega0RadPerSec: (unit.omega0DegPerSec * Math.PI) / 180,
+        rodLengthM: unit.rodLengthM,
+        gravity: unit.gravity,
+      }).T;
+      const timing = withSyncedTotalTimeT(
+        {
+          totalTimeT: unit.totalTimeT,
+          show1T: unit.show1T,
+          hide1T: unit.hide1T,
+          show2T: unit.show2T,
+          hide2T: unit.hide2T,
+          fadeMs: unit.fadeMs,
+        },
+        periodSec,
+      );
       return {
         type: PhysicsStimulusPlugin,
         physicsKind: "pendulum",
@@ -88,22 +102,34 @@ function unitToTrial(
         hide1T: timing.hide1T,
         show2T: timing.show2T,
         hide2T: timing.hide2T,
+        fadeMs: timing.fadeMs ?? 0,
         massKg: 1,
         stiffness: 4,
         x0M: 0,
         v0Mps: 0,
         unitMeta: data,
         developerMode,
+        hideSemiVisible: unit.type === "pendulumPractice",
       };
     }
     case "springStimulus": {
-      const timing = withSyncedTotalTimeT({
-        totalTimeT: unit.totalTimeT,
-        show1T: unit.show1T,
-        hide1T: unit.hide1T,
-        show2T: unit.show2T,
-        hide2T: unit.hide2T,
-      });
+      const periodSec = springAnalysis({
+        massKg: unit.massKg,
+        stiffness: unit.stiffness,
+        x0M: unit.x0M,
+        v0Mps: unit.v0Mps,
+      }).T;
+      const timing = withSyncedTotalTimeT(
+        {
+          totalTimeT: unit.totalTimeT,
+          show1T: unit.show1T,
+          hide1T: unit.hide1T,
+          show2T: unit.show2T,
+          hide2T: unit.hide2T,
+          fadeMs: unit.fadeMs,
+        },
+        periodSec,
+      );
       return {
         type: PhysicsStimulusPlugin,
         physicsKind: "spring",
@@ -116,6 +142,7 @@ function unitToTrial(
         hide1T: timing.hide1T,
         show2T: timing.show2T,
         hide2T: timing.hide2T,
+        fadeMs: timing.fadeMs ?? 0,
         massKg: unit.massKg,
         stiffness: unit.stiffness,
         x0M: unit.x0M,
@@ -182,11 +209,21 @@ function buildSegmentWithTrialsTimeline(
 
 export function buildTimeline(
   set: ExperimentStimulusSet,
-  options?: { developerMode?: boolean },
+  options?: {
+    developerMode?: boolean;
+    subjectId?: string;
+    stimulusSetIndex?: number;
+  },
 ): Record<string, unknown>[] {
   const developerMode = options?.developerMode ?? false;
+  let sequence = set.sequence;
+  const subjectId = options?.subjectId ?? "";
+  const idx = options?.stimulusSetIndex;
+  if (subjectId && idx !== undefined && Number.isFinite(idx)) {
+    sequence = applySubjectBlockShuffle(set, subjectId, idx).sequence;
+  }
   const timeline: Record<string, unknown>[] = [];
-  for (const item of set.sequence) {
+  for (const item of sequence) {
     if (item.kind === "block") {
       timeline.push(buildSegmentWithTrialsTimeline(item.id, "block", item.children, developerMode));
     } else if (item.kind === "practice") {

@@ -13,8 +13,12 @@ import { sanitizeImageDataUrl } from "./html";
 import { analyzePendulum, pendulumRegime, pendulumCriticalEnergy, pendulumEnergy } from "../physics/pendulum";
 import type { PendulumParams } from "../physics/pendulum";
 import { springAnalysis } from "../physics/spring";
-import { withSyncedTotalTimeT } from "../physics/timePhases";
-import type { PendulumStimulusUnit, SpringStimulusUnit } from "../types/experiment";
+import { STIMULUS_FADE_MS, withSyncedTotalTimeT } from "../physics/timePhases";
+import type {
+  PendulumPracticeUnit,
+  PendulumStimulusUnit,
+  SpringStimulusUnit,
+} from "../types/experiment";
 
 export const SESSION_STIMULUS_KEY = "jspsych-stimulus-set-for-run";
 export const SESSION_SUBJECT_ID_KEY = "jspsych-subject-id";
@@ -36,8 +40,10 @@ function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null && !Array.isArray(x);
 }
 
-function resyncStimulusTiming(unit: PendulumStimulusUnit | SpringStimulusUnit): void {
-  if (unit.type === "pendulumStimulus") {
+function resyncStimulusTiming(
+  unit: PendulumStimulusUnit | PendulumPracticeUnit | SpringStimulusUnit,
+): void {
+  if (unit.type === "pendulumStimulus" || unit.type === "pendulumPractice") {
     const T = analyzePendulum({
       theta0Rad: (unit.theta0Deg * Math.PI) / 180,
       omega0RadPerSec: (unit.omega0DegPerSec * Math.PI) / 180,
@@ -95,7 +101,7 @@ function parseUnit(raw: unknown): StimulusUnit | null {
     const key = typeof raw.key === "string" ? raw.key : " ";
     return { id, type: "imageControl", imageDataUrl, key };
   }
-  if (type === "pendulumDisplay" || type === "pendulumPractice") {
+  if (type === "pendulumDisplay") {
     return {
       id,
       type: "pendulumDisplay",
@@ -106,6 +112,39 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       displayTimeT: readFloat(raw, "displayTimeT", 2),
     };
   }
+  if (type === "pendulumPractice") {
+    const hasDisplayOnly =
+      raw.displayTimeT !== undefined &&
+      raw.show1T === undefined &&
+      raw.hide1T === undefined;
+    if (hasDisplayOnly) {
+      return {
+        id,
+        type: "pendulumDisplay",
+        theta0Deg: readFloat(raw, "theta0Deg", 0),
+        omega0DegPerSec: readFloat(raw, "omega0DegPerSec", 0),
+        rodLengthM: readFloat(raw, "rodLengthM", 4),
+        gravity: readFloat(raw, "gravity", 9.8),
+        displayTimeT: readFloat(raw, "displayTimeT", 2),
+      };
+    }
+    const unit = withSyncedTotalTimeT({
+      id,
+      type: "pendulumPractice" as const,
+      theta0Deg: readFloat(raw, "theta0Deg", 45),
+      omega0DegPerSec: readFloat(raw, "omega0DegPerSec", 0),
+      rodLengthM: readFloat(raw, "rodLengthM", 4),
+      gravity: readFloat(raw, "gravity", 9.8),
+      show1T: readFloat(raw, "show1T", 1),
+      hide1T: readFloat(raw, "hide1T", 1),
+      show2T: readFloat(raw, "show2T", 0),
+      hide2T: readFloat(raw, "hide2T", 0),
+      fadeMs: readFloat(raw, "fadeMs", STIMULUS_FADE_MS),
+      totalTimeT: readFloat(raw, "totalTimeT", 0),
+    });
+    resyncStimulusTiming(unit);
+    return unit;
+  }
   if (type === "pendulumStimulus") {
     const unit = withSyncedTotalTimeT({
       id,
@@ -115,9 +154,10 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       rodLengthM: readFloat(raw, "rodLengthM", 4),
       gravity: readFloat(raw, "gravity", 9.8),
       show1T: readFloat(raw, "show1T", 1),
-      hide1T: readFloat(raw, "hide1T", 0.75),
-      show2T: readFloat(raw, "show2T", 1),
-      hide2T: readFloat(raw, "hide2T", 0.75),
+      hide1T: readFloat(raw, "hide1T", 1),
+      show2T: readFloat(raw, "show2T", 0),
+      hide2T: readFloat(raw, "hide2T", 0),
+      fadeMs: readFloat(raw, "fadeMs", STIMULUS_FADE_MS),
       totalTimeT: readFloat(raw, "totalTimeT", 0),
     });
     resyncStimulusTiming(unit);
@@ -143,9 +183,10 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       x0M: readFloat(raw, "x0M", 0.5),
       v0Mps: readFloat(raw, "v0Mps", 0),
       show1T: readFloat(raw, "show1T", 1),
-      hide1T: readFloat(raw, "hide1T", 0.75),
-      show2T: readFloat(raw, "show2T", 1),
-      hide2T: readFloat(raw, "hide2T", 0.75),
+      hide1T: readFloat(raw, "hide1T", 1),
+      show2T: readFloat(raw, "show2T", 0),
+      hide2T: readFloat(raw, "hide2T", 0),
+      fadeMs: readFloat(raw, "fadeMs", STIMULUS_FADE_MS),
       totalTimeT: readFloat(raw, "totalTimeT", 0),
     });
     resyncStimulusTiming(unit);
@@ -355,7 +396,7 @@ function pushUnitWarnings(warnings: string[], loc: string, u: StimulusUnit): voi
       warnings.push(`${loc}：请上传有效图片（PNG / JPEG / GIF / WebP）。`);
     }
   }
-  if (u.type === "pendulumDisplay" || u.type === "pendulumStimulus") {
+  if (u.type === "pendulumDisplay" || u.type === "pendulumStimulus" || u.type === "pendulumPractice") {
     if (u.rodLengthM <= 0 || u.gravity <= 0) {
       warnings.push(`${loc}：杆长与重力加速度须为正值。`);
     }
@@ -385,12 +426,16 @@ function pushUnitWarnings(warnings: string[], loc: string, u: StimulusUnit): voi
   if (u.type === "springPractice" && u.displayTimeT <= 0) {
     warnings.push(`${loc}：显示时长（T 倍数）应大于 0。`);
   }
-  if (u.type === "pendulumStimulus" || u.type === "springStimulus") {
-    if (u.show1T <= 0 || u.show2T <= 0) {
+  if (u.type === "pendulumStimulus" || u.type === "pendulumPractice" || u.type === "springStimulus") {
+    const legacy = u.show2T > 0 || u.hide2T > 0;
+    if (u.show1T <= 0 || (legacy && u.show2T <= 0)) {
       warnings.push(`${loc}：显示段（×T）应大于 0。`);
     }
-    if (u.hide1T <= 0 || u.hide2T <= 0) {
+    if (u.hide1T <= 0 || (legacy && u.hide2T <= 0)) {
       warnings.push(`${loc}：隐藏段（秒）应大于 0。`);
+    }
+    if (!legacy && u.fadeMs !== undefined && (u.fadeMs < 0 || u.fadeMs > 2000)) {
+      warnings.push(`${loc}：淡出时长（ms）异常。`);
     }
   }
 }

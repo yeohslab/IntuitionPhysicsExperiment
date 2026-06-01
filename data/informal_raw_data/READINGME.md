@@ -1,8 +1,12 @@
 # informal_raw_data 实验 CSV 字段说明
 
-本文档说明 `*_experiment_data.csv`（如 `0002_experiment_data.csv`）中**关键列**的含义与计算公式。数据由运行页结束时导出（[`src/runner/exportStimulusCsv.ts`](../../src/runner/exportStimulusCsv.ts)），仅包含 **摆球/弹簧刺激试次**（`trial_type = physics-stimulus`）。
+> **当前导出（运行页）**：文件名 **`experiment_data_subjectXXXX.csv`**（如 `experiment_data_subject0002.csv`），**18 列**白名单，定义见 [`src/runner/exportStimulusCsv.ts`](../../src/runner/exportStimulusCsv.ts) 的 `STIMULUS_CSV_COLUMNS`。
+>
+> **本目录 informal 文件**：为改版**之前**采集的**宽表**（如 `0002_experiment_data.csv`，含 `block_shuffle_seed`、`stimulus_time_phases_json`、arc/得分列等），与当前导出格式不同；下文部分字段仅适用于这些历史文件。
 
-> **注意**：本目录下的 informal 文件为改版**之前**采集（`estimate_arc`，含不确定度滑块与单试次得分）。当前运行版本为 **`estimate_point`**（点估计一步确认，反馈仅蓝色真值）。
+本文档说明历史 informal CSV 与当前摆球点估计字段的含义。数据仅包含 **摆球/弹簧刺激试次**（`trial_type = physics-stimulus`）。
+
+> **注意**：informal 为 `estimate_arc` 时期数据；当前运行版本为 **`estimate_point`**（点估计一步确认，反馈仅蓝色真值）。
 
 ## 坐标与符号约定（摆球）
 
@@ -47,11 +51,11 @@
 | `delta_x_m` / `abs_delta_x_m` | 差值与绝对误差 |
 | `rt_estimate_sec` | 作答 RT（s） |
 
-## 旧版 estimate_arc 列（当前试次为空）
+## 旧版 estimate_arc 列（仅历史 informal 宽表）
 
-`arc_half_width_deg`、`interval_hit`、`trial_score`、`rt_arc_sec`、`interval_half_width_m` 等列在 CSV 表头中保留，**estimate_point** 试次不写入（留空）。历史 informal 文件可能仍有值。
+`arc_half_width_deg`、`interval_hit`、`trial_score`、`rt_arc_sec` 等出现在本目录旧文件中；**当前导出不再包含这些列**。
 
 ## 参考源码
 
-- 列定义：[`src/runner/exportStimulusCsv.ts`](../../src/runner/exportStimulusCsv.ts)
+- 当前列定义：[`src/runner/exportStimulusCsv.ts`](../../src/runner/exportStimulusCsv.ts) → `STIMULUS_CSV_COLUMNS`（18 列）
 - 运行插件：[`src/runner/plugins/physicsStimulusPlugin.ts`](../../src/runner/plugins/physicsStimulusPlugin.ts)

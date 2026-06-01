@@ -3,7 +3,8 @@ import "jspsych/css/jspsych.css";
 import "../styles/physics.css";
 import type { ExperimentStimulusSet } from "../types/experiment";
 import { buildTimeline } from "./buildTimeline";
-import { exportStimulusTrialsCsv } from "./exportStimulusCsv";
+import { experimentDataFilename, exportStimulusTrialsCsv } from "./exportStimulusCsv";
+import { applySubjectBlockShuffle, blockShuffleSeed } from "./shuffleSequence";
 import { cancelStaleKeyboardListeners, wireRunnerControls } from "./stimulusControl";
 import {
   isDeveloperModeRun,
@@ -89,7 +90,8 @@ function runExperiment(container: HTMLElement, set: ExperimentStimulusSet): void
     on_finish: () => {
       activeJsPsych = null;
       try {
-        exportStimulusTrialsCsv(jsPsych.data.get(), "experiment_data.csv");
+        const subjectId = sessionStorage.getItem(SESSION_SUBJECT_ID_KEY) ?? "";
+        exportStimulusTrialsCsv(jsPsych.data.get(), experimentDataFilename(subjectId));
       } catch (e) {
         console.error(e);
       }
@@ -103,11 +105,24 @@ function runExperiment(container: HTMLElement, set: ExperimentStimulusSet): void
   const subjectId = sessionStorage.getItem(SESSION_SUBJECT_ID_KEY) ?? "";
   const idxRaw = sessionStorage.getItem(SESSION_STIMULUS_FILE_INDEX_KEY);
   const stimulusSetIndex = idxRaw !== null && idxRaw !== "" ? Number(idxRaw) : NaN;
-  jsPsych.data.addProperties({
+  const runProps: Record<string, unknown> = {
     subject_id: subjectId,
     stimulus_set_index: Number.isFinite(stimulusSetIndex) ? stimulusSetIndex : null,
-  });
+  };
+  if (subjectId && Number.isFinite(stimulusSetIndex)) {
+    const seed = blockShuffleSeed(subjectId, stimulusSetIndex);
+    const shuffled = applySubjectBlockShuffle(set, subjectId, stimulusSetIndex);
+    runProps.block_shuffle_seed = seed;
+    runProps.block_order_ids = JSON.stringify(
+      shuffled.sequence.filter((x) => x.kind === "block").map((x) => x.id),
+    );
+  }
+  jsPsych.data.addProperties(runProps);
   wireRunnerControls(jsPsych, target);
-  const timeline = buildTimeline(set, { developerMode });
+  const timeline = buildTimeline(set, {
+    developerMode,
+    subjectId,
+    stimulusSetIndex: Number.isFinite(stimulusSetIndex) ? stimulusSetIndex : undefined,
+  });
   void jsPsych.run(timeline as Parameters<JsPsych["run"]>[0]);
 }

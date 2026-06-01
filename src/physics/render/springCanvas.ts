@@ -141,24 +141,68 @@ function springLengthPx(layout: SpringLayout, xMeters: number): number {
   return layout.restSpringLenPx + xMeters * layout.pixelsPerMeter;
 }
 
-/** 仿真：按物理位移绘制（不额外钳制，|x|≤A 由运动保证） */
-export function drawSpringPractice(
+/** 仿真底图：清屏 + 墙 + 虚线轨道 + 平衡点 */
+export function drawSpringSimBackground(ctx: CanvasRenderingContext2D, layout: SpringLayout): void {
+  const { anchorY } = layout;
+  const { start: lineStart, end: lineEnd } = oscillationLineSpan(layout);
+  const eqX = springEquilibriumPx(layout);
+  ctx.save();
+  clearCanvas(ctx, layout);
+  drawWall(ctx, layout);
+  ctx.strokeStyle = "#94a3b8";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 6]);
+  ctx.beginPath();
+  ctx.moveTo(lineStart, anchorY);
+  ctx.lineTo(lineEnd, anchorY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#cbd5e1";
+  ctx.beginPath();
+  ctx.arc(eqX, anchorY, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/** 弹簧 + 物块（不清屏） */
+export function drawSpringDynamics(
   ctx: CanvasRenderingContext2D,
   layout: SpringLayout,
   xMeters: number,
+  alpha = 1,
 ): void {
   const { anchorX, anchorY, ballRadius } = layout;
   const ballX = ballCenterX(layout, xMeters);
   const springLen = springLengthPx(layout, xMeters);
   const turns = Math.max(8, Math.round(12 + springLen / 28));
   ctx.save();
-  clearCanvas(ctx, layout);
-  drawWall(ctx, layout);
+  ctx.globalAlpha = alpha;
   ctx.strokeStyle = "#64748b";
   ctx.lineWidth = 2;
   drawZigzagSpring(ctx, anchorX, anchorY, ballX, anchorY, turns, 10);
   drawSpringBall(ctx, ballX, anchorY, "#0ea5e9", "#0369a1", ballRadius);
   ctx.restore();
+}
+
+/** 仿真：按物理位移绘制（不额外钳制，|x|≤A 由运动保证） */
+export function drawSpringPractice(
+  ctx: CanvasRenderingContext2D,
+  layout: SpringLayout,
+  xMeters: number,
+): void {
+  drawSpringSimBackground(ctx, layout);
+  drawSpringDynamics(ctx, layout, xMeters, 1);
+}
+
+/** 正式试次仿真帧 */
+export function drawSpringStimulusFrame(
+  ctx: CanvasRenderingContext2D,
+  layout: SpringLayout,
+  xMeters: number,
+  dynamicsAlpha: number,
+): void {
+  drawSpringSimBackground(ctx, layout);
+  if (dynamicsAlpha > 0) drawSpringDynamics(ctx, layout, xMeters, dynamicsAlpha);
 }
 
 /** hide 时段叠加于运动画面之上的遮挡层 */
@@ -274,16 +318,15 @@ export function springDisplacementFromLogicalX(layout: SpringLayout, logicalX: n
   return clampSpringXMeters(layout, raw);
 }
 
-/** 反馈：轨道引导 + 橙色估计物块 + 蓝色真实物块 */
-export function drawSpringFeedbackTruth(
+function drawSpringRodAt(
   ctx: CanvasRenderingContext2D,
   layout: SpringLayout,
-  xEstM: number,
-  xActualM: number,
+  xM: number,
+  fill: string,
+  stroke: string,
 ): void {
   const { anchorX, anchorY, ballRadius } = layout;
-  drawSpringEstimate(ctx, layout, xEstM);
-  const xClamped = clampSpringXMeters(layout, xActualM);
+  const xClamped = clampSpringXMeters(layout, xM);
   const ballX = ballCenterX(layout, xClamped);
   const springLen = springLengthPx(layout, xClamped);
   const turns = Math.max(8, Math.round(12 + springLen / 28));
@@ -291,6 +334,18 @@ export function drawSpringFeedbackTruth(
   ctx.strokeStyle = "#64748b";
   ctx.lineWidth = 2;
   drawZigzagSpring(ctx, anchorX, anchorY, ballX, anchorY, turns, 10);
-  drawSpringBall(ctx, ballX, anchorY, "#2563eb", "#1d4ed8", ballRadius);
+  drawSpringBall(ctx, ballX, anchorY, fill, stroke, ballRadius);
   ctx.restore();
+}
+
+/** 反馈：轨道引导 + 橙色被试选择 + 蓝色真实物块 */
+export function drawSpringFeedbackTruth(
+  ctx: CanvasRenderingContext2D,
+  layout: SpringLayout,
+  xEstM: number,
+  xActualM: number,
+): void {
+  drawSpringEstimateGuide(ctx, layout);
+  drawSpringRodAt(ctx, layout, xEstM, "#f97316", "#c2410c");
+  drawSpringRodAt(ctx, layout, xActualM, "#2563eb", "#1d4ed8");
 }

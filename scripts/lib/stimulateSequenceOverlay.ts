@@ -7,6 +7,7 @@ import {
   type BlockSegment,
   type ExperimentStimulusSet,
   type PendulumDisplayUnit,
+  type PendulumPracticeUnit,
   type PendulumStimulusUnit,
   type PracticeSegment,
   type RestSegment,
@@ -34,7 +35,7 @@ const DISPLAY_TIME_T = 2;
 
 export type InstructionTemplate = {
   welcomeRest: { type: "textControl"; text: string; key: string };
-  taskRest: { type: "textControl"; text: string; key: string };
+  structureRest: { type: "textControl"; text: string; key: string };
   blockObservationIntro: { type: "textControl"; text: string; key: string };
   blockObservationOutro: { type: "textControl"; text: string; key: string };
   practiceLabels: string[];
@@ -77,15 +78,7 @@ export function makeWelcomeRest(tpl: InstructionTemplate): RestSegment {
   return {
     kind: "rest",
     id: randomUUID(),
-    units: [makeTextControl(tpl.welcomeRest)],
-  };
-}
-
-export function makeTaskRest(tpl: InstructionTemplate): RestSegment {
-  return {
-    kind: "rest",
-    id: randomUUID(),
-    units: [makeTextControl(tpl.taskRest)],
+    units: [makeTextControl(tpl.welcomeRest), makeTextControl(tpl.structureRest)],
   };
 }
 
@@ -131,24 +124,34 @@ function isFixation(u: StimulusUnit): boolean {
   return u.type === "textDisplay" && u.text === FIXATION_TEXT;
 }
 
-function isFormalPendulumTrial(trial: Trial): boolean {
-  return trial.units.some((u) => u.type === "pendulumStimulus");
+function isPendulumTimedTrial(trial: Trial): boolean {
+  return trial.units.some(
+    (u) => u.type === "pendulumStimulus" || u.type === "pendulumPractice",
+  );
+}
+
+function isPendulumTimedUnit(u: StimulusUnit): u is PendulumStimulusUnit | PendulumPracticeUnit {
+  return u.type === "pendulumStimulus" || u.type === "pendulumPractice";
 }
 
 function pendulumUnits(units: StimulusUnit[]): StimulusUnit[] {
-  return units.filter((u) => u.type === "pendulumStimulus");
+  return units.filter(isPendulumTimedUnit);
+}
+
+function firstPendulumTimedIndex(units: StimulusUnit[]): number {
+  return units.findIndex(isPendulumTimedUnit);
 }
 
 function hasFixationBeforePendulum(units: StimulusUnit[]): boolean {
-  const idx = units.findIndex((u) => u.type === "pendulumStimulus");
+  const idx = firstPendulumTimedIndex(units);
   if (idx <= 0) return false;
   return isFixation(units[idx - 1]!);
 }
 
-/** 在首个 pendulumStimulus 前插入注视点（若尚未存在） */
+/** 在首个摆球刺激/练习单元前插入注视点（若尚未存在） */
 export function ensureFixation(trial: Trial, tpl: InstructionTemplate): void {
   const units = trial.units;
-  const pIdx = units.findIndex((u) => u.type === "pendulumStimulus");
+  const pIdx = firstPendulumTimedIndex(units);
   if (pIdx < 0) return;
   if (hasFixationBeforePendulum(units)) return;
   trial.units = [...units.slice(0, pIdx), makeFixation(tpl), ...units.slice(pIdx)];
@@ -183,6 +186,16 @@ export function energyFromPendulumStimulus(u: PendulumStimulusUnit): number {
   return pendulumEnergy(p);
 }
 
+export function energyFromPendulumPractice(u: PendulumPracticeUnit): number {
+  const p: PendulumParams = {
+    theta0Rad: (u.theta0Deg * Math.PI) / 180,
+    omega0RadPerSec: (u.omega0DegPerSec * Math.PI) / 180,
+    rodLengthM: u.rodLengthM,
+    gravity: u.gravity,
+  };
+  return pendulumEnergy(p);
+}
+
 export function energyFromPendulumDisplay(u: PendulumDisplayUnit): number {
   const p: PendulumParams = {
     theta0Rad: (u.theta0Deg * Math.PI) / 180,
@@ -193,18 +206,6 @@ export function energyFromPendulumDisplay(u: PendulumDisplayUnit): number {
   return pendulumEnergy(p);
 }
 
-function prependBlockObservationTrials(blocks: BlockSegment[], tpl: InstructionTemplate): void {
-  for (const block of blocks) {
-    const formal = block.children.find((t) => isFormalPendulumTrial(t));
-    const stim = formal?.units.find((u): u is PendulumStimulusUnit => u.type === "pendulumStimulus");
-    if (!stim) {
-      throw new Error(`Block ${block.id} 缺少正式 pendulumStimulus，无法生成观察 Trial`);
-    }
-    const E = energyFromPendulumStimulus(stim);
-    block.children.unshift(buildBlockObservationTrial(E, tpl));
-  }
-}
-
 export function applyTrialOverlays(
   practice: PracticeSegment,
   blocks: BlockSegment[],
@@ -213,12 +214,11 @@ export function applyTrialOverlays(
   applyPracticeLabels(practice, tpl.practiceLabels, tpl);
   for (const block of blocks) {
     for (const trial of block.children) {
-      if (!isFormalPendulumTrial(trial)) continue;
+      if (!isPendulumTimedTrial(trial)) continue;
       stripOverlayUnits(trial);
       ensureFixation(trial, tpl);
     }
   }
-  prependBlockObservationTrials(blocks, tpl);
 }
 
 export type PhysicsOnlySet = {
@@ -249,11 +249,7 @@ export function assembleFullSequence(
 
   applyTrialOverlays(practice, blocks, tpl);
 
-  const sequence: TopLevelSequenceItem[] = [
-    makeWelcomeRest(tpl),
-    practice,
-    makeTaskRest(tpl),
-  ];
+  const sequence: TopLevelSequenceItem[] = [makeWelcomeRest(tpl), practice];
 
   const total = blocks.length;
   blocks.forEach((block, i) => {
@@ -283,7 +279,7 @@ export function extractPhysicsOnly(set: ExperimentStimulusSet): PhysicsOnlySet |
     kind: "block" as const,
     id: b.id,
     children: b.children
-      .filter((t) => isFormalPendulumTrial(t))
+      .filter((t) => isPendulumTimedTrial(t))
       .map((t) => ({
         id: t.id,
         units: pendulumUnits(t.units),

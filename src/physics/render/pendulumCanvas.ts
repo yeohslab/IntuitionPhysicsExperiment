@@ -1,4 +1,5 @@
 import type { PendulumRegime } from "../pendulum";
+import type { StimulusVisibilityKind } from "../timePhases";
 import { PHYSICS_HIDDEN_FILL, PHYSICS_OCCLUSION_FILL_DEVELOPER } from "./canvasLayout";
 
 /** 仿真阶段：摆球可达角度范围示意 */
@@ -7,7 +8,15 @@ export type PendulumMotionRange = {
   wMaxDeg: number;
 };
 
-const MOTION_RANGE_STROKE = "#94a3b8";
+export const PENDULUM_GUIDE_BLUE = "#2563eb";
+export const PENDULUM_GUIDE_BLACK = "#0f172a";
+export const PENDULUM_GUIDE_ORANGE = "#f97316";
+export const PENDULUM_GUIDE_GREY = "#94a3b8";
+
+const PENDULUM_SIM_ROD = "#2563eb";
+const PENDULUM_SIM_BOB_FILL = "#2563eb";
+const PENDULUM_SIM_BOB_STROKE = "#1d4ed8";
+
 const MOTION_RANGE_DASH: [number, number] = [8, 6];
 
 /** 摆球 Canvas：θ=0 向下，顺时针为正（与 TODO 屏幕映射一致） */
@@ -18,6 +27,37 @@ export interface PendulumLayout {
   anchorX: number;
   anchorY: number;
   rodPx: number;
+}
+
+function parseHexColor(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3 ? h.replace(/(.)/g, "$1$1") : h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function toHexByte(v: number): string {
+  return Math.round(Math.max(0, Math.min(255, v)))
+    .toString(16)
+    .padStart(2, "0");
+}
+
+/** 轨迹虚线颜色插值（fade：蓝 → 黑） */
+export function lerpGuideColor(fromHex: string, toHex: string, t: number): string {
+  const u = Math.max(0, Math.min(1, t));
+  const [r0, g0, b0] = parseHexColor(fromHex);
+  const [r1, g1, b1] = parseHexColor(toHex);
+  return `#${toHexByte(r0 + (r1 - r0) * u)}${toHexByte(g0 + (g1 - g0) * u)}${toHexByte(b0 + (b1 - b0) * u)}`;
+}
+
+export function pendulumGuideStrokeForSimVisibility(vis: {
+  kind: StimulusVisibilityKind;
+  alpha: number;
+}): string {
+  if (vis.kind === "show") return PENDULUM_GUIDE_BLUE;
+  if (vis.kind === "fadeOut") {
+    return lerpGuideColor(PENDULUM_GUIDE_BLUE, PENDULUM_GUIDE_BLACK, 1 - vis.alpha);
+  }
+  return PENDULUM_GUIDE_BLACK;
 }
 
 export function pendulumLayout(canvasW: number, canvasH: number): PendulumLayout {
@@ -64,31 +104,54 @@ export function pendulumAngleFromPointer(
   return Math.atan2(dx, dy);
 }
 
-/** 摆杆 + 摆球（不清屏） */
+function drawPendulumAnchor(ctx: CanvasRenderingContext2D, layout: PendulumLayout): void {
+  const { anchorX, anchorY } = layout;
+  ctx.fillStyle = "#64748b";
+  ctx.beginPath();
+  ctx.arc(anchorX, anchorY, 5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** 摆杆 + 摆球（不清屏；默认含悬挂点；仿真蓝色） */
 export function drawPendulumRodAndBob(
   ctx: CanvasRenderingContext2D,
   layout: PendulumLayout,
   thetaRad: number,
+  alpha = 1,
+  includeAnchor = true,
 ): void {
   const { anchorX, anchorY } = layout;
   const bob = pendulumBobPosition(layout, thetaRad);
   ctx.save();
-  ctx.strokeStyle = "#334155";
-  ctx.fillStyle = "#64748b";
+  ctx.globalAlpha = alpha;
+  if (includeAnchor) drawPendulumAnchor(ctx, layout);
+  ctx.strokeStyle = PENDULUM_SIM_ROD;
   ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(anchorX, anchorY, 5, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(anchorX, anchorY);
   ctx.lineTo(bob.x, bob.y);
   ctx.stroke();
-  ctx.fillStyle = "#0ea5e9";
+  ctx.fillStyle = PENDULUM_SIM_BOB_FILL;
   ctx.beginPath();
   ctx.arc(bob.x, bob.y, 12, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = "#0369a1";
+  ctx.strokeStyle = PENDULUM_SIM_BOB_STROKE;
   ctx.stroke();
+  ctx.restore();
+}
+
+/** 仿真底图：清屏 + 角度范围 + 悬挂点 */
+export function drawPendulumSimBackground(
+  ctx: CanvasRenderingContext2D,
+  layout: PendulumLayout,
+  motionRange: PendulumMotionRange | undefined,
+  guideStrokeColor: string,
+): void {
+  ctx.save();
+  clearCanvas(ctx, layout);
+  if (motionRange) drawPendulumMotionRangeGuide(ctx, layout, motionRange, guideStrokeColor);
+  drawPendulumAnchor(ctx, layout);
   ctx.restore();
 }
 
@@ -97,13 +160,14 @@ export function drawPendulumMotionRangeGuide(
   ctx: CanvasRenderingContext2D,
   layout: PendulumLayout,
   range: PendulumMotionRange,
+  strokeColor: string,
 ): void {
   const { anchorX, anchorY, rodPx } = layout;
   const { regime, wMaxDeg } = range;
   if (wMaxDeg <= 0) return;
 
   ctx.save();
-  ctx.strokeStyle = MOTION_RANGE_STROKE;
+  ctx.strokeStyle = strokeColor;
   ctx.lineWidth = 2;
   ctx.setLineDash(MOTION_RANGE_DASH);
 
@@ -131,17 +195,43 @@ export function drawPendulumMotionRangeGuide(
   ctx.restore();
 }
 
+function drawPendulumFallbackCircleGuide(
+  ctx: CanvasRenderingContext2D,
+  layout: PendulumLayout,
+  strokeColor: string,
+): void {
+  const { anchorX, anchorY, rodPx } = layout;
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 2;
+  ctx.setLineDash(MOTION_RANGE_DASH);
+  ctx.beginPath();
+  ctx.arc(anchorX, anchorY, rodPx, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
 export function drawPendulumPractice(
   ctx: CanvasRenderingContext2D,
   layout: PendulumLayout,
   thetaRad: number,
   motionRange?: PendulumMotionRange,
 ): void {
-  ctx.save();
-  clearCanvas(ctx, layout);
-  if (motionRange) drawPendulumMotionRangeGuide(ctx, layout, motionRange);
-  drawPendulumRodAndBob(ctx, layout, thetaRad);
-  ctx.restore();
+  drawPendulumStimulusFrame(ctx, layout, thetaRad, motionRange, 1, PENDULUM_GUIDE_BLUE);
+}
+
+/** 正式试次仿真帧：参照系常显；动力学按 alpha 绘制 */
+export function drawPendulumStimulusFrame(
+  ctx: CanvasRenderingContext2D,
+  layout: PendulumLayout,
+  thetaRad: number,
+  motionRange: PendulumMotionRange | undefined,
+  dynamicsAlpha: number,
+  guideStrokeColor: string,
+): void {
+  drawPendulumSimBackground(ctx, layout, motionRange, guideStrokeColor);
+  if (dynamicsAlpha > 0) {
+    drawPendulumRodAndBob(ctx, layout, thetaRad, dynamicsAlpha, false);
+  }
 }
 
 export function drawPendulumStimulusVisible(
@@ -149,8 +239,10 @@ export function drawPendulumStimulusVisible(
   layout: PendulumLayout,
   thetaRad: number,
   motionRange?: PendulumMotionRange,
+  dynamicsAlpha = 1,
+  guideStrokeColor = PENDULUM_GUIDE_BLUE,
 ): void {
-  drawPendulumPractice(ctx, layout, thetaRad, motionRange);
+  drawPendulumStimulusFrame(ctx, layout, thetaRad, motionRange, dynamicsAlpha, guideStrokeColor);
 }
 
 /** hide 时段叠加于运动画面之上的遮挡层 */
@@ -170,20 +262,15 @@ export function drawPendulumEstimateGuide(
   ctx: CanvasRenderingContext2D,
   layout: PendulumLayout,
   motionRange?: PendulumMotionRange,
+  guideStrokeColor: string = PENDULUM_GUIDE_GREY,
 ): void {
-  const { anchorX, anchorY, rodPx } = layout;
+  const { anchorX, anchorY } = layout;
   ctx.save();
   clearCanvas(ctx, layout);
   if (motionRange) {
-    drawPendulumMotionRangeGuide(ctx, layout, motionRange);
+    drawPendulumMotionRangeGuide(ctx, layout, motionRange, guideStrokeColor);
   } else {
-    ctx.strokeStyle = MOTION_RANGE_STROKE;
-    ctx.lineWidth = 2;
-    ctx.setLineDash(MOTION_RANGE_DASH);
-    ctx.beginPath();
-    ctx.arc(anchorX, anchorY, rodPx, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    drawPendulumFallbackCircleGuide(ctx, layout, guideStrokeColor);
   }
   ctx.beginPath();
   ctx.arc(anchorX, anchorY, 5, 0, Math.PI * 2);
@@ -217,7 +304,7 @@ export function drawPendulumEstimate(
   thetaEstRad: number,
   motionRange?: PendulumMotionRange,
 ): void {
-  drawPendulumEstimateGuide(ctx, layout, motionRange);
+  drawPendulumEstimateGuide(ctx, layout, motionRange, PENDULUM_GUIDE_ORANGE);
   drawPendulumEstimateRod(ctx, layout, thetaEstRad);
 }
 
@@ -301,7 +388,7 @@ export function drawPendulumEstimateWithArc(
   }
 }
 
-/** 反馈：角度范围示意 + 橙色估计摆杆 + 蓝色真实摆杆 */
+/** 反馈：角度范围示意 + 橙色被试选择 + 蓝色真实摆杆 */
 export function drawPendulumFeedbackTruth(
   ctx: CanvasRenderingContext2D,
   layout: PendulumLayout,
@@ -309,6 +396,7 @@ export function drawPendulumFeedbackTruth(
   thetaTruthRad: number,
   motionRange?: PendulumMotionRange,
 ): void {
-  drawPendulumEstimate(ctx, layout, thetaEstRad, motionRange);
+  drawPendulumEstimateGuide(ctx, layout, motionRange, PENDULUM_GUIDE_GREY);
+  drawPendulumEstimateRod(ctx, layout, thetaEstRad);
   drawPendulumTruthRod(ctx, layout, thetaTruthRad);
 }
