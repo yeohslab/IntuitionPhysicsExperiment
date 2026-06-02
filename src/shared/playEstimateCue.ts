@@ -1,8 +1,8 @@
 let audioCtx: AudioContext | null = null;
 
 const MASKED_HUM_URL = "/audio/masked-hum.wav";
-/** 运行时 GainNode；WAV 峰值 0.25，×3.0 ≈ 主观音量 0.75 */
-const MASKED_PLAYBACK_GAIN = 3.0;
+/** 运行时 GainNode；WAV 峰值 0.25，×12 ≈ 主观音量（较上一档 ×4） */
+const MASKED_PLAYBACK_GAIN = 12.0;
 /** 估计阶段 ping 峰值（Web Audio 上限 1.0） */
 const PING_PEAK_GAIN = 1.0;
 
