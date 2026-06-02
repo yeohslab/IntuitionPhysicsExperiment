@@ -1,7 +1,8 @@
 let audioCtx: AudioContext | null = null;
 
-const MASKED_HUM_URL = "/audio/masked-hum.wav";
-/** 运行时 GainNode；WAV 峰值 0.25，×12 ≈ 主观音量（较上一档 ×4） */
+/** Vite base：GitHub Pages 子路径下须用 BASE_URL，不能用裸 /audio/... */
+const MASKED_HUM_URL = `${import.meta.env.BASE_URL}audio/masked-hum.wav`;
+/** 运行时 GainNode；WAV 峰值 0.25 */
 const MASKED_PLAYBACK_GAIN = 12.0;
 /** 估计阶段 ping 峰值（Web Audio 上限 1.0） */
 const PING_PEAK_GAIN = 1.0;
@@ -12,15 +13,83 @@ let maskedSource: AudioBufferSourceNode | null = null;
 let maskedGain: GainNode | null = null;
 let maskedPlaying = false;
 let maskedStartedThisTrial = false;
+let maskedStartInFlight = false;
+let maskedWantsPlay = false;
+let maskedHtmlAudio: HTMLAudioElement | null = null;
+let maskedHtmlPlaying = false;
+
+function getMaskedHtmlAudio(): HTMLAudioElement {
+  if (!maskedHtmlAudio) {
+    maskedHtmlAudio = new Audio(MASKED_HUM_URL);
+    maskedHtmlAudio.preload = "auto";
+  }
+  return maskedHtmlAudio;
+}
+
+/** 手势栈内解锁 HTMLAudio，供 Chrome/Edge 在 Web Audio suspend 时回退 */
+async function primeMaskedHtmlAudioInGesture(): Promise<void> {
+  try {
+    const el = getMaskedHtmlAudio();
+    el.volume = 0.0001;
+    el.currentTime = 0;
+    await el.play();
+    el.pause();
+    el.currentTime = 0;
+  } catch {
+    /* ignore */
+  }
+}
+
+function startMaskedHtmlPlayback(): boolean {
+  try {
+    const el = getMaskedHtmlAudio();
+    el.currentTime = 0;
+    el.volume = 1;
+    void el.play().then(() => {
+      maskedHtmlPlaying = true;
+    }).catch(() => {
+      maskedHtmlPlaying = false;
+      if (maskedStartedThisTrial && !maskedPlaying) {
+        maskedStartedThisTrial = false;
+      }
+    });
+    return true;
+  } catch {
+    maskedHtmlPlaying = false;
+    return false;
+  }
+}
+
+function stopMaskedHtmlPlayback(): void {
+  if (!maskedHtmlAudio) return;
+  try {
+    maskedHtmlAudio.pause();
+    maskedHtmlAudio.currentTime = 0;
+  } catch {
+    /* */
+  }
+  maskedHtmlPlaying = false;
+}
 
 function audioContextCtor(): typeof AudioContext | null {
   if (typeof window === "undefined") return null;
   return window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext ?? null;
 }
 
-/** 仅返回已创建的 context；不在非手势栈内 new AudioContext（Chrome/Edge 自动播放策略） */
 function getAudioContext(): AudioContext | null {
   return audioCtx;
+}
+
+async function ensureAudioContextRunning(): Promise<AudioContext | null> {
+  if (!audioCtx) return null;
+  if (audioCtx.state === "suspended") {
+    try {
+      await audioCtx.resume();
+    } catch {
+      return null;
+    }
+  }
+  return audioCtx.state === "running" ? audioCtx : null;
 }
 
 function playSilentUnlockPulse(ctx: AudioContext): void {
@@ -73,7 +142,12 @@ function playEstimateCueAt(ctx: AudioContext, t0: number): void {
   };
 }
 
-/** 加载并解码 masked-hum.wav（结果缓存） */
+function resetMaskedBufferLoad(): void {
+  maskedBufferLoad = null;
+  maskedBuffer = null;
+}
+
+/** 加载并解码 masked-hum.wav（结果缓存；失败可重试） */
 export async function loadMaskedHumBuffer(ctx: AudioContext): Promise<AudioBuffer | null> {
   if (maskedBuffer) return maskedBuffer;
   if (maskedBufferLoad) return maskedBufferLoad;
@@ -81,12 +155,15 @@ export async function loadMaskedHumBuffer(ctx: AudioContext): Promise<AudioBuffe
   maskedBufferLoad = (async () => {
     try {
       const res = await fetch(MASKED_HUM_URL);
-      if (!res.ok) return null;
+      if (!res.ok) {
+        resetMaskedBufferLoad();
+        return null;
+      }
       const data = await res.arrayBuffer();
-      maskedBuffer = await ctx.decodeAudioData(data.slice(0));
+      maskedBuffer = await ctx.decodeAudioData(data);
       return maskedBuffer;
     } catch {
-      maskedBufferLoad = null;
+      resetMaskedBufferLoad();
       return null;
     }
   })();
@@ -106,7 +183,7 @@ function startMaskedHumPlayback(ctx: AudioContext): boolean {
 
     source.connect(gain);
     gain.connect(ctx.destination);
-    source.start(0);
+    source.start(ctx.currentTime);
 
     source.onended = () => {
       if (maskedSource === source) {
@@ -125,14 +202,36 @@ function startMaskedHumPlayback(ctx: AudioContext): boolean {
   }
 }
 
-/** 实验音频是否已解锁（Web Audio running） */
+/** Chrome/Edge：show 段 idle 后 context 可能被 suspend，fade 前需 resume + 确保 buffer 已解码 */
+function requestMaskedHumStart(): void {
+  if (maskedStartedThisTrial || maskedPlaying || maskedHtmlPlaying || maskedStartInFlight) return;
+  maskedWantsPlay = true;
+  maskedStartInFlight = true;
+  void (async () => {
+    try {
+      const ctx = await ensureAudioContextRunning();
+      if (ctx && maskedWantsPlay && !maskedStartedThisTrial && !maskedPlaying) {
+        const buf = await loadMaskedHumBuffer(ctx);
+        if (buf && maskedWantsPlay && !maskedStartedThisTrial && startMaskedHumPlayback(ctx)) {
+          maskedStartedThisTrial = true;
+          return;
+        }
+      }
+      if (maskedWantsPlay && !maskedStartedThisTrial && !maskedHtmlPlaying) {
+        if (startMaskedHtmlPlayback()) {
+          maskedStartedThisTrial = true;
+        }
+      }
+    } finally {
+      maskedStartInFlight = false;
+    }
+  })();
+}
+
 export function isExperimentAudioReady(): boolean {
   return audioCtx?.state === "running";
 }
 
-/**
- * 在 Chrome / Edge 用户手势栈内调用：创建 AudioContext、await resume、预加载 WAV。
- */
 export async function primeExperimentAudioInUserGesture(): Promise<boolean> {
   try {
     const Ctx = audioContextCtor();
@@ -140,19 +239,17 @@ export async function primeExperimentAudioInUserGesture(): Promise<boolean> {
     if (!audioCtx) {
       audioCtx = new Ctx({ latencyHint: "interactive" });
     }
-    if (audioCtx.state === "suspended") {
-      await audioCtx.resume();
-    }
-    if (audioCtx.state !== "running") return false;
-    playSilentUnlockPulse(audioCtx);
-    await loadMaskedHumBuffer(audioCtx);
+    const ctx = await ensureAudioContextRunning();
+    if (!ctx) return false;
+    playSilentUnlockPulse(ctx);
+    await primeMaskedHtmlAudioInGesture();
+    await loadMaskedHumBuffer(ctx);
     return maskedBuffer !== null;
   } catch {
     return false;
   }
 }
 
-/** 同步入口：在用户 keydown / click 回调中调用（内部 await resume） */
 export function primeEstimateCueAudio(): void {
   void primeExperimentAudioInUserGesture();
 }
@@ -162,26 +259,28 @@ export async function primeEstimateCueAudioAsync(): Promise<void> {
   await primeExperimentAudioInUserGesture();
 }
 
-/** 进入汇报阶段短促 ping（失败静默） */
 export function playEstimateCue(): void {
-  try {
-    const ctx = getAudioContext();
-    if (!ctx || ctx.state !== "running") return;
-    playEstimateCueAt(ctx, ctx.currentTime);
-  } catch {
-    /* autoplay policy or missing API */
-  }
+  void (async () => {
+    try {
+      const ctx = await ensureAudioContextRunning();
+      if (!ctx) return;
+      playEstimateCueAt(ctx, ctx.currentTime);
+    } catch {
+      /* autoplay policy or missing API */
+    }
+  })();
 }
 
-/** hide 结束或试次清理：瞬间停止持续低音（不播 ping） */
 export function stopMaskedAmbientSound(): void {
+  maskedWantsPlay = false;
+  stopMaskedHtmlPlayback();
+  maskedStartedThisTrial = false;
   if (!maskedPlaying || !maskedSource || !maskedGain) return;
   try {
     const ctx = getAudioContext();
     const source = maskedSource;
     const gain = maskedGain;
     clearMaskedPlaybackNodes();
-    maskedStartedThisTrial = false;
 
     if (!ctx) {
       try {
@@ -201,43 +300,33 @@ export function stopMaskedAmbientSound(): void {
     disconnectMaskedPlayback(source, gain);
   } catch {
     clearMaskedPlaybackNodes();
-    maskedStartedThisTrial = false;
   }
 }
 
-/**
- * 按试次可见性驱动遮挡音：show 不播；fadeOut 起点播 WAV（含 150ms 渐入）；hide 继续；show 回退则停。
- */
 export function syncMaskedAmbientFromVisibility(
   vis: { kind: "show" | "fadeOut" | "hide"; alpha: number },
 ): boolean {
-  const ctx = getAudioContext();
-
   if (vis.kind === "show") {
-    if (maskedPlaying) stopMaskedAmbientSound();
+    maskedWantsPlay = false;
+    stopMaskedAmbientSound();
     maskedStartedThisTrial = false;
     return false;
   }
 
   if (vis.kind === "fadeOut" || vis.kind === "hide") {
-    if (!maskedBuffer && ctx?.state === "running") {
-      void loadMaskedHumBuffer(ctx);
-    }
-    if (!maskedStartedThisTrial && ctx?.state === "running" && maskedBuffer) {
-      if (startMaskedHumPlayback(ctx)) {
-        maskedStartedThisTrial = true;
-      }
-    }
-    return maskedPlaying;
+    requestMaskedHumStart();
+    return maskedPlaying || maskedHtmlPlaying;
   }
 
   return false;
 }
 
-/** 新试次开始前：重置状态并确保 buffer 已加载 */
 export function prepareMaskedAmbientForTrial(): void {
   maskedStartedThisTrial = false;
-  const ctx = getAudioContext();
-  if (!ctx || ctx.state !== "running") return;
-  void loadMaskedHumBuffer(ctx);
+  maskedWantsPlay = false;
+  void (async () => {
+    const ctx = await ensureAudioContextRunning();
+    if (!ctx) return;
+    await loadMaskedHumBuffer(ctx);
+  })();
 }
