@@ -1,8 +1,9 @@
-import maskedHumUrl from "../assets/audio/masked-hum.wav?url";
+// 该 wav 放在 public/audio 下，运行时以绝对路径访问
+const maskedHumUrl = "/audio/masked-hum.wav";
 
 let audioCtx: AudioContext | null = null;
 /** 运行时 GainNode；WAV 峰值 0.25 */
-const MASKED_PLAYBACK_GAIN = 3.0;
+const MASKED_PLAYBACK_GAIN = 1.5;
 /** 估计阶段 ping 峰值（Web Audio 上限 1.0） */
 const PING_PEAK_GAIN = 1.0;
 
