@@ -1,9 +1,8 @@
-let audioCtx: AudioContext | null = null;
+import maskedHumUrl from "../assets/audio/masked-hum.wav?url";
 
-/** Vite base：GitHub Pages 子路径下须用 BASE_URL，不能用裸 /audio/... */
-const MASKED_HUM_URL = `${import.meta.env.BASE_URL}audio/masked-hum.wav`;
+let audioCtx: AudioContext | null = null;
 /** 运行时 GainNode；WAV 峰值 0.25 */
-const MASKED_PLAYBACK_GAIN = 12.0;
+const MASKED_PLAYBACK_GAIN = 5.0;
 /** 估计阶段 ping 峰值（Web Audio 上限 1.0） */
 const PING_PEAK_GAIN = 1.0;
 
@@ -20,7 +19,7 @@ let maskedHtmlPlaying = false;
 
 function getMaskedHtmlAudio(): HTMLAudioElement {
   if (!maskedHtmlAudio) {
-    maskedHtmlAudio = new Audio(MASKED_HUM_URL);
+    maskedHtmlAudio = new Audio(maskedHumUrl);
     maskedHtmlAudio.preload = "auto";
   }
   return maskedHtmlAudio;
@@ -154,7 +153,7 @@ export async function loadMaskedHumBuffer(ctx: AudioContext): Promise<AudioBuffe
 
   maskedBufferLoad = (async () => {
     try {
-      const res = await fetch(MASKED_HUM_URL);
+      const res = await fetch(maskedHumUrl);
       if (!res.ok) {
         resetMaskedBufferLoad();
         return null;

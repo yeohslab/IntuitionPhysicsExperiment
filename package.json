@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run generate-masked-hum && tsc && vite build",
     "preview": "vite preview",
     "verify-physics": "npx --yes tsx scripts/verify-pendulum-period.ts && npx --yes tsx scripts/verify-physics-precision.ts",
     "generate-stimulate": "npx --yes tsx scripts/generate-stimulate-sets.ts",
