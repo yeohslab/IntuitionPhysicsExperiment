@@ -2,7 +2,7 @@ import maskedHumUrl from "../assets/audio/masked-hum.wav?url";
 
 let audioCtx: AudioContext | null = null;
 /** 运行时 GainNode；WAV 峰值 0.25 */
-const MASKED_PLAYBACK_GAIN = 5.0;
+const MASKED_PLAYBACK_GAIN = 3.0;
 /** 估计阶段 ping 峰值（Web Audio 上限 1.0） */
 const PING_PEAK_GAIN = 1.0;
 
