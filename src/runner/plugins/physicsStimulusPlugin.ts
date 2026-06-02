@@ -43,6 +43,7 @@ import {
 import { springPositionErrorM } from "../../physics/springArcScore";
 import {
   buildTimePhases,
+  stimulusPhaseDurationsForExport,
   stimulusTotalSec,
   stimulusTotalTimeT,
   stimulusVisibilityAt,
@@ -414,6 +415,7 @@ class PhysicsStimulusPlugin {
         analysis.regime,
         wMaxDeg,
       );
+      const phaseDur = stimulusPhaseDurationsForExport(synced, T);
       return {
         response_mode: "estimate_point",
         physicsKind: trial.physicsKind,
@@ -422,6 +424,7 @@ class PhysicsStimulusPlugin {
         pendulum_regime: analysis.regime,
         stimulus_time_phases_json: JSON.stringify(phases),
         total_time_T: totalTimeT,
+        ...phaseDur,
         theta_actual_deg: thetaActualDeg,
         theta_estimated_deg: thetaEstimatedDeg,
         delta_theta_deg: deltaThetaDeg,
@@ -609,6 +612,7 @@ class PhysicsStimulusPlugin {
     const buildPayload = (): Record<string, unknown> => {
       const rtEstimateSec = (performance.now() - estimateStartMs) / 1000;
       const eM = springPositionErrorM(xEstM, xActualM);
+      const phaseDur = stimulusPhaseDurationsForExport(synced, T);
       return {
         response_mode: "estimate_point",
         physicsKind: trial.physicsKind,
@@ -616,6 +620,7 @@ class PhysicsStimulusPlugin {
         spring_T_sec: T,
         stimulus_time_phases_json: JSON.stringify(phases),
         total_time_T: totalTimeT,
+        ...phaseDur,
         x_actual_m: xActualM,
         x_estimated_m: xEstM,
         delta_x_m: xEstM - xActualM,

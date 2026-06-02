@@ -1,6 +1,6 @@
 # informal_raw_data 实验 CSV 字段说明
 
-> **当前导出（运行页）**：文件名 **`experiment_data_subjectXXXX.csv`**（如 `experiment_data_subject0002.csv`），**18 列**白名单，定义见 [`src/runner/exportStimulusCsv.ts`](../../src/runner/exportStimulusCsv.ts) 的 `STIMULUS_CSV_COLUMNS`。
+> **当前导出（运行页）**：文件名 **`experiment_data_subjectXXXX.csv`**（如 `experiment_data_subject0002.csv`），**25 列**白名单；字段含义见 [`data_feature.md`](../../data_feature.md)，列定义见 [`src/runner/exportStimulusCsv.ts`](../../src/runner/exportStimulusCsv.ts) 的 `STIMULUS_CSV_COLUMNS`。
 >
 > **本目录 informal 文件**：为改版**之前**采集的**宽表**（如 `0002_experiment_data.csv`，含 `block_shuffle_seed`、`stimulus_time_phases_json`、arc/得分列等），与当前导出格式不同；下文部分字段仅适用于这些历史文件。
 
@@ -57,5 +57,5 @@
 
 ## 参考源码
 
-- 当前列定义：[`src/runner/exportStimulusCsv.ts`](../../src/runner/exportStimulusCsv.ts) → `STIMULUS_CSV_COLUMNS`（18 列）
+- 当前列定义：[`src/runner/exportStimulusCsv.ts`](../../src/runner/exportStimulusCsv.ts) → `STIMULUS_CSV_COLUMNS`（25 列）；[`data_feature.md`](../../data_feature.md)
 - 运行插件：[`src/runner/plugins/physicsStimulusPlugin.ts`](../../src/runner/plugins/physicsStimulusPlugin.ts)

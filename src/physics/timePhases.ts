@@ -112,6 +112,37 @@ export function stimulusTotalTimeT(
   return stimulusTotalSec(mult, T) / T;
 }
 
+/** CSV 导出用：单次遮挡范式下 show / fade / hide 的秒数与 T 倍数 */
+export interface StimulusPhaseDurationsExport {
+  show_T: number;
+  fade_T: number;
+  hide_T: number;
+  total_time_sec: number;
+  show_sec: number;
+  fade_sec: number;
+  hide_sec: number;
+}
+
+export function stimulusPhaseDurationsForExport(
+  mult: Pick<StimulusTimingMultiples, "show1T" | "hide1T" | "show2T" | "hide2T" | "fadeMs">,
+  periodSec: number,
+): StimulusPhaseDurationsExport {
+  const T = Math.max(1e-12, periodSec);
+  const showSec = mult.show1T * T;
+  const fade = fadeSec(mult);
+  const hideSec = mult.hide1T;
+  const totalSec = stimulusTotalSec(mult, T);
+  return {
+    show_T: mult.show1T,
+    fade_T: fade / T,
+    hide_T: hideSec / T,
+    total_time_sec: totalSec,
+    show_sec: showSec,
+    fade_sec: fade,
+    hide_sec: hideSec,
+  };
+}
+
 /** @deprecated 仅用于无周期时的粗校验；优先使用 stimulusTotalTimeT */
 export function sumSegmentMultiples(
   mult: Pick<StimulusTimingMultiples, "show1T" | "hide1T" | "show2T" | "hide2T" | "fadeMs">,

@@ -30,4 +30,4 @@ npm run verify-all
 
 单独审计报告见仓库根目录 `AUDIT_REPORT.md`（`npm run audit` 会更新该文件）。
 
-实验结束后下载 **`experiment_data_subjectXXXX.csv`**（`XXXX` 为四位被试编号；无编号试跑时为 `experiment_data.csv`）。仅包含 `physics-stimulus` 摆球试次行（练习段与正式 block 均保留），**18 列**：`subject_id`、`unit_type`、`segment_kind`、`physicsKind`、`pendulum_E_J`、`pendulum_T_sec`、`pendulum_regime`、`total_time_T`、`w_max_deg`、θ 估计/真值/误差（度与弧度）、`rt_estimate_sec`。不含纯指导语试次。列定义见 [`src/runner/exportStimulusCsv.ts`](../src/runner/exportStimulusCsv.ts)。
+实验结束后下载 **`experiment_data_subjectXXXX.csv`**（`XXXX` 为四位被试编号；无编号试跑时为 `experiment_data.csv`）。仅包含 `physics-stimulus` 摆球试次行（练习段与正式 block 均保留），**25 列**（含 `show_T`/`fade_T`/`hide_T` 与 `show_sec`/`fade_sec`/`hide_sec`/`total_time_sec` 等时序字段）。不含纯指导语试次。字段说明见 [`data_feature.md`](../data_feature.md)，列顺序见 [`src/runner/exportStimulusCsv.ts`](../src/runner/exportStimulusCsv.ts)。
