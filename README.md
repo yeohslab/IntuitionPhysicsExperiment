@@ -4,7 +4,7 @@
 
 - **刺激编写**（`#/editor`）：顶层为 **顺序列表**（`sequence`），可穿插 **Block**、**Rest**、**Practice**；Block / Practice 内为 Trial → 单元，**Rest** 段只有单元、无 Trial；支持拖拽排序、导入/导出 JSON、本地草稿、「运行实验」与「开发者模式运行」（hide 时段遮挡半透明，便于调试）。
 - **实验首页**（`#/start` 或根路径）：输入**纯数字**被试编号（1–9999，存为四位前导零如 `0001`），按 **编号数值 mod 5** 从 5 份 `stimulate/stimulus-*.json` 中选一份加载并运行（首页**不打乱**）。**运行页**构建时间线时，将 **25 个正式 Block** 按**被试编号 + 刺激集索引**确定性打乱（同被试可复现；欢迎/练习/任务 Rest 与 Block 前进度 Rest 顺序、文案 1/25…25/25 **不变**）。编辑页「运行实验」使用会话中刺激集，**不打乱** Block（除非会话里仍保留被试编号与刺激集索引且从首页进入运行页）。
-- **运行**（`#/runner`）：从会话中读取当前设计并执行；仿真全程推进物理运动，hide 时段仅叠加不透明遮挡（被试不可见摆球/弹簧）；结束后自动下载 **`experiment_data_subject0001.csv`**（四位被试编号，如 `0001`；编辑页无编号试跑时为 `experiment_data.csv`）。CSV **仅含** `physics-stimulus` 摆球试次（练习与正式 block），**25 列**（详见 [`data_feature.md`](data_feature.md) 与 `src/runner/exportStimulusCsv.ts`）：标识与摆球 E/T/regime、总时长 `total_time_T` 及 show/fade/hide 的 T 倍数与秒数、θ 估计/真值/误差、`rt_estimate_sec`。
+- **运行**（`#/runner`）：从会话中读取当前设计并执行；仿真全程推进物理运动，hide 时段仅叠加不透明遮挡（被试不可见摆球/弹簧）；结束后自动下载 **`experiment_data_subject0001.csv`**（四位被试编号，如 `0001`；编辑页无编号试跑时为 `experiment_data.csv`）。CSV **仅含** `physics-stimulus` 摆球试次（练习与正式 block），**25 列**（详见 [`data_feature.md`](data/data_feature.md) 与 `src/runner/exportStimulusCsv.ts`）：标识与摆球 E/T/regime、总时长 `total_time_T` 及 show/fade/hide 的 T 倍数与秒数、θ 估计/真值/误差、`rt_estimate_sec`。
 
 ## 环境要求
 

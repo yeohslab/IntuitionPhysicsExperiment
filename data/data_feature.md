@@ -1,6 +1,6 @@
 # Data Feature
 
-实验结束后由运行页自动下载 CSV，文件名为 `experiment_data_subjectXXXX.csv`（`XXXX` 为四位被试编号；编辑页无编号试跑时为 `experiment_data.csv`）。仅包含 `trial_type = physics-stimulus` 的摆球试次（练习 `pendulumPractice` 与正式 `pendulumStimulus`），共 **25 列**，列顺序与 [`src/runner/exportStimulusCsv.ts`](src/runner/exportStimulusCsv.ts) 中 `STIMULUS_CSV_COLUMNS` 一致。
+实验结束后由运行页自动下载 CSV，文件名为 `experiment_data_subjectXXXX.csv`（`XXXX` 为四位被试编号；编辑页无编号试跑时为 `experiment_data.csv`）。仅包含 `trial_type = physics-stimulus` 的摆球试次（练习 `pendulumPractice` 与正式 `pendulumStimulus`），共 **25 列**，列顺序与 [`src/runner/exportStimulusCsv.ts`](../src/runner/exportStimulusCsv.ts) 中 `STIMULUS_CSV_COLUMNS` 一致。
 
 **摆角约定**：θ = 0 为竖直向下，**顺时针为正**（度与弧度字段同一约定）。质量固定 $m = 1\,\mathrm{kg}$，势能零点在最低点。
 
@@ -46,7 +46,7 @@ $$E = \frac{1}{2} m (l\omega_0)^2 + m g l \,(1 - \cos\theta_0)$$
 
 $$\texttt{total\_time\_T} = \frac{t_{\mathrm{sim,end}}}{T}$$
 
-其中 $t_{\mathrm{sim,end}} = \texttt{show\_sec} + \texttt{fade\_sec} + \texttt{hide\_sec}$，且 $\texttt{total\_time\_sec} = t_{\mathrm{sim,end}} = \texttt{total\_time\_T} \cdot T$。以下各段时长由刺激 JSON 的 `show1T`、`fadeMs`、`hide1T` 与 $T$ 在试次结束时计算（[`stimulusPhaseDurationsForExport`](src/physics/timePhases.ts)）。
+其中 $t_{\mathrm{sim,end}} = \texttt{show\_sec} + \texttt{fade\_sec} + \texttt{hide\_sec}$，且 $\texttt{total\_time\_sec} = t_{\mathrm{sim,end}} = \texttt{total\_time\_T} \cdot T$。以下各段时长由刺激 JSON 的 `show1T`、`fadeMs`、`hide1T` 与 $T$ 在试次结束时计算（[`stimulusPhaseDurationsForExport`](../src/physics/timePhases.ts)）。
 
 ## show_T
 
