@@ -11,10 +11,29 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib import font_manager
 import numpy as np
 import pandas as pd
 
 HERE = Path(__file__).resolve().parent
+
+
+def setup_fonts() -> None:
+    candidates = [
+        r"C:\Windows\Fonts\msyh.ttc",
+        r"C:\Windows\Fonts\msyh.ttf",
+        r"C:\Windows\Fonts\simhei.ttf",
+        r"C:\Windows\Fonts\simsun.ttc",
+    ]
+    for path in candidates:
+        if Path(path).exists():
+            font_manager.fontManager.addfont(path)
+            family = font_manager.FontProperties(fname=path).get_name()
+            plt.rcParams["font.sans-serif"] = [family, "DejaVu Sans"]
+            break
+    else:
+        plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "DejaVu Sans"]
+    plt.rcParams["axes.unicode_minus"] = False
 
 
 def plot_group_hist(
@@ -27,7 +46,13 @@ def plot_group_hist(
 ) -> None:
     fig, ax = plt.subplots(figsize=(8, 5))
     bins = np.linspace(-180, 180, 37)  # 10° 宽
-    ax.hist(angles_deg, bins=bins, color="#4C78A8" if group == 1 else "#F58518", edgecolor="white", linewidth=0.6)
+    ax.hist(
+        angles_deg,
+        bins=bins,
+        color="#4C78A8" if group == 1 else "#F58518",
+        edgecolor="white",
+        linewidth=0.6,
+    )
     ax.set_xlim(-180, 180)
     ax.set_xlabel(r"终点角 $\theta_{\mathrm{end}}$ (°)")
     ax.set_ylabel("试次数")
@@ -44,7 +69,12 @@ def plot_group_hist(
         va="top",
         ha="left",
         fontsize=10,
-        bbox={"boxstyle": "round,pad=0.3", "facecolor": "white", "alpha": 0.85, "edgecolor": "0.8"},
+        bbox={
+            "boxstyle": "round,pad=0.3",
+            "facecolor": "white",
+            "alpha": 0.85,
+            "edgecolor": "0.8",
+        },
     )
     fig.tight_layout()
     fig.savefig(out_path, dpi=dpi)
@@ -53,6 +83,7 @@ def plot_group_hist(
 
 
 def main() -> None:
+    setup_fonts()
     csv_path = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "end_theta_by_group.csv"
     out_dir = Path(sys.argv[2]) if len(sys.argv) > 2 else HERE
     df = pd.read_csv(csv_path)
