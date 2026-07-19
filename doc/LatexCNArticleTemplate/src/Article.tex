@@ -1,0 +1,135 @@
+\documentclass[12pt,a4paper]{article}
+% 使用 UTF-8 编码的 ctex 包处理中文
+\usepackage[UTF8]{ctex}
+
+% 使用 graphicx 包处理图形
+\usepackage{graphicx}
+\graphicspath{{./pic/}{../pic/}}   % 设置图片路径为 pic 目录
+
+% 使用 amsmath,amssymb,amsthm,esint 包处理数学样式和环境
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{esint}
+
+% 使用 raggedbottom 改善垂直排版，减少 Underfull \vbox 警告
+\raggedbottom
+
+% 使用 chngcntr 包支持计数器重置和编号控制
+\usepackage{chngcntr}
+\counterwithin{subsection}{section} % 每个 section 内 subsection 从 1 重新计数：1.1, 1.2 / 2.1, 2.2, ...
+\counterwithout{figure}{section} % 图片按节编号：图1.1, 图1.2, ...
+\counterwithout{table}{section} % 表格按节编号：表1.1, 表1.2, ...
+\counterwithout{equation}{subsection} % 设置为按小节编号：(1.1.1), (1.1.2), ...
+
+
+% 使用 geometry 包设置页面边距（可选功能：启用后左右页边距相同）
+\usepackage{geometry}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+
+
+% 使用 hyperref 包处理超链接
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+% 使用 bookmark 包处理书签（单次编译，避免 rerunfilecheck 警告）
+\usepackage{bookmark}
+
+
+
+% 使用 fancyhdr 包设置页眉页脚
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\rightmark}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{14.5pt} % 调整页眉高度以满足 fancyhdr 要求
+
+% plain 样式：粗体标题，斜体内容 - 用于需要证明的陈述
+\theoremstyle{plain}
+\newtheorem{theorem}{定理}[section]           % 定理1.1, 定理1.2, ...（共享计数器）
+\newtheorem{lemma}[theorem]{引理}               % 引理1.3, 引理1.4, ...（共享计数器）
+\newtheorem{proposition}[theorem]{命题}   % 命题1.5, 命题1.6, ...（共享计数器）
+\newtheorem{corollary}[theorem]{推论}       % 推论1.7, 推论1.8, ...（共享计数器）
+
+% definition 样式：粗体标题，正体内容 - 用于定义性陈述
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{定义}     % 定义1.9, 定义1.10, ...（共享计数器）
+\newtheorem{axiom}[theorem]{公理}               % 公理1.11, 公理1.12, ...（共享计数器）
+\newtheorem{law}[theorem]{定律}                   % 定律1.13, 定律1.14, ...（共享计数器）
+\newtheorem{formula}[theorem]{公式}           % 公式1.15, 公式1.16, ...（共享计数器）
+
+% remark 样式：斜体标题，正体内容 - 用于注释性内容
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{注}             % 注1.1, 注1.2, ...（共享计数器）
+
+% 练习与解答与例题环境（按节编号，独立计数器）
+\newcounter{exercise}[section]
+\newenvironment{exercise}
+    {\refstepcounter{exercise}\par\noindent\textbf{练习~\theexercise.}\ }
+    {\par}  % 练习1.1, 练习1.2, ...
+
+\newcounter{solution}[section]
+\newenvironment{solution}
+    {\refstepcounter{solution}\par\noindent\textbf{解~\thesolution.}\ }
+    {\par}  % 解1.1, 解1.2, ...
+
+\newcounter{example}[section]
+\newenvironment{example}
+    {\refstepcounter{example}\par\noindent\textbf{例~\theexample.}\ }
+    {\par}  % 例1.1, 例1.2, ...
+
+% 证明环境（不编号，标题改为中文）
+\renewcommand{\proofname}{证明}
+
+% 使用 listings 包处理代码环境,使用 xcolor 包处理语法颜色
+\usepackage{listings} 
+\usepackage{xcolor}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\lstset{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=true,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+\renewcommand{\lstlistingname}{代码}  % 将代码环境标题改为中文
+\AtBeginDocument{
+    \counterwithin{lstlisting}{section}  % 代码按节编号, 代码1.1, 代码1.2, ...
+    \renewcommand*{\thelstlisting}{\thesection.\arabic{lstlisting}}  % 设置编号格式为 节号.序号
+}
+
+
+% 使用 longtable 和 booktabs 包处理表格
+\usepackage{longtable}
+\usepackage{booktabs}
+
+
+\begin{document}
+% 前言部分
+\input{TeX_files/frontmatter.tex}
+
+
+% 正文部分
+\input{TeX_files/section_results.tex}
+
+\newpage
+\bibliographystyle{plain}
+\bibliography{library.bib}
+
+
+\end{document}

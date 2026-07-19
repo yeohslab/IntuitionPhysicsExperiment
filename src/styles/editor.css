@@ -468,6 +468,24 @@
   color: #1a1a1a;
 }
 
+.runner-view .jspsych-target {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.runner-view .jspsych-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.runner-view .jspsych-content:has(.stimulus-fixation) {
+  justify-content: center;
+  align-items: center;
+}
+
 /* 覆盖可能继承的深色，保证试次区域可读 */
 .runner-view .jspsych-target,
 .runner-view .jspsych-content,
@@ -540,7 +558,26 @@
   padding: 2rem;
 }
 
-.runner-view .stimulus-wrap.stimulus-markdown {
+/* 注视点：试次区域正中的加号 */
+.runner-view .stimulus-wrap.stimulus-fixation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  max-width: none;
+  margin: 0;
+  line-height: 1;
+}
+
+.runner-view .fixation-cross {
+  font-size: 3rem;
+  font-weight: 400;
+  color: #202124;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  user-select: none;
+}
+
+.runner-view .stimulus-wrap.stimulus-instruction {
   text-align: center;
   max-width: 42rem;
   margin: 0 auto;
@@ -549,8 +586,8 @@
 }
 
 /* 列表：外框在居中容器内水平居中，条目仍左对齐便于阅读 */
-.runner-view .stimulus-markdown ul,
-.runner-view .stimulus-markdown ol {
+.runner-view .stimulus-instruction ul,
+.runner-view .stimulus-instruction ol {
   display: inline-block;
   text-align: left;
   margin: 0 0 0.75rem;
@@ -558,7 +595,7 @@
   vertical-align: top;
 }
 
-.runner-view .stimulus-markdown pre {
+.runner-view .stimulus-instruction pre {
   margin: 0 auto 0.75rem;
   padding: 0.75rem 1rem;
   background: #f1f3f4;
@@ -569,38 +606,54 @@
   max-width: 100%;
   box-sizing: border-box;
 }
-.runner-view .stimulus-markdown h1,
-.runner-view .stimulus-markdown h2,
-.runner-view .stimulus-markdown h3 {
+.runner-view .stimulus-instruction h1,
+.runner-view .stimulus-instruction h2,
+.runner-view .stimulus-instruction h3 {
   margin: 0 0 0.65rem;
   line-height: 1.25;
 }
 
-.runner-view .stimulus-markdown h1 {
+.runner-view .stimulus-instruction h1 {
   font-size: 1.65rem;
 }
 
-.runner-view .stimulus-markdown h2 {
+.runner-view .stimulus-instruction h2 {
   font-size: 1.35rem;
 }
 
-.runner-view .stimulus-markdown h3 {
+.runner-view .stimulus-instruction h3 {
   font-size: 1.15rem;
 }
 
-.runner-view .stimulus-markdown p {
+.runner-view .stimulus-instruction p {
   margin: 0 0 0.75rem;
 }
 
-.runner-view .stimulus-markdown p:last-child {
+.runner-view .stimulus-instruction p:last-child {
   margin-bottom: 0;
 }
 
-.runner-view .stimulus-markdown li {
+/* 指导语阶段说明：外框居中，正文左对齐 */
+.runner-view .stimulus-instruction .instr-left {
+  display: block;
+  text-align: left;
+  margin: 0 auto 0.75rem;
+  max-width: 100%;
+}
+
+.runner-view .stimulus-instruction .instr-left p {
+  margin: 0 0 0.75rem;
+}
+
+.runner-view .stimulus-instruction .instr-left p:last-child {
+  margin-bottom: 0;
+}
+
+.runner-view .stimulus-instruction li {
   margin: 0.2rem 0;
 }
 
-.runner-view .stimulus-markdown code {
+.runner-view .stimulus-instruction code {
   font-family: ui-monospace, Consolas, monospace;
   font-size: 0.92em;
   background: #f1f3f4;
@@ -608,17 +661,17 @@
   border-radius: 4px;
 }
 
-.runner-view .stimulus-markdown pre code {
+.runner-view .stimulus-instruction pre code {
   background: transparent;
   padding: 0;
 }
 
-.runner-view .stimulus-markdown a {
+.runner-view .stimulus-instruction a {
   color: #0b57d0;
   text-decoration: underline;
 }
 
-.runner-view .stimulus-markdown hr {
+.runner-view .stimulus-instruction hr {
   border: 0;
   border-top: 1px solid #dadce0;
   margin: 1rem 0;

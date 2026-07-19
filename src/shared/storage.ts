@@ -12,52 +12,25 @@ import { newId } from "./ids";
 import { sanitizeImageDataUrl } from "./html";
 import { analyzePendulum, pendulumRegime, pendulumCriticalEnergy, pendulumEnergy } from "../physics/pendulum";
 import type { PendulumParams } from "../physics/pendulum";
-import { springAnalysis } from "../physics/spring";
 import { STIMULUS_FADE_MS, withSyncedTotalTimeT } from "../physics/timePhases";
-import type {
-  PendulumPracticeUnit,
-  PendulumStimulusUnit,
-  SpringStimulusUnit,
-} from "../types/experiment";
+import type { PendulumPracticeUnit, PendulumStimulusUnit } from "../types/experiment";
 
+/** 当次会话由 generateRuntimeStimulusSet 写入的刺激集 JSON */
 export const SESSION_STIMULUS_KEY = "jspsych-stimulus-set-for-run";
 export const SESSION_SUBJECT_ID_KEY = "jspsych-subject-id";
-/** 0..4，对应 stimulate/stimulus-01 … stimulus-05 */
-export const SESSION_STIMULUS_FILE_INDEX_KEY = "jspsych-stimulus-file-index";
-/** 编辑页「开发者模式运行」：hide 遮挡半透明 */
-export const SESSION_DEVELOPER_MODE_KEY = "jspsych-developer-mode";
-export const LOCAL_DRAFT_KEY = "jspsych-stimulus-draft";
-
-export function setDeveloperModeForRun(on: boolean): void {
-  sessionStorage.setItem(SESSION_DEVELOPER_MODE_KEY, on ? "1" : "0");
-}
-
-export function isDeveloperModeRun(): boolean {
-  return sessionStorage.getItem(SESSION_DEVELOPER_MODE_KEY) === "1";
-}
+/** 组间运动方式：1=摆动，2=旋转 */
+export const SESSION_MOTION_GROUP_KEY = "jspsych-motion-group";
 
 function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null && !Array.isArray(x);
 }
 
-function resyncStimulusTiming(
-  unit: PendulumStimulusUnit | PendulumPracticeUnit | SpringStimulusUnit,
-): void {
-  if (unit.type === "pendulumStimulus" || unit.type === "pendulumPractice") {
-    const T = analyzePendulum({
-      theta0Rad: (unit.theta0Deg * Math.PI) / 180,
-      omega0RadPerSec: (unit.omega0DegPerSec * Math.PI) / 180,
-      rodLengthM: unit.rodLengthM,
-      gravity: unit.gravity,
-    }).T;
-    Object.assign(unit, withSyncedTotalTimeT(unit, T));
-    return;
-  }
-  const T = springAnalysis({
-    massKg: unit.massKg,
-    stiffness: unit.stiffness,
-    x0M: unit.x0M,
-    v0Mps: unit.v0Mps,
+function resyncStimulusTiming(unit: PendulumStimulusUnit | PendulumPracticeUnit): void {
+  const T = analyzePendulum({
+    theta0Rad: (unit.theta0Deg * Math.PI) / 180,
+    omega0RadPerSec: (unit.omega0DegPerSec * Math.PI) / 180,
+    rodLengthM: unit.rodLengthM,
+    gravity: unit.gravity,
   }).T;
   Object.assign(unit, withSyncedTotalTimeT(unit, T));
 }
@@ -153,35 +126,6 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       omega0DegPerSec: readFloat(raw, "omega0DegPerSec", 0),
       rodLengthM: readFloat(raw, "rodLengthM", 4),
       gravity: readFloat(raw, "gravity", 9.8),
-      show1T: readFloat(raw, "show1T", 1),
-      hide1T: readFloat(raw, "hide1T", 1),
-      show2T: readFloat(raw, "show2T", 0),
-      hide2T: readFloat(raw, "hide2T", 0),
-      fadeMs: readFloat(raw, "fadeMs", STIMULUS_FADE_MS),
-      totalTimeT: readFloat(raw, "totalTimeT", 0),
-    });
-    resyncStimulusTiming(unit);
-    return unit;
-  }
-  if (type === "springPractice") {
-    return {
-      id,
-      type: "springPractice",
-      massKg: readFloat(raw, "massKg", 1),
-      stiffness: readFloat(raw, "stiffness", 4),
-      x0M: readFloat(raw, "x0M", 0.5),
-      v0Mps: readFloat(raw, "v0Mps", 0),
-      displayTimeT: readFloat(raw, "displayTimeT", 4),
-    };
-  }
-  if (type === "springStimulus") {
-    const unit = withSyncedTotalTimeT({
-      id,
-      type: "springStimulus" as const,
-      massKg: readFloat(raw, "massKg", 1),
-      stiffness: readFloat(raw, "stiffness", 4),
-      x0M: readFloat(raw, "x0M", 0.5),
-      v0Mps: readFloat(raw, "v0Mps", 0),
       show1T: readFloat(raw, "show1T", 1),
       hide1T: readFloat(raw, "hide1T", 1),
       show2T: readFloat(raw, "show2T", 0),
@@ -295,18 +239,11 @@ export function loadStimulusSetFromSession(): ExperimentStimulusSet | null {
   }
 }
 
-export function loadDraftFromLocal(): ExperimentStimulusSet | null {
-  const s = localStorage.getItem(LOCAL_DRAFT_KEY);
-  if (!s) return null;
-  try {
-    return parseExperimentStimulusSet(JSON.parse(s) as unknown);
-  } catch {
-    return null;
-  }
-}
-
-export function saveDraftToLocal(set: ExperimentStimulusSet): void {
-  localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify(set));
+/** 清空当次实验会话（刺激集、被试信息等） */
+export function clearExperimentSession(): void {
+  sessionStorage.removeItem(SESSION_STIMULUS_KEY);
+  sessionStorage.removeItem(SESSION_SUBJECT_ID_KEY);
+  sessionStorage.removeItem(SESSION_MOTION_GROUP_KEY);
 }
 
 function segmentLabel(item: TopLevelSequenceItem, sequence: TopLevelSequenceItem[]): string {
@@ -415,18 +352,10 @@ function pushUnitWarnings(warnings: string[], loc: string, u: StimulusUnit): voi
       warnings.push(`${loc}：能量接近临界值，动力学处于分界附近。`);
     }
   }
-  if (u.type === "springPractice" || u.type === "springStimulus") {
-    if (u.massKg <= 0 || u.stiffness <= 0) {
-      warnings.push(`${loc}：质量与劲度系数须为正值。`);
-    }
-  }
   if (u.type === "pendulumDisplay" && u.displayTimeT <= 0) {
     warnings.push(`${loc}：显示时长（T 倍数）应大于 0。`);
   }
-  if (u.type === "springPractice" && u.displayTimeT <= 0) {
-    warnings.push(`${loc}：显示时长（T 倍数）应大于 0。`);
-  }
-  if (u.type === "pendulumStimulus" || u.type === "pendulumPractice" || u.type === "springStimulus") {
+  if (u.type === "pendulumStimulus" || u.type === "pendulumPractice") {
     const legacy = u.show2T > 0 || u.hide2T > 0;
     if (u.show1T <= 0 || (legacy && u.show2T <= 0)) {
       warnings.push(`${loc}：显示段（×T）应大于 0。`);
@@ -434,7 +363,7 @@ function pushUnitWarnings(warnings: string[], loc: string, u: StimulusUnit): voi
     if (u.hide1T <= 0 || (legacy && u.hide2T <= 0)) {
       warnings.push(`${loc}：隐藏段（秒）应大于 0。`);
     }
-    if (!legacy && u.fadeMs !== undefined && (u.fadeMs < 0 || u.fadeMs > 2000)) {
+    if (!legacy && u.fadeMs !== undefined && (u.fadeMs < 0 || u.fadeMs > 30_000)) {
       warnings.push(`${loc}：淡出时长（ms）异常。`);
     }
   }

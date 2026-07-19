@@ -8,9 +8,6 @@ import {
   PENDULUM_GUIDE_BLUE,
 } from "../../physics/render/pendulumCanvas";
 import { pendulumWMaxDeg } from "../../physics/pendulumArcScore";
-import type { SpringParams } from "../../physics/spring";
-import { springAnalysis, springDisplacementAt, springMotion } from "../../physics/spring";
-import { springLayout, drawSpringPractice } from "../../physics/render/springCanvas";
 import { setupHiDpiCanvas } from "../../physics/render/canvasCoords";
 import {
   PHYSICS_CANVAS_LOGICAL_H,
@@ -25,32 +22,22 @@ const info = {
   name: "physics-display",
   version: "0.1.0",
   parameters: {
-    physicsKind: { type: ParameterType.STRING, default: "pendulum" },
     theta0Deg: { type: ParameterType.FLOAT, default: 0 },
     omega0DegPerSec: { type: ParameterType.FLOAT, default: 0 },
     rodLengthM: { type: ParameterType.FLOAT, default: 4 },
     gravity: { type: ParameterType.FLOAT, default: 9.8 },
     displayTimeT: { type: ParameterType.FLOAT, default: 2 },
-    massKg: { type: ParameterType.FLOAT, default: 1 },
-    stiffness: { type: ParameterType.FLOAT, default: 4 },
-    x0M: { type: ParameterType.FLOAT, default: 0.5 },
-    v0Mps: { type: ParameterType.FLOAT, default: 0 },
     unitMeta: { type: ParameterType.COMPLEX, default: {} },
   },
   data: {},
 } as const;
 
 type Trial = {
-  physicsKind: "pendulum" | "spring";
   theta0Deg: number;
   omega0DegPerSec: number;
   rodLengthM: number;
   gravity: number;
   displayTimeT: number;
-  massKg: number;
-  stiffness: number;
-  x0M: number;
-  v0Mps: number;
   unitMeta: Record<string, unknown>;
 };
 
@@ -59,12 +46,8 @@ class PhysicsPracticePlugin {
   constructor(private jsPsych: JsPsych) {}
 
   trial(display_element: HTMLElement, trial: Trial): void {
-    const trialClass =
-      trial.physicsKind === "pendulum"
-        ? "physics-trial physics-trial--stimulus physics-trial--sim"
-        : "physics-trial physics-trial--stimulus";
     display_element.innerHTML = `
-      <div class="${trialClass}">
+      <div class="physics-trial physics-trial--stimulus physics-trial--sim">
         <canvas class="physics-canvas" width="${PHYSICS_CANVAS_LOGICAL_W}" height="${PHYSICS_CANVAS_LOGICAL_H}"></canvas>
         <p class="physics-hint muted">观看运动，结束后自动继续。</p>
       </div>`;
@@ -74,71 +57,37 @@ class PhysicsPracticePlugin {
     const { ctx, cssW, cssH } = setupHiDpiCanvas(canvas, logicalW, logicalH);
 
     const t0 = performance.now();
-
-    if (trial.physicsKind === "pendulum") {
-      const p: PendulumParams = {
-        theta0Rad: degToRad(trial.theta0Deg),
-        omega0RadPerSec: degToRad(trial.omega0DegPerSec),
-        rodLengthM: trial.rodLengthM,
-        gravity: trial.gravity,
-      };
-      const analysis = analyzePendulum(p);
-      const durationSec = trial.displayTimeT * analysis.T;
-      const rot = analysis.regime === "rotation" ? new PendulumRotationIntegrator(p) : null;
-      const layout = pendulumLayout(cssW, cssH);
-      const wMaxDeg = pendulumWMaxDeg(analysis.E, analysis.regime, trial.rodLengthM, trial.gravity);
-      const motionRange = { regime: analysis.regime, wMaxDeg };
-
-      const tick = (now: number) => {
-        const elapsed = (now - t0) / 1000;
-        const t = Math.min(elapsed, durationSec);
-        let theta: number;
-        if (rot) {
-          rot.step(t - rot.tAccum);
-          theta = rot.theta;
-        } else {
-          theta = pendulumThetaOscillationAt(t, p, analysis);
-        }
-        drawPendulumStimulusFrame(ctx, layout, theta, motionRange, 1, PENDULUM_GUIDE_BLUE);
-        if (elapsed >= durationSec) {
-          this.jsPsych.finishTrial({
-            ...trial.unitMeta,
-            physicsKind: trial.physicsKind,
-            pendulum_E_J: analysis.E,
-            pendulum_T_sec: analysis.T,
-            pendulum_regime: analysis.regime,
-            practice_duration_sec: durationSec,
-          });
-          return;
-        }
-        requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-      return;
-    }
-
-    const sp: SpringParams = {
-      massKg: trial.massKg,
-      stiffness: trial.stiffness,
-      x0M: trial.x0M,
-      v0Mps: trial.v0Mps,
+    const p: PendulumParams = {
+      theta0Rad: degToRad(trial.theta0Deg),
+      omega0RadPerSec: degToRad(trial.omega0DegPerSec),
+      rodLengthM: trial.rodLengthM,
+      gravity: trial.gravity,
     };
-    const { E, T } = springAnalysis(sp);
-    const durationSec = trial.displayTimeT * T;
-    const { amplitudeM } = springMotion(sp);
-    const layout = springLayout(cssW, cssH, amplitudeM);
+    const analysis = analyzePendulum(p);
+    const durationSec = trial.displayTimeT * analysis.T;
+    const rot = analysis.regime === "rotation" ? new PendulumRotationIntegrator(p) : null;
+    const layout = pendulumLayout(cssW, cssH);
+    const wMaxDeg = pendulumWMaxDeg(analysis.E, analysis.regime, trial.rodLengthM, trial.gravity);
+    const motionRange = { regime: analysis.regime, wMaxDeg };
 
     const tick = (now: number) => {
       const elapsed = (now - t0) / 1000;
       const t = Math.min(elapsed, durationSec);
-      const x = springDisplacementAt(t, sp);
-      drawSpringPractice(ctx, layout, x);
+      let theta: number;
+      if (rot) {
+        rot.step(t - rot.tAccum);
+        theta = rot.theta;
+      } else {
+        theta = pendulumThetaOscillationAt(t, p, analysis);
+      }
+      drawPendulumStimulusFrame(ctx, layout, theta, motionRange, 1, PENDULUM_GUIDE_BLUE);
       if (elapsed >= durationSec) {
         this.jsPsych.finishTrial({
           ...trial.unitMeta,
-          physicsKind: trial.physicsKind,
-          spring_E_J: E,
-          spring_T_sec: T,
+          physicsKind: "pendulum",
+          pendulum_E_J: analysis.E,
+          pendulum_T_sec: analysis.T,
+          pendulum_regime: analysis.regime,
           practice_duration_sec: durationSec,
         });
         return;

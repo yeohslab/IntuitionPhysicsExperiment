@@ -1,33 +1,80 @@
-# 预生成刺激集（schema 5）
+# 运行时刺激生成
 
-本目录下的 `stimulus-01.json` … `stimulus-05.json` 为**唯一数据源**：实验首页按被试编号加载对应文件，编辑页无本地草稿时默认打开 `stimulus-01.json`（经 `src/stimulate/index.ts` 在构建时打入）。勿在 `public/` 等处维护副本。
+正式实验**不再**使用预置 `stimulus-01.json` … `stimulus-05.json`。被试在首页输入组别与被试编号后，由 [`src/stimulate/generateRuntimeSet.ts`](../src/stimulate/generateRuntimeSet.ts) 当场生成完整 `ExperimentStimulusSet`，写入 `sessionStorage` 后进入运行页。
 
-文件可由脚本按固定随机种子 **91001–91005** 生成。指导语与结构模板见 [`instruction-template.json`](instruction-template.json)（欢迎 Rest 两屏指导语、练习 1/6–6/6、各 Block 试次、Block 前进度 Rest、注视点 `+`）。手改模板或 `stimulus-01.json` 文案后，可先更新模板再运行 `npm run generate-stimulate` 全量重生成，或 `npm run sync-stimulate` 仅同步指导语到 01…05（保留各文件物理试次）。
+## 入口
 
-生成规则概要：
-
-- 全局能量 \([1.96, 78.4]\,\mathrm{J}\)（上界 \(E_c = 2mgl\)）等分为 **26** 段；剔除**最靠近** \(E_c \approx 78.4\,\mathrm{J}\) 的 **1** 段。
-- **Practice** 段：**6** 个 Trial — **1**×`pendulumPractice` + **5**×`pendulumStimulus`，能量均为 \((1.96 + E_c)/2 \approx 40.18\,\mathrm{J}\)。
-- **25** 个 Block，每 Block 对应 1 个保留能量段；**6** 个 Trial：**1**×`pendulumPractice` + **5**×`pendulumStimulus`，目标能量为段**中点** \(E_\mathrm{mid}\)。
-- 每个摆球单元：在 \([-0.7\theta_{\max}, 0.7\theta_{\max}]\) 上均匀抽取**目标终态角**，再随机 `show1T` 与满足该能量的初态 \((\theta_0,\omega_0)\)，迭代拟合直至仿真终态角误差 ≤ 1°（`src/physics/pendulumUnitFit.ts`）。
-- JSON 中 Block 按能量段**固定顺序**写入；**运行实验**时正式段（Practice 之后）仅将 **25 个 Block** 按**被试编号 + 刺激集索引**确定性打乱，Block 前进度 Rest 保持 JSON 顺序与 1/25…25/25 文案（`src/runner/shuffleSequence.ts`）。
-- 顶层顺序（设计稿）：**欢迎 Rest**（阶段说明 + 实验结构，两屏）→ **Practice**（6 Trial）→ 对每个 Block：**Block 前 Rest（进度）** → **Block**（6 Trial）。
-- 汇报范式：**点估计**（点击/拖动确认位置）；反馈显示**橙色**（被试选择）与**蓝色**（真值）。
-
-各摆球刺激/练习试次的时序：`show1T` 为 \([1, 2]\) 倍周期 T（随机）；`fadeMs` 固定 **150** ms（不计入遮挡）；`hide1T` 固定 **0.5 s**。试次流程：蓝杆球 + 蓝虚线 → 淡出 150 ms（轨迹蓝→黑）→ 遮挡 0.5 s → 提示音 + 橙框/橙虚线作答；反馈约 0.3 s 后可按空格继续。`pendulumStimulus` 在 hide 时不绘制杆/球；`pendulumPractice` 在 hide 时杆/球半透明（0.45 alpha）。无全屏遮罩。
-
-重新生成（会覆盖现有文件）：
-
-```bash
-npm run generate-stimulate
+```
+StartView → generateRuntimeStimulusSet({ group, subjectId }) → sessionStorage → RunnerView → buildTimeline
 ```
 
-校验（物理精度、刺激集能量/时序、角度导出、Block 打乱等）：
+- 随机源：[`cryptoRandom`](../src/stimulate/cryptoRandom.ts)（`crypto.getRandomValues`）
+- 指导语文案：[`instructions.ts`](../src/stimulate/instructions.ts)（内联 HTML，经 DOMPurify 消毒后渲染）
 
-```bash
-npm run verify-all
+## 生成规则
+
+### 能量分段
+
+- **组 1（摆动）**：\([1.96,\, E_c]\,\mathrm{J}\)，\(E_c = 2mgl = 78.4\,\mathrm{J}\)
+- **组 2（旋转）**：\([E_c,\, 2E_c] = [78.4,\, 156.8]\,\mathrm{J}\)
+- 各区间等分为 **16** 段，剔除最靠近 \(E_c\) 的 **1** 段，保留 **15** 个能量中点 \(E_\mathrm{mid}\)
+
+实现见 [`energySegments.ts`](../src/physics/energySegments.ts)。
+
+### 宏观 sequence
+
+```
+欢迎 Rest → 结构说明 Rest → 练习 Rest → 练习 Block（9 Trial）
+→ [Block 前 Rest 1/15 → Block 1] → … → [Block 前 Rest 15/15 → Block 15]
 ```
 
-单独审计报告见仓库根目录 `AUDIT_REPORT.md`（`npm run audit` 会更新该文件）。
+- **15 个正式 Block** 在生成时随机打乱；Block 前 Rest 的进度文案**不**随打乱改变
+- **练习 Block**：能量为区间中点，timing 3×3 全交叉共 9 Trial；单元类型 `pendulumStimulus`（与正式同构），`segment_kind=practice`，不计入正式分析
+### 每个正式 Block
 
-实验结束后下载 **`experiment_data_subjectXXXX.csv`**（`XXXX` 为四位被试编号；无编号试跑时为 `experiment_data.csv`）。仅包含 `physics-stimulus` 摆球试次行（练习段与正式 block 均保留），**25 列**（含 `show_T`/`fade_T`/`hide_T` 与 `show_sec`/`fade_sec`/`hide_sec`/`total_time_sec` 等时序字段）。不含纯指导语试次。字段说明见 [`data_feature.md`](../data/data_feature.md)，列顺序见 [`src/runner/exportStimulusCsv.ts`](../src/runner/exportStimulusCsv.ts)。
+- **9** 个 Trial，每个 Trial：`注视点 +` → `pendulumStimulus`
+- **timing 全交叉**：`hide1T` ∈ {0.5, 0.6, 0.7} s × 组专属 `show1T`（摆动 {1.25, 1.5, 1.75} T；旋转 {2.5, 3, 3.5} T），共 9 种组合各出现一次，Block 内顺序随机
+- **淡出**：摆动 \(0.25\,T\)；旋转 \(0.5\,T\)（写入 `fadeMs`，不计入 `hide1T`）
+- 目标能量：该 Block 对应段的 \(E_\mathrm{mid}\)
+- 初态拟合：[`fitPendulumDiscreteTrial`](../src/physics/pendulumUnitFit.ts)（θ₀ 网格扫描 + 局部求精；ω₀ 符号顺序由 rng 随机；淡出按区制）
+
+### 约束
+
+- 组 1 试次 `pendulum_regime` 为 `oscillation`；组 2 为 `rotation`（临界附近允许 `critical`）
+- hide 时段无转向（[`hideIntervalHasNoTurning`](../src/physics/pendulumHideConstraint.ts)）
+- 生成后执行 [`assertRuntimeStimulusSet`](../src/stimulate/generateRuntimeSet.ts)
+
+## 校验
+
+```bash
+npm run verify-runtime-generator
+```
+
+抽检两组（摆动/旋转）完整生成结果，并统计 ω₀ 符号分布。
+
+## 终点角分布图
+
+对 `stimulate/stimulus_set_group*_subject*.json` 中正式 Block 试次，用物理引擎重算仿真终点角并绘制直方图：
+
+```bash
+npx tsx scripts/plot-stimulate-end-theta-hist.ts
+```
+
+输出：
+
+- `end_theta_hist_group1.png` — 组1（摆动）
+- `end_theta_hist_group2.png` — 组2（旋转）
+- `end_theta_by_group.csv` — 逐试次终点角数据
+
+## 相关文件
+
+| 文件 | 作用 |
+|------|------|
+| `src/start/StartView.ts` | 采集组别/编号，调用生成器 |
+| `src/shared/storage.ts` | `SESSION_STIMULUS_KEY`、`SESSION_MOTION_GROUP_KEY` |
+| `src/runner/buildTimeline.ts` | 将 sequence 转为 jsPsych 时间线 |
+| `scripts/verify-runtime-generator.ts` | 生成器集成测试 |
+
+## 归档说明
+
+`data/formal_raw_data/` 下 CSV 为**既往正式实验**导出数据（旧版协议，可能与当前 2×3×3 设计不同）。勿与当前运行时生成逻辑混用。

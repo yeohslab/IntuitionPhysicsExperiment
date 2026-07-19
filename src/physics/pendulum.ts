@@ -36,6 +36,24 @@ export function pendulumOmegaRadForEnergyAtBottom(
   return Math.sqrt((2 * E) / (massKg * rodLengthM * rodLengthM));
 }
 
+/**
+ * 最高点 θ=±π 处由能量反推 |ω|（rad/s）。
+ * 旋转：K=E−E_c>0；往复/临界：到不了或刚到顶点，为 0。
+ */
+export function pendulumOmegaRadForEnergyAtTop(
+  E: number,
+  rodLengthM: number,
+  gravity: number,
+  massKg: number = PENDULUM_MASS_KG,
+): number {
+  if (E < 0 || !Number.isFinite(E)) throw new Error(`无效能量 E=${E}`);
+  if (rodLengthM <= 0) throw new Error(`无效杆长 l=${rodLengthM}`);
+  const Ec = pendulumCriticalEnergy(rodLengthM, gravity);
+  const K = E - Ec;
+  if (K <= 0) return 0;
+  return Math.sqrt((2 * K) / (massKg * rodLengthM * rodLengthM));
+}
+
 export function pendulumOmegaDegPerSecForEnergyAtBottom(
   E: number,
   rodLengthM: number,
@@ -52,7 +70,7 @@ export function pendulumRegime(E: number, rodLengthM: number, gravity: number): 
   return "critical";
 }
 
-/** 周期 T（秒）：往复或绕圈，见 TODO.md */
+/** 周期 T（秒）：往复椭圆积分 / 转圈周期公式 */
 export function pendulumPeriod(E: number, rodLengthM: number, gravity: number): number {
   const m = PENDULUM_MASS_KG;
   const g = gravity;
@@ -216,9 +234,24 @@ export function pendulumThetaOscillationAt(
   p: PendulumParams,
   analysis: PendulumAnalysis,
 ): number {
-  const k = analysis.kOsc ?? oscillationModulusK(analysis.E, p.rodLengthM, p.gravity);
-  const psi = analysis.psiOsc ?? 0;
-  return thetaOmegaOscillation(tSec, psi, k, analysis.alpha).theta;
+  return pendulumThetaOmegaAt(tSec, p, analysis).theta;
+}
+
+/** 仿真时刻 t 的 (θ, ω)（往复解析 / 转圈数值积分） */
+export function pendulumThetaOmegaAt(
+  tSec: number,
+  p: PendulumParams,
+  analysis?: PendulumAnalysis,
+): { theta: number; omega: number } {
+  const a = analysis ?? analyzePendulum(p);
+  if (a.regime === "rotation") {
+    const rot = new PendulumRotationIntegrator(p);
+    rot.step(Math.max(0, tSec));
+    return { theta: rot.theta, omega: rot.omega };
+  }
+  const k = a.kOsc ?? oscillationModulusK(a.E, p.rodLengthM, p.gravity);
+  const psi = a.psiOsc ?? findOscillationPhase(p.theta0Rad, p.omega0RadPerSec, k, a.alpha);
+  return thetaOmegaOscillation(tSec, psi, k, a.alpha);
 }
 
 /** 辛 Verlet（速度形式），绕圈动力学 */

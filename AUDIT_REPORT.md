@@ -1,47 +1,71 @@
-# 四项精度与数据完整性审计报告
+# 物理与运行时校验说明
 
-生成时间：2026-06-01T16:22:14.780Z
+本文档描述当前仓库**自动化校验**范围。正式实验刺激由运行时生成（见 [`stimulate/README.md`](stimulate/README.md)），不再维护五份固定 JSON 或 `npm run audit`。
 
-
-## 1. 已有 npm 校验（需单独执行）
-
-- `npm run verify-physics` — 执行日已通过（往复能量、绕圈 Verlet、椭圆周期）
-
-- `npm run verify-pendulum-display-energy` — 5 套刺激集能量/hide/终态角
-
-- `npm run verify-pendulum-arc-score` — 角度折返与得分逻辑
-
-
-## 1. 摆球绕圈：rAF 逐帧 vs simEnd 一步
-
-- **PASS**: 刺激集无 rotation 单元；合成绕圈 rAF vs simEnd |Δθ|=1.14e-9 rad
-
-## 2. 随机 Block 顺序
-
-- **PASS**: 确定性复现：subject=0042 index=1 → 25 block 顺序稳定
-- **PASS**: applySubjectBlockShuffle 与底层 shuffle 一致
-- **PASS**: 打乱后 block 顺序与 JSON 原序不同
-- **PASS**: 刺激集含 25 个 block
-- **PASS**: Practice / 欢迎 Rest 等 prefix 顺序未变
-- **PASS**: buildTimeline：空 subjectId（falsy）→ 不调用 applySubjectBlockShuffle
-- **WARN**: applySubjectBlockShuffle('', idx) 仍会打乱；防护仅在 buildTimeline/RunnerView，勿直接以空串调用
-- **PASS**: 奇数 formal 段 → 静默不打乱
-- **WARN**: 编辑页「运行实验」不写入 subject_id；Runner 在 subjectId 为空时不调用 applySubjectBlockShuffle。正式被试须从首页「开始实验」入口。
-- **PASS**: buildTimeline 条件：subjectId 非空且 stimulusSetIndex 有限时才打乱（与 RunnerView 一致）
-
-## 3. 各阶段持续时间精度
-
-- **PASS**: 扫描 780 个摆球单元：show1T∈[1,2]、hide1T=0.5s、fadeMs=150、totalTimeT 一致、buildTimePhases 分段正确
-- **PASS**: totalTimeT 最大偏差 0.00e+0
-- **WARN**: 运行时 rAF 墙钟：后台标签页可能延长真实等待，仿真 t 仍 cap 于 simEndSec（设计行为）
-
-## 4. 角度记录精度
-
-- **PASS**: pendulumAngleDegFromRad / degToRad 与 wrapAngleRad 一致（|Δ|<1e-10）
-- **PASS**: pendulumAngleFromPointer 50 次随机 round-trip |Δθ|<1e-8
-- **PASS**: 往复误差/导出：eDeg=5.7296° delta_csv=5.7296°（钳位逻辑可用）
-- **WARN**: CSV 中 theta_*_rad 由折返后的度换算，转圈试次不保留圈数
-- **PASS**: finishTrial 已写入 w_max_deg、unit_id、segment_id；全局 block_shuffle_seed / block_order_ids 由 RunnerView 写入
+最后更新：与当前 `verify-all` 脚本一致。
 
 ---
-审计脚本全部通过。
+
+## 执行方式
+
+```bash
+npm run verify-all
+```
+
+等价于依次运行：
+
+| 命令 | 内容 |
+|------|------|
+| `verify-physics` | 摆球周期、往复/转圈能量守恒、相位求解 |
+| `verify-runtime-generator` | 组 1/2 各生成完整刺激集；15×9 结构；timing 全交叉；hide 无转向；无 spring 单元；ω₀ 符号抽检 |
+| `verify-pendulum-arc-score` | 摆角误差、折返与区间命中 |
+
+---
+
+## 运行时生成器（verify-runtime-generator）
+
+- 组 1：15 能量段，\(E_\mathrm{mid}\) 落在摆动区
+- 组 2：15 能量段，\(E_\mathrm{mid}\) 落在旋转区
+- 每 Block 9 Trial，3×3 timing 组合无重复、无遗漏
+- `fitPendulumDiscreteTrial` 产出的试次满足 hide 无转向约束
+- ω₀ 正/负符号在固定种子多次拟合中应大致均衡（非严格 50:50，但不应固定负号优先）
+
+---
+
+## 物理精度（verify-physics）
+
+- 椭圆函数周期与小角近似对照
+- 往复：初值闭合、能量漂移阈值
+- 转圈：Verlet 积分相对能量漂移
+- 相位求解数值误差
+
+---
+
+## 角度导出（verify-pendulum-arc-score）
+
+- 往复/转圈误差度规与 `pendulumArcScore.ts` 一致
+- 区间命中与得分函数边界
+
+---
+
+## 已移除的校验（历史）
+
+以下脚本与审计项随旧版固定刺激集、弹簧范式、编辑器一并废弃，**勿再引用**：
+
+- `scripts/generate-stimulate-sets.ts`、`scripts/audit-experiment-integrity.ts`
+- `scripts/verify-pendulum-display-energy.ts`、`verify-spring-arc-score.ts`
+- `src/runner/shuffleSequence.ts`（确定性 Block 打乱）
+- 五份 `stimulus-01.json` … `stimulus-05.json`
+
+---
+
+## 运行时注意事项
+
+- 仿真时间轴由 `requestAnimationFrame` 驱动，墙钟在后台标签页可能变慢；仿真物理时间仍 cap 于 `simEndSec`（设计行为）。
+- CSV 中 `theta_*_rad` 由折返后的度换算，转圈试次不保留圈数信息。
+
+---
+
+## 既往审计数据
+
+`data/formal_raw_data/` 与 `data_analysis/output/` 中的报告基于**旧版协议**（单旋转区、25×5、固定 JSON）。与新 2×3×3 运行时设计并列存档，分析时须区分协议版本。

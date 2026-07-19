@@ -4,12 +4,10 @@ import "../styles/physics.css";
 import type { ExperimentStimulusSet } from "../types/experiment";
 import { buildTimeline } from "./buildTimeline";
 import { experimentDataFilename, exportStimulusTrialsCsv } from "./exportStimulusCsv";
-import { applySubjectBlockShuffle, blockShuffleSeed } from "./shuffleSequence";
 import { cancelStaleKeyboardListeners, wireRunnerControls } from "./stimulusControl";
 import {
-  isDeveloperModeRun,
   loadStimulusSetFromSession,
-  SESSION_STIMULUS_FILE_INDEX_KEY,
+  SESSION_MOTION_GROUP_KEY,
   SESSION_SUBJECT_ID_KEY,
   validateRunnableSet,
 } from "../shared/storage";
@@ -33,14 +31,13 @@ export function mountRunner(container: HTMLElement): void {
   container.className = "runner-view";
 
   const set = loadStimulusSetFromSession();
-  const err = set ? validateRunnableSet(set) : "未找到要运行的刺激集。请从首页输入被试编号并开始，或在编辑页点击「运行实验」。";
+  const err = set ? validateRunnableSet(set) : "未找到要运行的刺激集。请从首页输入被试信息并开始。";
 
   if (!set || err) {
     container.innerHTML = `
       <div class="runner-panel runner-panel--error">
         <p>${escapeAttr(err ?? "未知错误")}</p>
-        <p><a href="#/start" class="btn btn-primary">返回实验首页</a>
-        <a href="#/editor" class="btn btn-secondary">刺激编写</a></p>
+        <p><a href="#/start" class="btn btn-primary">返回实验首页</a></p>
       </div>
     `;
     return;
@@ -58,13 +55,9 @@ function escapeAttr(s: string): string {
 }
 
 function runExperiment(container: HTMLElement, set: ExperimentStimulusSet): void {
-  const developerMode = isDeveloperModeRun();
   const toolbar = document.createElement("div");
   toolbar.className = "runner-toolbar";
-  const devBadge = developerMode
-    ? `<span class="runner-toolbar__dev muted">开发者模式：遮挡半透明</span>`
-    : "";
-  toolbar.innerHTML = `${devBadge}<a href="#/start" class="btn btn-ghost">实验首页</a><a href="#/editor" class="btn btn-ghost">刺激编写</a>`;
+  toolbar.innerHTML = `<a href="#/start" class="btn btn-ghost">实验首页</a>`;
 
   const target = document.createElement("div");
   target.id = "jspsych-target";
@@ -75,7 +68,7 @@ function runExperiment(container: HTMLElement, set: ExperimentStimulusSet): void
   done.hidden = true;
   done.innerHTML = `
     <p>实验已结束。若浏览器未自动下载 CSV，请检查是否被拦截下载。</p>
-    <p><a href="#/start" class="btn btn-primary">实验首页</a> <a href="#/editor" class="btn btn-secondary">刺激编写</a></p>
+    <p><a href="#/start" class="btn btn-primary">实验首页</a></p>
   `;
 
   container.appendChild(toolbar);
@@ -103,26 +96,13 @@ function runExperiment(container: HTMLElement, set: ExperimentStimulusSet): void
 
   activeJsPsych = jsPsych;
   const subjectId = sessionStorage.getItem(SESSION_SUBJECT_ID_KEY) ?? "";
-  const idxRaw = sessionStorage.getItem(SESSION_STIMULUS_FILE_INDEX_KEY);
-  const stimulusSetIndex = idxRaw !== null && idxRaw !== "" ? Number(idxRaw) : NaN;
-  const runProps: Record<string, unknown> = {
+  const groupRaw = sessionStorage.getItem(SESSION_MOTION_GROUP_KEY);
+  const motionGroup = groupRaw === "1" || groupRaw === "2" ? Number(groupRaw) : null;
+  jsPsych.data.addProperties({
     subject_id: subjectId,
-    stimulus_set_index: Number.isFinite(stimulusSetIndex) ? stimulusSetIndex : null,
-  };
-  if (subjectId && Number.isFinite(stimulusSetIndex)) {
-    const seed = blockShuffleSeed(subjectId, stimulusSetIndex);
-    const shuffled = applySubjectBlockShuffle(set, subjectId, stimulusSetIndex);
-    runProps.block_shuffle_seed = seed;
-    runProps.block_order_ids = JSON.stringify(
-      shuffled.sequence.filter((x) => x.kind === "block").map((x) => x.id),
-    );
-  }
-  jsPsych.data.addProperties(runProps);
-  wireRunnerControls(jsPsych, target);
-  const timeline = buildTimeline(set, {
-    developerMode,
-    subjectId,
-    stimulusSetIndex: Number.isFinite(stimulusSetIndex) ? stimulusSetIndex : undefined,
+    motion_group: motionGroup,
   });
+  wireRunnerControls(jsPsych, target);
+  const timeline = buildTimeline(set);
   void jsPsych.run(timeline as Parameters<JsPsych["run"]>[0]);
 }

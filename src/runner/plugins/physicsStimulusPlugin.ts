@@ -1,6 +1,6 @@
 import type { JsPsych } from "jspsych";
 import { ParameterType } from "jspsych";
-import { analyzePendulum, pendulumThetaOscillationAt, PendulumRotationIntegrator } from "../../physics/pendulum";
+import { analyzePendulum, pendulumThetaOmegaAt, pendulumOmegaRadForEnergyAtBottom, pendulumOmegaRadForEnergyAtTop, PendulumRotationIntegrator } from "../../physics/pendulum";
 import type { PendulumParams } from "../../physics/pendulum";
 import {
   pendulumLayout,
@@ -18,16 +18,6 @@ import {
   stopMaskedAmbientSound,
   syncMaskedAmbientFromVisibility,
 } from "../../shared/playEstimateCue";
-import type { SpringParams } from "../../physics/spring";
-import { springAnalysis, springDisplacementAt, springMotion } from "../../physics/spring";
-import {
-  springLayout,
-  drawSpringStimulusFrame,
-  drawSpringEstimate,
-  drawSpringEstimateGuide,
-  drawSpringFeedbackTruth,
-  springDisplacementFromLogicalX,
-} from "../../physics/render/springCanvas";
 import { setupHiDpiCanvas, pointerToLogical } from "../../physics/render/canvasCoords";
 import {
   PHYSICS_CANVAS_LOGICAL_H,
@@ -38,45 +28,34 @@ import {
   pendulumWMaxDeg,
   pendulumAngleDegFromRad,
   degToRad,
+  radToDeg,
   wrapDeltaThetaDeg,
 } from "../../physics/pendulumArcScore";
-import { springPositionErrorM } from "../../physics/springArcScore";
 import {
   buildTimePhases,
   stimulusPhaseDurationsForExport,
   stimulusTotalSec,
   stimulusTotalTimeT,
   stimulusVisibilityAt,
+  STIMULUS_FADE_MS,
   withSyncedTotalTimeT,
-  type StimulusVisibilityKind,
 } from "../../physics/timePhases";
 import { normalizeKeyForJsPsych } from "../../shared/keys";
 import { cancelStaleKeyboardListeners } from "../stimulusControl";
+import { mountSpeedIndicatorBar } from "../components/speedIndicatorBar";
 
 type KeyboardHandler = (e: KeyboardEvent) => void;
 type TrialPhase = "sim" | "estimate" | "feedback";
 
 const SPACE_KEY = normalizeKeyForJsPsych(" ");
 
-function simDynamicsAlpha(
-  vis: { kind: StimulusVisibilityKind; alpha: number },
-  developerMode: boolean,
-  hideSemiVisible: boolean,
-): number {
-  if (vis.kind === "hide" && (developerMode || hideSemiVisible)) return 0.45;
-  return vis.alpha;
-}
-
-function mountEstimateFooter(footer: HTMLElement, simHint: HTMLElement, label: string): HTMLButtonElement {
+function mountEstimateFooter(footer: HTMLElement, simHint: HTMLElement): HTMLButtonElement {
   simHint.textContent = "仿真已结束。";
   footer.innerHTML = "";
   const panel = document.createElement("div");
   panel.className = "physics-estimate-ui";
-  const surface =
-    label === "摆杆"
-      ? "在<strong>橙色虚线轨迹</strong>上"
-      : "在<strong>轨道</strong>上";
-  panel.innerHTML = `<p class="physics-hint">${surface}<strong>点击</strong>您认为${label}在试次结束瞬间的位置，可<strong>拖动</strong>微调，然后确认。</p>`;
+  panel.innerHTML =
+    "<p class=\"physics-hint\">在<strong>橙色虚线轨迹</strong>上<strong>点击</strong>您认为摆杆在试次结束瞬间的位置，可<strong>拖动</strong>微调，然后确认。</p>";
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "physics-btn physics-btn--primary";
@@ -88,18 +67,12 @@ function mountEstimateFooter(footer: HTMLElement, simHint: HTMLElement, label: s
 
 const FEEDBACK_CONTINUE_DELAY_MS = 300;
 
-function mountTruthOnlyFeedbackFooter(
-  footer: HTMLElement,
-  physicsKind: "pendulum" | "spring",
-): HTMLParagraphElement {
+function mountTruthOnlyFeedbackFooter(footer: HTMLElement): HTMLParagraphElement {
   footer.innerHTML = "";
   const panel = document.createElement("div");
   panel.className = "physics-feedback-ui";
-  const hint =
-    physicsKind === "pendulum"
-      ? "<strong>橙色摆杆</strong>为您的选择，<strong>蓝色摆杆</strong>为该试次结束瞬间的真实指向。"
-      : "<strong>橙色物块</strong>为您的选择，<strong>蓝色物块</strong>为该试次结束瞬间的真实位置。";
-  panel.innerHTML = `<p class="physics-hint muted">${hint}</p>`;
+  panel.innerHTML =
+    "<p class=\"physics-hint muted\"><strong>橙色摆杆</strong>为您的选择，<strong>蓝色摆杆</strong>为该试次结束瞬间的真实指向。</p>";
   const continueHint = document.createElement("p");
   continueHint.className = "physics-hint muted physics-feedback-continue";
   continueHint.textContent = "按空格键继续";
@@ -153,7 +126,6 @@ function listenSpace(jsPsych: JsPsych, onSpace: () => void): KeyboardHandler {
   }) as KeyboardHandler;
 }
 
-/** 提交按钮会抢走焦点，导致空格无法触发 jsPsych 键盘监听 */
 function blurActiveElement(): void {
   const el = document.activeElement;
   if (el instanceof HTMLElement) el.blur();
@@ -161,9 +133,8 @@ function blurActiveElement(): void {
 
 const info = {
   name: "physics-stimulus",
-  version: "0.5.0",
+  version: "0.6.0",
   parameters: {
-    physicsKind: { type: ParameterType.STRING, default: "pendulum" },
     theta0Deg: { type: ParameterType.FLOAT, default: 45 },
     omega0DegPerSec: { type: ParameterType.FLOAT, default: 0 },
     rodLengthM: { type: ParameterType.FLOAT, default: 4 },
@@ -173,20 +144,13 @@ const info = {
     hide1T: { type: ParameterType.FLOAT, default: 0.75 },
     show2T: { type: ParameterType.FLOAT, default: 0 },
     hide2T: { type: ParameterType.FLOAT, default: 0 },
-    fadeMs: { type: ParameterType.FLOAT, default: 150 },
-    massKg: { type: ParameterType.FLOAT, default: 1 },
-    stiffness: { type: ParameterType.FLOAT, default: 4 },
-    x0M: { type: ParameterType.FLOAT, default: 0.5 },
-    v0Mps: { type: ParameterType.FLOAT, default: 0 },
+    fadeMs: { type: ParameterType.FLOAT, default: STIMULUS_FADE_MS },
     unitMeta: { type: ParameterType.COMPLEX, default: {} },
-    developerMode: { type: ParameterType.BOOL, default: false },
-    hideSemiVisible: { type: ParameterType.BOOL, default: false },
   },
   data: {},
 } as const;
 
 type Trial = {
-  physicsKind: "pendulum" | "spring";
   theta0Deg: number;
   omega0DegPerSec: number;
   rodLengthM: number;
@@ -197,13 +161,7 @@ type Trial = {
   show2T: number;
   hide2T: number;
   fadeMs: number;
-  massKg: number;
-  stiffness: number;
-  x0M: number;
-  v0Mps: number;
   unitMeta: Record<string, unknown>;
-  developerMode: boolean;
-  hideSemiVisible: boolean;
 };
 
 class PhysicsStimulusPlugin {
@@ -214,9 +172,11 @@ class PhysicsStimulusPlugin {
     cancelStaleKeyboardListeners(this.jsPsych);
     display_element.innerHTML = `
       <div class="physics-trial physics-trial--stimulus physics-trial--sim">
-        <canvas class="physics-canvas" width="${PHYSICS_CANVAS_LOGICAL_W}" height="${PHYSICS_CANVAS_LOGICAL_H}"></canvas>
+        <div class="physics-canvas-frame">
+          <canvas class="physics-canvas" width="${PHYSICS_CANVAS_LOGICAL_W}" height="${PHYSICS_CANVAS_LOGICAL_H}"></canvas>
+        </div>
         <div class="physics-footer">
-          <p class="physics-hint muted physics-sim-hint">观看运动；摆杆/物块将淡出消失，虚线轨迹仍保留。</p>
+          <p class="physics-hint muted physics-sim-hint">观看运动；摆杆将淡出消失，虚线轨迹仍保留。</p>
         </div>
       </div>`;
 
@@ -226,14 +186,15 @@ class PhysicsStimulusPlugin {
     const { ctx, cssW, cssH } = setupHiDpiCanvas(canvas, logicalW, logicalH);
 
     const trialRoot = display_element.querySelector(".physics-trial") as HTMLElement;
+    const canvasFrame = display_element.querySelector(".physics-canvas-frame") as HTMLElement;
     const footer = display_element.querySelector(".physics-footer") as HTMLElement;
     const simHint = display_element.querySelector(".physics-sim-hint") as HTMLElement;
+    const layout = pendulumLayout(cssW, cssH);
 
     const t0 = performance.now();
     let raf = 0;
     let phase: TrialPhase = "sim";
     let kbListener: KeyboardHandler | null = null;
-    const trialCleanups: Array<() => void> = [];
 
     const syncSimCursor = (p: TrialPhase) => {
       trialRoot.classList.toggle("physics-trial--sim", p === "sim");
@@ -244,18 +205,6 @@ class PhysicsStimulusPlugin {
         this.jsPsych.pluginAPI.cancelKeyboardResponse(kbListener);
         kbListener = null;
       }
-    };
-
-    const registerTrialCleanup = (fn: () => void) => {
-      trialCleanups.push(fn);
-    };
-
-    const finish = (extra: Record<string, unknown>) => {
-      clearKb();
-      cancelAnimationFrame(raf);
-      for (const fn of trialCleanups) fn();
-      stopMaskedAmbientSound();
-      this.jsPsych.finishTrial(extra);
     };
 
     const timing = withSyncedTotalTimeT({
@@ -270,89 +219,13 @@ class PhysicsStimulusPlugin {
     const pointerLogical = (e: PointerEvent) =>
       pointerToLogical(e.clientX, e.clientY, canvas, logicalW, logicalH);
 
-    if (trial.physicsKind === "pendulum") {
-      this.runPendulumTrial({
-        trial,
-        timing,
-        ctx,
-        cssW,
-        cssH,
-        canvas,
-        footer,
-        simHint,
-        t0,
-        pointerLogical,
-        getPhase: () => phase,
-        setPhase: (p) => {
-          phase = p;
-          syncSimCursor(p);
-        },
-        getRaf: () => raf,
-        setRaf: (id) => {
-          raf = id;
-        },
-        finish,
-        setKb: (h) => {
-          clearKb();
-          kbListener = h;
-        },
-        registerTrialCleanup,
-        jsPsych: this.jsPsych,
-      });
-      return;
-    }
+    const finish = (extra: Record<string, unknown>) => {
+      clearKb();
+      cancelAnimationFrame(raf);
+      stopMaskedAmbientSound();
+      this.jsPsych.finishTrial(extra);
+    };
 
-    this.runSpringTrial({
-      trial,
-      timing,
-      ctx,
-      cssW,
-      cssH,
-      canvas,
-      footer,
-      simHint,
-      t0,
-      pointerLogical,
-      getPhase: () => phase,
-      setPhase: (p) => {
-        phase = p;
-        syncSimCursor(p);
-      },
-      getRaf: () => raf,
-      setRaf: (id) => {
-        raf = id;
-      },
-      finish,
-      setKb: (h) => {
-        clearKb();
-        kbListener = h;
-      },
-      registerTrialCleanup,
-      jsPsych: this.jsPsych,
-    });
-  }
-
-  private runPendulumTrial(opts: {
-    trial: Trial;
-    timing: ReturnType<typeof withSyncedTotalTimeT>;
-    ctx: CanvasRenderingContext2D;
-    cssW: number;
-    cssH: number;
-    canvas: HTMLCanvasElement;
-    footer: HTMLElement;
-    simHint: HTMLElement;
-    t0: number;
-    pointerLogical: (e: PointerEvent) => { x: number; y: number };
-    getPhase: () => TrialPhase;
-    setPhase: (p: TrialPhase) => void;
-    getRaf: () => number;
-    setRaf: (id: number) => void;
-    finish: (extra: Record<string, unknown>) => void;
-    setKb: (h: KeyboardHandler | null) => void;
-    registerTrialCleanup: (fn: () => void) => void;
-    jsPsych: JsPsych;
-  }): void {
-    const { trial, timing, ctx, cssW, cssH, canvas, footer, simHint, t0, pointerLogical } = opts;
     const p: PendulumParams = {
       theta0Rad: degToRad(trial.theta0Deg),
       omega0RadPerSec: degToRad(trial.omega0DegPerSec),
@@ -366,17 +239,30 @@ class PhysicsStimulusPlugin {
     const phases = buildTimePhases(synced, T);
     const simEndSec = stimulusTotalSec(synced, T);
     const rot = analysis.regime === "rotation" ? new PendulumRotationIntegrator(p) : null;
-    const layout = pendulumLayout(cssW, cssH);
     const wMaxDeg = pendulumWMaxDeg(analysis.E, analysis.regime, trial.rodLengthM, trial.gravity);
     const motionRange = { regime: analysis.regime, wMaxDeg };
+    const rodL = trial.rodLengthM;
+    // 线速度 v=l|ω|；低端 v_min、高端 v_max；比例 (v−v_min)/(v_max−v_min)
+    const vMax = rodL * pendulumOmegaRadForEnergyAtBottom(analysis.E, rodL);
+    const vMin =
+      analysis.regime === "rotation"
+        ? rodL * pendulumOmegaRadForEnergyAtTop(analysis.E, rodL, trial.gravity)
+        : 0;
+    const speedBar = mountSpeedIndicatorBar(canvasFrame, {
+      rodPx: layout.rodPx,
+      canvasCssW: cssW,
+      canvasCssH: cssH,
+      anchorX: layout.anchorX,
+      anchorY: layout.anchorY,
+    });
 
     let thetaActualRad = 0;
+    let omegaActualRadPerSec = 0;
     let thetaEstRad = 0;
     let estimateInteracted = false;
     let dragging = false;
     let estimateStartMs = 0;
     let capturedPointerId: number | null = null;
-    const maskedAudioActive = { current: false };
 
     prepareMaskedAmbientForTrial();
 
@@ -391,9 +277,9 @@ class PhysicsStimulusPlugin {
       }
     };
 
-    const thetaActualAtEnd = () => {
-      if (rot) return rot.theta;
-      return pendulumThetaOscillationAt(simEndSec, p, analysis);
+    const stateActualAtEnd = (): { theta: number; omega: number } => {
+      if (rot) return { theta: rot.theta, omega: rot.omega };
+      return pendulumThetaOmegaAt(simEndSec, p, analysis);
     };
 
     const redrawEstimate = () => {
@@ -418,7 +304,7 @@ class PhysicsStimulusPlugin {
       const phaseDur = stimulusPhaseDurationsForExport(synced, T);
       return {
         response_mode: "estimate_point",
-        physicsKind: trial.physicsKind,
+        physicsKind: "pendulum",
         pendulum_E_J: analysis.E,
         pendulum_T_sec: T,
         pendulum_regime: analysis.regime,
@@ -433,6 +319,8 @@ class PhysicsStimulusPlugin {
         theta_estimated_rad: degToRad(thetaEstimatedDeg),
         delta_theta_rad: degToRad(deltaThetaDeg),
         abs_delta_theta_rad: degToRad(eDeg),
+        omega_actual_deg_per_sec: radToDeg(omegaActualRadPerSec),
+        omega_actual_rad_per_sec: omegaActualRadPerSec,
         rt_estimate_sec: rtEstimateSec,
         fade_ms: timing.fadeMs ?? 0,
         w_max_deg: wMaxDeg,
@@ -444,28 +332,32 @@ class PhysicsStimulusPlugin {
     };
 
     const startFeedback = (payload: Record<string, unknown>) => {
-      opts.setPhase("feedback");
+      phase = "feedback";
+      syncSimCursor("feedback");
       canvas.classList.remove("physics-canvas--estimate");
       releasePointerCaptureIfNeeded();
-      const continueHint = mountTruthOnlyFeedbackFooter(footer, "pendulum");
+      const continueHint = mountTruthOnlyFeedbackFooter(footer);
       drawPendulumFeedbackTruth(ctx, layout, thetaEstRad, thetaActualRad, motionRange);
-      const trialRoot = canvas.closest(".physics-trial") as HTMLElement;
-      const { kb } = beginFeedbackContinue(opts.jsPsych, trialRoot, continueHint, () => {
-        opts.finish(payload);
+      const { kb } = beginFeedbackContinue(this.jsPsych, trialRoot, continueHint, () => {
+        finish(payload);
       });
-      opts.setKb(kb);
+      kbListener = kb;
     };
 
     const startEstimate = () => {
-      opts.setPhase("estimate");
-      thetaActualRad = thetaActualAtEnd();
+      speedBar.hide();
+      phase = "estimate";
+      syncSimCursor("estimate");
+      const endState = stateActualAtEnd();
+      thetaActualRad = endState.theta;
+      omegaActualRadPerSec = endState.omega;
       thetaEstRad = 0;
       estimateInteracted = false;
       estimateStartMs = performance.now();
       canvas.classList.add("physics-canvas--estimate");
       void playEstimateCue();
       redrawEstimate();
-      const confirmBtn = mountEstimateFooter(footer, simHint, "摆杆");
+      const confirmBtn = mountEstimateFooter(footer, simHint);
       confirmBtn.disabled = true;
       const confirm = () => {
         if (!estimateInteracted) return;
@@ -475,14 +367,14 @@ class PhysicsStimulusPlugin {
         canvas.removeEventListener("pointercancel", onUp);
         confirmBtn.removeEventListener("click", confirm);
         releasePointerCaptureIfNeeded();
-        opts.setKb(null);
+        clearKb();
         startFeedback(buildPayload());
       };
       confirmBtn.addEventListener("click", confirm);
-      opts.setKb(listenSpace(opts.jsPsych, confirm));
+      kbListener = listenSpace(this.jsPsych, confirm);
 
       const onDown = (e: PointerEvent) => {
-        if (opts.getPhase() !== "estimate") return;
+        if (phase !== "estimate") return;
         estimateInteracted = true;
         confirmBtn.disabled = false;
         dragging = true;
@@ -493,7 +385,7 @@ class PhysicsStimulusPlugin {
         redrawEstimate();
       };
       const onMove = (e: PointerEvent) => {
-        if (!dragging || opts.getPhase() !== "estimate") return;
+        if (!dragging || phase !== "estimate") return;
         const { x, y } = pointerLogical(e);
         thetaEstRad = pendulumAngleFromPointer(layout, x, y);
         redrawEstimate();
@@ -516,210 +408,40 @@ class PhysicsStimulusPlugin {
     };
 
     const simTick = (now: number) => {
-      if (opts.getPhase() !== "sim") return;
+      if (phase !== "sim") return;
       const elapsed = (now - t0) / 1000;
       const t = Math.min(elapsed, simEndSec);
       let theta: number;
+      let omega: number;
       if (rot) {
         rot.step(t - rot.tAccum);
         theta = rot.theta;
+        omega = rot.omega;
       } else {
-        theta = pendulumThetaOscillationAt(t, p, analysis);
+        const state = pendulumThetaOmegaAt(t, p, analysis);
+        theta = state.theta;
+        omega = state.omega;
       }
       const vis = stimulusVisibilityAt(synced, T, t);
-      maskedAudioActive.current = syncMaskedAmbientFromVisibility(vis);
-      const dynAlpha = simDynamicsAlpha(vis, trial.developerMode, trial.hideSemiVisible);
+      syncMaskedAmbientFromVisibility(vis);
       const guideStroke = pendulumGuideStrokeForSimVisibility(vis);
-      drawPendulumStimulusFrame(ctx, layout, theta, motionRange, dynAlpha, guideStroke);
+      drawPendulumStimulusFrame(ctx, layout, theta, motionRange, vis.alpha, guideStroke);
+      // (v − v_min) / (v_max − v_min)，v = l|ω|
+      const v = rodL * Math.abs(omega);
+      const denom = vMax - vMin;
+      const level = denom > 1e-12 ? (v - vMin) / denom : 0;
+      speedBar.setLevels(level, level);
 
       if (elapsed >= simEndSec) {
-        cancelAnimationFrame(opts.getRaf());
+        cancelAnimationFrame(raf);
         stopMaskedAmbientSound();
-        maskedAudioActive.current = false;
         startEstimate();
         return;
       }
-      opts.setRaf(requestAnimationFrame(simTick));
+      raf = requestAnimationFrame(simTick);
     };
 
-    opts.setRaf(requestAnimationFrame(simTick));
-  }
-
-  private runSpringTrial(opts: {
-    trial: Trial;
-    timing: ReturnType<typeof withSyncedTotalTimeT>;
-    ctx: CanvasRenderingContext2D;
-    cssW: number;
-    cssH: number;
-    canvas: HTMLCanvasElement;
-    footer: HTMLElement;
-    simHint: HTMLElement;
-    t0: number;
-    pointerLogical: (e: PointerEvent) => { x: number; y: number };
-    getPhase: () => TrialPhase;
-    setPhase: (p: TrialPhase) => void;
-    getRaf: () => number;
-    setRaf: (id: number) => void;
-    finish: (extra: Record<string, unknown>) => void;
-    setKb: (h: KeyboardHandler | null) => void;
-    registerTrialCleanup: (fn: () => void) => void;
-    jsPsych: JsPsych;
-  }): void {
-    const { trial, timing, ctx, cssW, cssH, canvas, footer, simHint, t0, pointerLogical } = opts;
-    const sp: SpringParams = {
-      massKg: trial.massKg,
-      stiffness: trial.stiffness,
-      x0M: trial.x0M,
-      v0Mps: trial.v0Mps,
-    };
-    const { E, T } = springAnalysis(sp);
-    const synced = withSyncedTotalTimeT(timing, T);
-    const totalTimeT = stimulusTotalTimeT(synced, T);
-    const phases = buildTimePhases(synced, T);
-    const simEndSec = stimulusTotalSec(synced, T);
-    const { amplitudeM } = springMotion(sp);
-    const layout = springLayout(cssW, cssH, amplitudeM);
-
-    let xActualM = 0;
-    let xEstM = 0;
-    let estimateInteracted = false;
-    let dragging = false;
-    let estimateStartMs = 0;
-    let capturedPointerId: number | null = null;
-    const maskedAudioActive = { current: false };
-
-    prepareMaskedAmbientForTrial();
-
-    const releasePointerCaptureIfNeeded = () => {
-      if (capturedPointerId !== null) {
-        try {
-          canvas.releasePointerCapture(capturedPointerId);
-        } catch {
-          /* already released */
-        }
-        capturedPointerId = null;
-      }
-    };
-
-    const redrawEstimate = () => {
-      if (!estimateInteracted) {
-        drawSpringEstimateGuide(ctx, layout);
-        return;
-      }
-      drawSpringEstimate(ctx, layout, xEstM);
-    };
-
-    const buildPayload = (): Record<string, unknown> => {
-      const rtEstimateSec = (performance.now() - estimateStartMs) / 1000;
-      const eM = springPositionErrorM(xEstM, xActualM);
-      const phaseDur = stimulusPhaseDurationsForExport(synced, T);
-      return {
-        response_mode: "estimate_point",
-        physicsKind: trial.physicsKind,
-        spring_E_J: E,
-        spring_T_sec: T,
-        stimulus_time_phases_json: JSON.stringify(phases),
-        total_time_T: totalTimeT,
-        ...phaseDur,
-        x_actual_m: xActualM,
-        x_estimated_m: xEstM,
-        delta_x_m: xEstM - xActualM,
-        abs_delta_x_m: eM,
-        rt_estimate_sec: rtEstimateSec,
-        fade_ms: timing.fadeMs ?? 0,
-      };
-    };
-
-    const startFeedback = (payload: Record<string, unknown>) => {
-      opts.setPhase("feedback");
-      releasePointerCaptureIfNeeded();
-      const continueHint = mountTruthOnlyFeedbackFooter(footer, "spring");
-      drawSpringFeedbackTruth(ctx, layout, xEstM, xActualM);
-      const trialRoot = canvas.closest(".physics-trial") as HTMLElement;
-      const { kb } = beginFeedbackContinue(opts.jsPsych, trialRoot, continueHint, () => {
-        opts.finish(payload);
-      });
-      opts.setKb(kb);
-    };
-
-    const startEstimate = () => {
-      opts.setPhase("estimate");
-      xActualM = springDisplacementAt(simEndSec, sp);
-      xEstM = 0;
-      estimateInteracted = false;
-      estimateStartMs = performance.now();
-      void playEstimateCue();
-      redrawEstimate();
-      const confirmBtn = mountEstimateFooter(footer, simHint, "物块");
-      confirmBtn.disabled = true;
-      const confirm = () => {
-        if (!estimateInteracted) return;
-        canvas.removeEventListener("pointerdown", onDown);
-        canvas.removeEventListener("pointermove", onMove);
-        canvas.removeEventListener("pointerup", onUp);
-        canvas.removeEventListener("pointercancel", onUp);
-        confirmBtn.removeEventListener("click", confirm);
-        releasePointerCaptureIfNeeded();
-        opts.setKb(null);
-        startFeedback(buildPayload());
-      };
-      confirmBtn.addEventListener("click", confirm);
-      opts.setKb(listenSpace(opts.jsPsych, confirm));
-
-      const onDown = (e: PointerEvent) => {
-        if (opts.getPhase() !== "estimate") return;
-        estimateInteracted = true;
-        confirmBtn.disabled = false;
-        dragging = true;
-        canvas.setPointerCapture(e.pointerId);
-        capturedPointerId = e.pointerId;
-        const { x } = pointerLogical(e);
-        xEstM = springDisplacementFromLogicalX(layout, x);
-        redrawEstimate();
-      };
-      const onMove = (e: PointerEvent) => {
-        if (!dragging || opts.getPhase() !== "estimate") return;
-        const { x } = pointerLogical(e);
-        xEstM = springDisplacementFromLogicalX(layout, x);
-        redrawEstimate();
-      };
-      const onUp = (e: PointerEvent) => {
-        dragging = false;
-        if (capturedPointerId === e.pointerId) {
-          try {
-            canvas.releasePointerCapture(e.pointerId);
-          } catch {
-            /* */
-          }
-          capturedPointerId = null;
-        }
-      };
-      canvas.addEventListener("pointerdown", onDown);
-      canvas.addEventListener("pointermove", onMove);
-      canvas.addEventListener("pointerup", onUp);
-      canvas.addEventListener("pointercancel", onUp);
-    };
-
-    const simTick = (now: number) => {
-      if (opts.getPhase() !== "sim") return;
-      const elapsed = (now - t0) / 1000;
-      const t = Math.min(elapsed, simEndSec);
-      const x = springDisplacementAt(t, sp);
-      const vis = stimulusVisibilityAt(synced, T, t);
-      maskedAudioActive.current = syncMaskedAmbientFromVisibility(vis);
-      const dynAlpha = simDynamicsAlpha(vis, trial.developerMode, trial.hideSemiVisible);
-      drawSpringStimulusFrame(ctx, layout, x, dynAlpha);
-      if (elapsed >= simEndSec) {
-        cancelAnimationFrame(opts.getRaf());
-        stopMaskedAmbientSound();
-        maskedAudioActive.current = false;
-        startEstimate();
-        return;
-      }
-      opts.setRaf(requestAnimationFrame(simTick));
-    };
-
-    opts.setRaf(requestAnimationFrame(simTick));
+    raf = requestAnimationFrame(simTick);
   }
 }
 

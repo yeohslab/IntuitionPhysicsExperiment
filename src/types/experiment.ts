@@ -1,4 +1,4 @@
-/** 当前刺激集格式版本（仅支持本版本导入） */
+/** 当前刺激集内存/会话格式版本（运行时 generateRuntimeStimulusSet 产出） */
 export const STIMULUS_SET_SCHEMA_VERSION = 5 as const;
 
 export type StimulusUnitType =
@@ -8,9 +8,7 @@ export type StimulusUnitType =
   | "imageControl"
   | "pendulumDisplay"
   | "pendulumStimulus"
-  | "pendulumPractice"
-  | "springPractice"
-  | "springStimulus";
+  | "pendulumPractice";
 
 export interface TextDisplayUnit {
   id: string;
@@ -75,7 +73,7 @@ export interface PendulumStimulusUnit {
   fadeMs?: number;
 }
 
-/** 摆球练习：与摆球刺激相同时序与作答；hide 时段半透明可见 */
+/** 摆球练习（遗留 JSON 兼容）：与摆球刺激相同时序与作答 */
 export interface PendulumPracticeUnit {
   id: string;
   type: "pendulumPractice";
@@ -91,33 +89,6 @@ export interface PendulumPracticeUnit {
   fadeMs?: number;
 }
 
-export interface SpringPracticeUnit {
-  id: string;
-  type: "springPractice";
-  massKg: number;
-  stiffness: number;
-  x0M: number;
-  v0Mps: number;
-  displayTimeT: number;
-}
-
-export interface SpringStimulusUnit {
-  id: string;
-  type: "springStimulus";
-  massKg: number;
-  stiffness: number;
-  x0M: number;
-  v0Mps: number;
-  totalTimeT: number;
-  /** 第一显示段（× 周期 T） */
-  show1T: number;
-  /** 第一隐藏段（秒） */
-  hide1T: number;
-  show2T: number;
-  hide2T: number;
-  fadeMs?: number;
-}
-
 export type StimulusUnit =
   | TextDisplayUnit
   | TextControlUnit
@@ -125,9 +96,7 @@ export type StimulusUnit =
   | ImageControlUnit
   | PendulumDisplayUnit
   | PendulumStimulusUnit
-  | PendulumPracticeUnit
-  | SpringPracticeUnit
-  | SpringStimulusUnit;
+  | PendulumPracticeUnit;
 
 export interface Trial {
   id: string;

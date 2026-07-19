@@ -1,5 +1,5 @@
 /**
- * 高精度物理校验：弹簧（解析 SHO）、摆球往复（椭圆函数）、摆球绕圈（Verlet）。
+ * 高精度物理校验：摆球往复（椭圆函数）、摆球绕圈（Verlet）。
  * 运行：npm run verify-physics
  */
 import {
@@ -10,13 +10,6 @@ import {
   PendulumRotationIntegrator,
   type PendulumParams,
 } from "../src/physics/pendulum";
-import {
-  springDisplacementAt,
-  springEnergy,
-  springPeriod,
-  springVelocityAt,
-  type SpringParams,
-} from "../src/physics/spring";
 import { completeEllipticK, jacobiSn } from "../src/physics/elliptic";
 
 const FAIL = (msg: string) => {
@@ -30,49 +23,6 @@ function maxAbs(xs: number[]): number {
   return xs.reduce((m, x) => Math.max(m, Math.abs(x)), 0);
 }
 
-// —— 弹簧 ——
-function verifySpring() {
-  const cases: SpringParams[] = [
-    { massKg: 1, stiffness: 4, x0M: 0.5, v0Mps: 0 },
-    { massKg: 2.3, stiffness: 7.1, x0M: -0.3, v0Mps: 1.2 },
-    { massKg: 1, stiffness: 100, x0M: 0, v0Mps: 2 },
-  ];
-  for (const sp of cases) {
-    const E0 = springEnergy(sp);
-    const T = springPeriod(sp);
-    const x0err = Math.abs(springDisplacementAt(0, sp) - sp.x0M);
-    const v0err = Math.abs(springVelocityAt(0, sp) - sp.v0Mps);
-    if (x0err > 1e-12 || v0err > 1e-12) {
-      FAIL(`弹簧初值 t=0: |Δx|=${x0err}, |Δv|=${v0err}`);
-      return;
-    }
-    const n = 2000;
-    const energies: number[] = [];
-    for (let i = 0; i <= n; i++) {
-      const t = (i / n) * 5 * T;
-      const x = springDisplacementAt(t, sp);
-      const v = springVelocityAt(t, sp);
-      energies.push(
-        0.5 * sp.stiffness * x * x + 0.5 * sp.massKg * v * v - E0,
-      );
-    }
-    const eDrift = maxAbs(energies);
-    if (eDrift > 1e-10) {
-      FAIL(`弹簧能量漂移 max|E-E0|=${eDrift}`);
-      return;
-    }
-    const xT = springDisplacementAt(T, sp);
-    const x0 = springDisplacementAt(0, sp);
-    const periodErr = Math.max(Math.abs(xT - x0), Math.abs(springVelocityAt(T, sp) - sp.v0Mps));
-    if (periodErr > 1e-9) {
-      FAIL(`弹簧周期闭合误差=${periodErr}`);
-      return;
-    }
-  }
-  ok("弹簧：初值、能量守恒、周期闭合（相对误差 < 1e-9）");
-}
-
-// —— 摆球往复：初值、能量、周期 ——
 function pendulumKE(theta: number, omega: number, l: number, g: number): number {
   const m = 1;
   return 0.5 * m * (l * omega) ** 2 + m * g * l * (1 - Math.cos(theta));
@@ -98,7 +48,6 @@ function verifyPendulumOscillation() {
       FAIL(`摆球往复初值 θ(0): 目标=${p.theta0Rad}, 实际=${th0}, |Δ|=${th0err}`);
       return;
     }
-    // 下面用更严阈值复检 θ、ω（在循环末）
     const E0 = pendulumEnergy(p);
     const T = analysis.T;
     const n = 400;
@@ -106,7 +55,6 @@ function verifyPendulumOscillation() {
     for (let i = 0; i <= n; i++) {
       const t = (i / n) * 3 * T;
       const th = pendulumThetaOscillationAt(t, p, analysis);
-      // 数值 ω：中心差分
       const dt = 1e-6;
       const thP = pendulumThetaOscillationAt(t + dt, p, analysis);
       const thM = pendulumThetaOscillationAt(t - dt, p, analysis);
@@ -142,7 +90,6 @@ function verifyPendulumOscillation() {
   ok("摆球往复：初值 |Δθ|≤1e-9、|Δω|≤1e-7，能量漂移 ≤1e-4 J，周期 θ 闭合");
 }
 
-// 相位网格精度：细化扫描后的初值误差
 function verifyPhaseFinderResolution() {
   const p: PendulumParams = {
     theta0Rad: 1.1,
@@ -160,7 +107,6 @@ function verifyPhaseFinderResolution() {
   ok(`摆球相位求解 |Δθ|=${err.toExponential(2)} rad`);
 }
 
-// —— 摆球绕圈：Verlet 能量漂移 ——
 function verifyPendulumRotation() {
   const p: PendulumParams = {
     theta0Rad: Math.PI,
@@ -189,7 +135,6 @@ function verifyPendulumRotation() {
     FAIL(`绕圈 Verlet 5T 相对能量漂移=${relDrift.toExponential(2)}`);
     return;
   }
-  // 一周应接近 2π（最低点两次）
   const rot2 = new PendulumRotationIntegrator(p);
   rot2.step(T);
   const dTheta = Math.abs(((rot2.theta - p.theta0Rad + Math.PI) % (2 * Math.PI)) - Math.PI);
@@ -200,52 +145,8 @@ function verifyPendulumRotation() {
   ok(`摆球绕圈 Verlet：5T 相对能量漂移 ${relDrift.toExponential(2)}`);
 }
 
-/** 非零初速度专项：弹簧 v₀、摆球 ω₀（含 x₀=0 / θ₀=0 纯速度启动） */
 function verifyNonzeroInitialVelocity() {
   const deg = (d: number) => (d * Math.PI) / 180;
-
-  const springCases: SpringParams[] = [
-    { massKg: 1, stiffness: 4, x0M: 0, v0Mps: 1.5 },
-    { massKg: 1, stiffness: 4, x0M: 0, v0Mps: -2.7 },
-    { massKg: 1.5, stiffness: 6, x0M: 0.2, v0Mps: 0.9 },
-    { massKg: 0.8, stiffness: 12, x0M: -0.4, v0Mps: 1.1 },
-    { massKg: 1, stiffness: 4, x0M: 0.5, v0Mps: 2 },
-  ];
-  let maxSpringX = 0;
-  let maxSpringV = 0;
-  let maxSpringE = 0;
-  for (const sp of springCases) {
-    if (Math.abs(sp.v0Mps) < 1e-12) continue;
-    const E0 = springEnergy(sp);
-    const T = springPeriod(sp);
-    const x0err = Math.abs(springDisplacementAt(0, sp) - sp.x0M);
-    const v0err = Math.abs(springVelocityAt(0, sp) - sp.v0Mps);
-    maxSpringX = Math.max(maxSpringX, x0err);
-    maxSpringV = Math.max(maxSpringV, v0err);
-    const n = 3000;
-    for (let i = 0; i <= n; i++) {
-      const t = (i / n) * 4 * T;
-      const x = springDisplacementAt(t, sp);
-      const v = springVelocityAt(t, sp);
-      maxSpringE = Math.max(
-        maxSpringE,
-        Math.abs(0.5 * sp.stiffness * x * x + 0.5 * sp.massKg * v * v - E0),
-      );
-    }
-    const periodErr = Math.max(
-      Math.abs(springDisplacementAt(T, sp) - sp.x0M),
-      Math.abs(springVelocityAt(T, sp) - sp.v0Mps),
-    );
-    if (x0err > 1e-12 || v0err > 1e-12 || maxSpringE > 1e-10 || periodErr > 1e-9) {
-      FAIL(
-        `弹簧(v₀≠0) x₀=${sp.x0M} v₀=${sp.v0Mps}: |Δx₀|=${x0err} |Δv₀|=${v0err} E漂移=${maxSpringE} 周期=${periodErr}`,
-      );
-      return;
-    }
-  }
-  ok(
-    `弹簧非零 v₀：|Δx₀|≤${maxSpringX.toExponential(2)} |Δv₀|≤${maxSpringV.toExponential(2)}，5×4T 能量漂移≤${maxSpringE.toExponential(2)}`,
-  );
 
   const pendulumOscCases: PendulumParams[] = [
     { theta0Rad: 0, omega0RadPerSec: deg(45), rodLengthM: 4, gravity: 9.8 },
@@ -334,12 +235,9 @@ function verifyNonzeroInitialVelocity() {
     FAIL(`绕圈(v₀≠0) 4T 相对能量漂移=${maxRotRelE}`);
     return;
   }
-  ok(
-    `摆球绕圈非零 ω₀：t=0 精确，4T 相对能量漂移≤${maxRotRelE.toExponential(2)}`,
-  );
+  ok(`摆球绕圈非零 ω₀：t=0 精确，4T 相对能量漂移≤${maxRotRelE.toExponential(2)}`);
 }
 
-// 椭圆函数：sn 周期 4K
 function verifyElliptic() {
   const k = 0.7;
   const K = completeEllipticK(k);
@@ -354,7 +252,6 @@ function verifyElliptic() {
 
 function main() {
   verifyElliptic();
-  verifySpring();
   verifyPendulumOscillation();
   verifyNonzeroInitialVelocity();
   verifyPhaseFinderResolution();

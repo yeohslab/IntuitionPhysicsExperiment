@@ -1,6 +1,6 @@
 import type { PendulumRegime } from "../pendulum";
 import type { StimulusVisibilityKind } from "../timePhases";
-import { PHYSICS_HIDDEN_FILL, PHYSICS_OCCLUSION_FILL_DEVELOPER } from "./canvasLayout";
+import { PHYSICS_HIDDEN_FILL } from "./canvasLayout";
 
 /** 仿真阶段：摆球可达角度范围示意 */
 export type PendulumMotionRange = {
@@ -12,6 +12,9 @@ export const PENDULUM_GUIDE_BLUE = "#2563eb";
 export const PENDULUM_GUIDE_BLACK = "#0f172a";
 export const PENDULUM_GUIDE_ORANGE = "#f97316";
 export const PENDULUM_GUIDE_GREY = "#94a3b8";
+
+/** 摆球半径（逻辑/绘制像素） */
+export const PENDULUM_BOB_RADIUS_PX = 12;
 
 const PENDULUM_SIM_ROD = "#2563eb";
 const PENDULUM_SIM_BOB_FILL = "#2563eb";
@@ -134,7 +137,7 @@ export function drawPendulumRodAndBob(
   ctx.stroke();
   ctx.fillStyle = PENDULUM_SIM_BOB_FILL;
   ctx.beginPath();
-  ctx.arc(bob.x, bob.y, 12, 0, Math.PI * 2);
+  ctx.arc(bob.x, bob.y, PENDULUM_BOB_RADIUS_PX, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = PENDULUM_SIM_BOB_STROKE;
   ctx.stroke();
@@ -249,10 +252,9 @@ export function drawPendulumStimulusVisible(
 export function drawPendulumOcclusion(
   ctx: CanvasRenderingContext2D,
   layout: PendulumLayout,
-  semiTransparent: boolean,
 ): void {
   ctx.save();
-  ctx.fillStyle = semiTransparent ? PHYSICS_OCCLUSION_FILL_DEVELOPER : PHYSICS_HIDDEN_FILL;
+  ctx.fillStyle = PHYSICS_HIDDEN_FILL;
   ctx.fillRect(0, 0, layout.canvasW, layout.canvasH);
   ctx.restore();
 }

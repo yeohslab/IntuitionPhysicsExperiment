@@ -1,5 +1,5 @@
-// 该 wav 放在 public/audio 下，运行时以绝对路径访问
-const maskedHumUrl = "/audio/masked-hum.wav";
+// public/audio；相对 base，兼容 GitHub Pages 项目站
+const maskedHumUrl = `${import.meta.env.BASE_URL}audio/masked-hum.wav`;
 
 let audioCtx: AudioContext | null = null;
 /** 运行时 GainNode；WAV 峰值 0.25 */

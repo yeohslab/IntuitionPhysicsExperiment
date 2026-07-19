@@ -1,5 +1,3 @@
-import type { PendulumRegime } from "./pendulum";
-
 export type PhaseKind = "show" | "hide" | "fade";
 
 export interface TimePhase {
@@ -22,73 +20,71 @@ export interface StimulusTimingMultiples {
   show2T: number;
   /** @deprecated 单次遮挡范式下为 0 */
   hide2T: number;
-  /** show→hide 边界淡出（毫秒），不计入 hide1T */
+  /** show→hide 边界淡出（毫秒），不计入 hide1T；正式实验由 fadeT×T 写入（摆动 0.25 / 旋转 0.5） */
   fadeMs?: number;
 }
 
 export const SHOW_T_MIN = 1;
-export const SHOW_T_MAX = 2;
-/** 弹簧等非摆球刺激：遮挡时长（秒） */
-export const HIDE_SEC_MIN = 1;
-export const HIDE_SEC_MAX = 1.5;
-/** 摆球遮挡时长（秒）；JSON 中 hide1T 存此固定值 */
-export const PENDULUM_HIDE_SEC = 0.5;
-/** @deprecated 使用 PENDULUM_HIDE_SEC */
-export const PENDULUM_HIDE_T = PENDULUM_HIDE_SEC;
-/** 可见→遮挡边界淡出时长（固定，不计入 hide1T） */
+/** 含旋转组最大可视水平 3.5T */
+export const SHOW_T_MAX = 3.5;
+/** 摆动组可视时间水平（×T） */
+export const SHOW_LEVELS_T_OSCILLATION = [1.25, 1.5, 1.75] as const;
+/** 旋转组可视时间水平（×T） */
+export const SHOW_LEVELS_T_ROTATION = [2.5, 3, 3.5] as const;
+/** @deprecated 默认摆动组；请用 showLevelsForGroup */
+export const SHOW_LEVELS_T = SHOW_LEVELS_T_OSCILLATION;
+/** 正式实验遮挡时长水平（秒） */
+export const HIDE_LEVELS_SEC = [0.5, 0.6, 0.7] as const;
+/** 摆动组淡出时长（×T），不计入 hide1T */
+export const STIMULUS_FADE_T_OSCILLATION = 0.25;
+/** 旋转组淡出时长（×T），不计入 hide1T */
+export const STIMULUS_FADE_T_ROTATION = 0.5;
+/** @deprecated 默认摆动组；请用 fadeTForGroup / fadeTForRegime */
+export const STIMULUS_FADE_T = STIMULUS_FADE_T_OSCILLATION;
+/** @deprecated 旧版固定淡出毫秒；新逻辑用 fadeMsForPeriod */
 export const STIMULUS_FADE_MS = 150;
 
-function uniform(lo: number, hi: number, rng: () => number): number {
-  return lo + rng() * (hi - lo);
+export type TimingMotionGroup = 1 | 2;
+
+/** 组 1 摆动 / 组 2 旋转 的可视时间水平 */
+export function showLevelsForGroup(group: TimingMotionGroup): readonly number[] {
+  return group === 1 ? SHOW_LEVELS_T_OSCILLATION : SHOW_LEVELS_T_ROTATION;
+}
+
+/** 组 1 摆动 0.25T / 组 2 旋转 0.5T */
+export function fadeTForGroup(group: TimingMotionGroup): number {
+  return group === 1 ? STIMULUS_FADE_T_OSCILLATION : STIMULUS_FADE_T_ROTATION;
+}
+
+/** 由能量区制取淡出倍数（临界按摆动） */
+export function fadeTForRegime(regime: "oscillation" | "rotation" | "critical"): number {
+  return regime === "rotation" ? STIMULUS_FADE_T_ROTATION : STIMULUS_FADE_T_OSCILLATION;
 }
 
 function usesLegacyFourPhase(mult: Pick<StimulusTimingMultiples, "show2T" | "hide2T">): boolean {
   return (mult.show2T ?? 0) > 0 || (mult.hide2T ?? 0) > 0;
 }
 
-function fadeSec(mult: Pick<StimulusTimingMultiples, "fadeMs">): number {
-  return (mult.fadeMs ?? 0) / 1000;
+/** 由周期换算淡出毫秒：fadeT × T × 1000 */
+export function fadeMsForPeriod(periodSec: number, fadeT: number = STIMULUS_FADE_T): number {
+  return Math.max(0, fadeT) * Math.max(1e-12, periodSec) * 1000;
 }
 
-/** 摆球遮挡时长（秒），固定 0.5 */
-export function pendulumHideSec(_periodSec?: number): number {
-  return PENDULUM_HIDE_SEC;
-}
-
-/** @deprecated 使用 pendulumHideSec */
-export function randomPendulumHideSec(
-  _regime?: PendulumRegime,
-  _periodSec?: number,
+/**
+ * 淡出秒数：优先用试次写入的 fadeMs（组间可不同）；
+ * 无 fadeMs 且已知周期时回退默认摆动淡出 STIMULUS_FADE_T×T。
+ */
+export function fadeDurationSec(
+  mult: Pick<StimulusTimingMultiples, "fadeMs">,
+  periodSec?: number,
 ): number {
-  return pendulumHideSec();
-}
-
-/** 摆球试次时序：show/fade 同通用；hide1T 固定 0.5 s */
-export function randomPendulumStimulusTiming(
-  _regime: PendulumRegime,
-  _periodSec: number,
-  rng: () => number = Math.random,
-): Pick<StimulusTimingMultiples, "show1T" | "hide1T" | "show2T" | "hide2T" | "fadeMs"> {
-  return {
-    show1T: uniform(SHOW_T_MIN, SHOW_T_MAX, rng),
-    hide1T: PENDULUM_HIDE_SEC,
-    show2T: 0,
-    hide2T: 0,
-    fadeMs: STIMULUS_FADE_MS,
-  };
-}
-
-/** 通用（如弹簧）：显示 [1,2]T；隐藏 [1,1.5]s；淡出固定 150ms */
-export function randomStimulusTiming(
-  rng: () => number = Math.random,
-): Pick<StimulusTimingMultiples, "show1T" | "hide1T" | "show2T" | "hide2T" | "fadeMs"> {
-  return {
-    show1T: uniform(SHOW_T_MIN, SHOW_T_MAX, rng),
-    hide1T: uniform(HIDE_SEC_MIN, HIDE_SEC_MAX, rng),
-    show2T: 0,
-    hide2T: 0,
-    fadeMs: STIMULUS_FADE_MS,
-  };
+  if (mult.fadeMs !== undefined && Number.isFinite(mult.fadeMs)) {
+    return Math.max(0, mult.fadeMs / 1000);
+  }
+  if (periodSec !== undefined && periodSec > 0) {
+    return STIMULUS_FADE_T * periodSec;
+  }
+  return 0;
 }
 
 /** 刺激总时长（秒） */
@@ -100,7 +96,7 @@ export function stimulusTotalSec(
   if (usesLegacyFourPhase(mult)) {
     return mult.show1T * T + mult.hide1T + mult.show2T * T + mult.hide2T;
   }
-  return mult.show1T * T + fadeSec(mult) + mult.hide1T;
+  return mult.show1T * T + fadeDurationSec(mult, T) + mult.hide1T;
 }
 
 /** 刺激总时长（T 的倍数） */
@@ -129,7 +125,7 @@ export function stimulusPhaseDurationsForExport(
 ): StimulusPhaseDurationsExport {
   const T = Math.max(1e-12, periodSec);
   const showSec = mult.show1T * T;
-  const fade = fadeSec(mult);
+  const fade = fadeDurationSec(mult, T);
   const hideSec = mult.hide1T;
   const totalSec = stimulusTotalSec(mult, T);
   return {
@@ -150,18 +146,24 @@ export function sumSegmentMultiples(
   if (usesLegacyFourPhase(mult)) {
     return mult.show1T + mult.show2T + mult.hide1T + mult.hide2T;
   }
-  return mult.show1T + mult.hide1T + fadeSec(mult);
+  // hide1T 仍为秒，此处仅粗算；有周期时应走 stimulusTotalTimeT
+  return mult.show1T + STIMULUS_FADE_T + mult.hide1T;
 }
 
 export function withSyncedTotalTimeT<T extends StimulusTimingMultiples>(
   mult: T,
   periodSec?: number,
 ): T {
-  const totalTimeT =
-    periodSec !== undefined && periodSec > 0
-      ? stimulusTotalTimeT(mult, periodSec)
-      : sumSegmentMultiples(mult);
-  return { ...mult, totalTimeT };
+  if (periodSec !== undefined && periodSec > 0) {
+    // 保留已写入的 fadeMs（旋转组 0.5T）；缺失时按默认摆动淡出补齐
+    const fadeMs =
+      mult.fadeMs !== undefined && Number.isFinite(mult.fadeMs)
+        ? mult.fadeMs
+        : fadeMsForPeriod(periodSec);
+    const synced = { ...mult, fadeMs };
+    return { ...synced, totalTimeT: stimulusTotalTimeT(synced, periodSec) };
+  }
+  return { ...mult, totalTimeT: sumSegmentMultiples(mult) };
 }
 
 /** 仿真时刻 t 的可见性（含淡出 alpha） */
@@ -177,7 +179,7 @@ export function stimulusVisibilityAt(
     return { kind: hide ? "hide" : "show", alpha: hide ? 0 : 1 };
   }
   const showEnd = mult.show1T * T;
-  const fSec = fadeSec(mult);
+  const fSec = fadeDurationSec(mult, T);
   const fadeEnd = showEnd + fSec;
   if (tSec < showEnd - 1e-12) return { kind: "show", alpha: 1 };
   if (fSec > 0 && tSec < fadeEnd - 1e-12) {
@@ -236,7 +238,7 @@ export function buildTimePhases(mult: StimulusTimingMultiples, periodSec: number
   if (usesLegacyFourPhase(mult)) {
     return buildTimePhasesLegacy(mult, T);
   }
-  const fSec = fadeSec(mult);
+  const fSec = fadeDurationSec(mult, T);
   const segments: Array<{ kind: PhaseKind; lenSec: number }> = [
     { kind: "show", lenSec: mult.show1T * T },
     ...(fSec > 0 ? [{ kind: "fade" as const, lenSec: fSec }] : []),

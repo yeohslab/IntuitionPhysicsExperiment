@@ -84,3 +84,7 @@
   margin-top: 1.25rem;
   justify-content: flex-end;
 }
+
+#start-dialog-status {
+  margin: 0.75rem 0 0;
+}

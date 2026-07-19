@@ -7,7 +7,7 @@
 }
 
 /* 刺激试次：页脚预留固定高度，避免仿真→作答阶段切换时 Canvas 上下跳动 */
-.physics-trial--stimulus .physics-canvas {
+.physics-trial--stimulus .physics-canvas-frame {
   flex-shrink: 0;
 }
 
@@ -19,16 +19,62 @@
   box-sizing: border-box;
 }
 
+.physics-canvas-frame {
+  position: relative;
+  display: block;
+  width: min(1000px, 100%);
+  line-height: 0;
+}
+
+.physics-speed-bar-pair {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.physics-speed-bar-pair--hidden {
+  visibility: hidden;
+}
+
+.physics-speed-bar {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.physics-speed-bar__track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 2px solid #000;
+  background: #fff;
+  overflow: hidden;
+}
+
+.physics-speed-bar__fill {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 0;
+  background: #dc2626;
+  pointer-events: none;
+}
+
 /* 仿真阶段隐藏光标，进入作答（estimate/arc/feedback）后恢复 */
 .physics-trial--stimulus.physics-trial--sim,
 .physics-trial--stimulus.physics-trial--sim .physics-canvas,
+.physics-trial--stimulus.physics-trial--sim .physics-canvas-frame,
+.physics-trial--stimulus.physics-trial--sim .physics-speed-bar-pair,
 .physics-trial--stimulus.physics-trial--sim .physics-footer {
   cursor: none;
 }
 
 .physics-canvas {
   display: block;
-  width: min(1000px, 100%);
+  width: 100%;
   height: auto;
   aspect-ratio: 1000 / 650;
   border-radius: 8px;
