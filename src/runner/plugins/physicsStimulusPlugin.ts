@@ -368,7 +368,12 @@ class PhysicsStimulusPlugin {
         confirmBtn.removeEventListener("click", confirm);
         releasePointerCaptureIfNeeded();
         clearKb();
-        startFeedback(buildPayload());
+        const payload = buildPayload();
+        if (trial.unitMeta?.segmentKind === "practice") {
+          startFeedback(payload);
+        } else {
+          finish(payload);
+        }
       };
       confirmBtn.addEventListener("click", confirm);
       kbListener = listenSpace(this.jsPsych, confirm);

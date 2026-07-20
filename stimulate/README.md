@@ -29,7 +29,7 @@ StartView → generateRuntimeStimulusSet({ group, subjectId }) → sessionStorag
 ```
 
 - **15 个正式 Block** 在生成时随机打乱；Block 前 Rest 的进度文案**不**随打乱改变
-- **练习 Block**：能量为区间中点，timing 3×3 全交叉共 9 Trial；单元类型 `pendulumStimulus`（与正式同构），`segment_kind=practice`，不计入正式分析
+- **练习 Block**：能量为区间中点，timing 3×3 全交叉共 9 个**练习 Trial**；单元类型 `pendulumStimulus`，`segment_kind=practice`，含反馈阶段，不计入正式分析
 ### 每个正式 Block
 
 - **9** 个 Trial，每个 Trial：`注视点 +` → `pendulumStimulus`

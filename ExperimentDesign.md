@@ -46,7 +46,7 @@
 
 ## 3 软件与装置
 
-- 浏览器（Chrome / Edge 等），鼠标 + 键盘（空格确认指导语与反馈）。
+- 浏览器（Chrome / Edge 等），鼠标 + 键盘（空格确认指导语；练习 Trial 反馈阶段亦用空格继续）。
 - 客户端完成物理仿真、Canvas 渲染与 CSV 导出；可静态托管（如 GitHub Pages）。
 
 | 模块 | 路径 | 功能 |
@@ -54,7 +54,7 @@
 | 运行时生成 | `src/stimulate/generateRuntimeSet.ts` | 15 Block × 9 Trial、真随机、自检 |
 | 物理引擎 | `src/physics/pendulum.ts` | 能量、周期、动力学 |
 | 试次拟合 | `src/physics/pendulumUnitFit.ts` | 按 \(E\) 与终态角反推初态 |
-| 刺激插件 | `src/runner/plugins/physicsStimulusPlugin.ts` | 五阶段时序、速度条、点估计 |
+| 刺激插件 | `src/runner/plugins/physicsStimulusPlugin.ts` | 仿真时序、速度条、点估计；练习 Trial 含反馈，正式 Trial 无反馈 |
 | 数据导出 | `src/runner/exportStimulusCsv.ts` | 试次级 CSV |
 
 ---
@@ -108,17 +108,24 @@
 → [Rest 1/15 → Block 1 (9 Trial)] → … → [Rest 15/15 → Block 15]
 ```
 
-每个刺激 Trial：**注视点** → **pendulumStimulus**（五阶段见下）。
+每个刺激 Trial：**注视点** → **pendulumStimulus**（阶段见下）。
 
-### 5.1 单试次五阶段
+### 5.1 练习 Trial 与正式 Trial
+
+| 类型 | 段落 | 阶段 |
+|------|------|------|
+| **练习 Trial** | 练习 Block（`segment_kind=practice`） | 可视 → 淡出 → 遮挡 → 汇报 → **反馈** |
+| **正式 Trial** | 正式 Block（`segment_kind=block`） | 可视 → 淡出 → 遮挡 → 汇报（确认后直接进入下一试次） |
+
+#### 阶段说明
 
 | 阶段 | 时长 | 说明 |
 |------|------|------|
 | 可视 | `show1T` × \(T\) | 蓝杆/蓝虚线；摆左右**竖向线速度条**（$(v-v_{\min})/(v_{\max}-v_{\min})$） |
 | 淡出 | 摆动 \(0.25\,T\) / 旋转 \(0.5\,T\) | 蓝→黑；掩蔽音 |
 | 遮挡 | `hide1T` s | 仅黑虚线；掩蔽音；心中模拟 |
-| 汇报 | 被试控制 | 提示音；橙框/橙虚线；点击/拖动确认摆角 |
-| 反馈 | 被试控制 | 橙（选择）vs 蓝（真值）；约 0.3 s 后可空格继续 |
+| 汇报 | 被试控制 | 提示音；橙框/橙虚线；点击/拖动后确认摆角（按钮或空格） |
+| 反馈 | 被试控制（**仅练习 Trial**） | 橙（选择）vs 蓝（真值）；约 0.3 s 后可空格继续 |
 
 点估计针对 \(t_\mathrm{sim,end} = \texttt{show\_sec} + \texttt{fade\_sec} + \texttt{hide\_sec}\) 的真值角。
 
