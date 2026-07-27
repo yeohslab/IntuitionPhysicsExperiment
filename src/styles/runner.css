@@ -1,0 +1,160 @@
+.runner-view {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f4f5f7;
+  color: #1a1a1a;
+}
+
+.runner-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.5rem 1rem;
+  background: #fff;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.jspsych-target {
+  flex: 1;
+  min-height: 60vh;
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.runner-view .jspsych-target,
+.runner-view .jspsych-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.runner-view .jspsych-content {
+  flex: 1;
+}
+
+.runner-view .jspsych-content:has(.stimulus-fixation) {
+  justify-content: center;
+  align-items: center;
+}
+
+.runner-view .jspsych-target,
+.runner-view .jspsych-content,
+.runner-view .jspsych-display {
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.runner-done {
+  margin: auto;
+  max-width: 44rem;
+  padding: 2rem;
+  text-align: center;
+  color: #1a1a1a;
+  background: #fff;
+}
+
+.runner-done h2 {
+  margin-top: 0;
+}
+
+.runner-done p {
+  margin: 0 0 1rem;
+}
+
+.runner-done__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.runner-panel {
+  max-width: 30rem;
+  margin: 3rem auto;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e8eaed;
+}
+
+.runner-panel--error {
+  background: #fce8e6;
+  border-color: #f5c6c0;
+}
+
+.stimulus-wrap {
+  text-align: center;
+  padding: 2rem;
+}
+
+.runner-view .stimulus-wrap.stimulus-fixation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  max-width: none;
+  margin: 0;
+  line-height: 1;
+}
+
+.runner-view .fixation-cross {
+  font-size: 3rem;
+  font-weight: 400;
+  color: #202124;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  user-select: none;
+}
+
+.runner-view .stimulus-wrap.stimulus-instruction {
+  text-align: center;
+  max-width: 42rem;
+  margin: 0 auto;
+  line-height: 1.55;
+  font-size: 1.05rem;
+}
+
+.runner-view .stimulus-instruction h1,
+.runner-view .stimulus-instruction h2,
+.runner-view .stimulus-instruction h3 {
+  margin: 0 0 0.65rem;
+  line-height: 1.25;
+}
+
+.runner-view .stimulus-instruction h1 {
+  font-size: 1.65rem;
+}
+
+.runner-view .stimulus-instruction h2 {
+  font-size: 1.35rem;
+}
+
+.runner-view .stimulus-instruction h3 {
+  font-size: 1.15rem;
+}
+
+.runner-view .stimulus-instruction p {
+  margin: 0 0 0.75rem;
+}
+
+.runner-view .stimulus-instruction p:last-child {
+  margin-bottom: 0;
+}
+
+.runner-view .stimulus-instruction .instr-left {
+  display: block;
+  text-align: left;
+  margin: 0 auto 0.75rem;
+  max-width: 100%;
+}
+
+.runner-view .stimulus-instruction .instr-left p:last-child {
+  margin-bottom: 0;
+}
+
+.runner-view .stimulus-instruction code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.92em;
+  background: #f1f3f4;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}

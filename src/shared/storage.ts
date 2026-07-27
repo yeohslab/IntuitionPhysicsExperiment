@@ -1,228 +1,160 @@
+import { analyzePendulum } from "../experiment/physics/pendulum";
+import { withSyncedTotalTimeT } from "../experiment/physics/timePhases";
+import { isParticipantInfo, type ParticipantInfo } from "./participant";
 import {
   STIMULUS_SET_SCHEMA_VERSION,
   type BlockSegment,
   type ExperimentStimulusSet,
+  type PendulumStimulusUnit,
   type PracticeSegment,
   type RestSegment,
   type StimulusUnit,
   type TopLevelSequenceItem,
   type Trial,
-} from "../types/experiment";
-import { newId } from "./ids";
-import { sanitizeImageDataUrl } from "./html";
-import { analyzePendulum, pendulumRegime, pendulumCriticalEnergy, pendulumEnergy } from "../physics/pendulum";
-import type { PendulumParams } from "../physics/pendulum";
-import { STIMULUS_FADE_MS, withSyncedTotalTimeT } from "../physics/timePhases";
-import type { PendulumPracticeUnit, PendulumStimulusUnit } from "../types/experiment";
+} from "./experimentTypes";
 
-/** 当次会话由 generateRuntimeStimulusSet 写入的刺激集 JSON */
-export const SESSION_STIMULUS_KEY = "jspsych-stimulus-set-for-run";
-export const SESSION_SUBJECT_ID_KEY = "jspsych-subject-id";
-/** 组间运动方式：1=摆动，2=旋转 */
-export const SESSION_MOTION_GROUP_KEY = "jspsych-motion-group";
+export const SESSION_STIMULUS_KEY = "intuition-physics-stimulus-set";
+export const SESSION_PARTICIPANT_KEY = "intuition-physics-participant";
 
-function isRecord(x: unknown): x is Record<string, unknown> {
-  return typeof x === "object" && x !== null && !Array.isArray(x);
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function resyncStimulusTiming(unit: PendulumStimulusUnit | PendulumPracticeUnit): void {
-  const T = analyzePendulum({
-    theta0Rad: (unit.theta0Deg * Math.PI) / 180,
-    omega0RadPerSec: (unit.omega0DegPerSec * Math.PI) / 180,
-    rodLengthM: unit.rodLengthM,
-    gravity: unit.gravity,
-  }).T;
-  Object.assign(unit, withSyncedTotalTimeT(unit, T));
+function finiteNumber(
+  raw: Record<string, unknown>,
+  key: string,
+): number | null {
+  const value = raw[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function readFloat(raw: Record<string, unknown>, key: string, fallback: number): number {
-  const v = raw[key];
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
-  return fallback;
+function validId(raw: Record<string, unknown>): string | null {
+  return typeof raw.id === "string" && raw.id.length > 0 ? raw.id : null;
 }
 
 function parseUnit(raw: unknown): StimulusUnit | null {
   if (!isRecord(raw)) return null;
-  const id = typeof raw.id === "string" ? raw.id : newId();
-  const type = raw.type;
-  if (type === "textDisplay") {
-    const text = typeof raw.text === "string" ? raw.text : "";
-    const durationMs =
-      typeof raw.durationMs === "number" && Number.isFinite(raw.durationMs)
-        ? Math.round(raw.durationMs)
-        : 1000;
-    return { id, type: "textDisplay", text, durationMs };
-  }
-  if (type === "textControl") {
-    const text = typeof raw.text === "string" ? raw.text : "";
-    const key = typeof raw.key === "string" ? raw.key : " ";
-    return { id, type: "textControl", text, key };
-  }
-  if (type === "imageDisplay") {
-    const rawUrl = typeof raw.imageDataUrl === "string" ? raw.imageDataUrl : "";
-    const imageDataUrl = sanitizeImageDataUrl(rawUrl) ?? "";
-    const durationMs =
-      typeof raw.durationMs === "number" && Number.isFinite(raw.durationMs)
-        ? Math.round(raw.durationMs)
-        : 1000;
-    return { id, type: "imageDisplay", imageDataUrl, durationMs };
-  }
-  if (type === "imageControl") {
-    const rawUrl = typeof raw.imageDataUrl === "string" ? raw.imageDataUrl : "";
-    const imageDataUrl = sanitizeImageDataUrl(rawUrl) ?? "";
-    const key = typeof raw.key === "string" ? raw.key : " ";
-    return { id, type: "imageControl", imageDataUrl, key };
-  }
-  if (type === "pendulumDisplay") {
-    return {
-      id,
-      type: "pendulumDisplay",
-      theta0Deg: readFloat(raw, "theta0Deg", 0),
-      omega0DegPerSec: readFloat(raw, "omega0DegPerSec", 0),
-      rodLengthM: readFloat(raw, "rodLengthM", 4),
-      gravity: readFloat(raw, "gravity", 9.8),
-      displayTimeT: readFloat(raw, "displayTimeT", 2),
-    };
-  }
-  if (type === "pendulumPractice") {
-    const hasDisplayOnly =
-      raw.displayTimeT !== undefined &&
-      raw.show1T === undefined &&
-      raw.hide1T === undefined;
-    if (hasDisplayOnly) {
-      return {
-        id,
-        type: "pendulumDisplay",
-        theta0Deg: readFloat(raw, "theta0Deg", 0),
-        omega0DegPerSec: readFloat(raw, "omega0DegPerSec", 0),
-        rodLengthM: readFloat(raw, "rodLengthM", 4),
-        gravity: readFloat(raw, "gravity", 9.8),
-        displayTimeT: readFloat(raw, "displayTimeT", 2),
-      };
+  const id = validId(raw);
+  if (!id) return null;
+
+  if (raw.type === "textDisplay") {
+    const durationMs = finiteNumber(raw, "durationMs");
+    if (typeof raw.text !== "string" || durationMs === null || durationMs <= 0) {
+      return null;
     }
-    const unit = withSyncedTotalTimeT({
-      id,
-      type: "pendulumPractice" as const,
-      theta0Deg: readFloat(raw, "theta0Deg", 45),
-      omega0DegPerSec: readFloat(raw, "omega0DegPerSec", 0),
-      rodLengthM: readFloat(raw, "rodLengthM", 4),
-      gravity: readFloat(raw, "gravity", 9.8),
-      show1T: readFloat(raw, "show1T", 1),
-      hide1T: readFloat(raw, "hide1T", 1),
-      show2T: readFloat(raw, "show2T", 0),
-      hide2T: readFloat(raw, "hide2T", 0),
-      fadeMs: readFloat(raw, "fadeMs", STIMULUS_FADE_MS),
-      totalTimeT: readFloat(raw, "totalTimeT", 0),
-    });
-    resyncStimulusTiming(unit);
-    return unit;
+    return { id, type: "textDisplay", text: raw.text, durationMs };
   }
-  if (type === "pendulumStimulus") {
-    const unit = withSyncedTotalTimeT({
-      id,
-      type: "pendulumStimulus" as const,
-      theta0Deg: readFloat(raw, "theta0Deg", 45),
-      omega0DegPerSec: readFloat(raw, "omega0DegPerSec", 0),
-      rodLengthM: readFloat(raw, "rodLengthM", 4),
-      gravity: readFloat(raw, "gravity", 9.8),
-      show1T: readFloat(raw, "show1T", 1),
-      hide1T: readFloat(raw, "hide1T", 1),
-      show2T: readFloat(raw, "show2T", 0),
-      hide2T: readFloat(raw, "hide2T", 0),
-      fadeMs: readFloat(raw, "fadeMs", STIMULUS_FADE_MS),
-      totalTimeT: readFloat(raw, "totalTimeT", 0),
-    });
-    resyncStimulusTiming(unit);
-    return unit;
+
+  if (raw.type === "textControl") {
+    if (typeof raw.text !== "string" || typeof raw.key !== "string") return null;
+    return { id, type: "textControl", text: raw.text, key: raw.key };
   }
-  return null;
+
+  if (raw.type !== "pendulumStimulus") return null;
+  const theta0Deg = finiteNumber(raw, "theta0Deg");
+  const omega0DegPerSec = finiteNumber(raw, "omega0DegPerSec");
+  const rodLengthM = finiteNumber(raw, "rodLengthM");
+  const gravity = finiteNumber(raw, "gravity");
+  const show1T = finiteNumber(raw, "show1T");
+  const hide1T = finiteNumber(raw, "hide1T");
+  const fadeMs = finiteNumber(raw, "fadeMs");
+  if (
+    theta0Deg === null ||
+    omega0DegPerSec === null ||
+    rodLengthM === null ||
+    gravity === null ||
+    show1T === null ||
+    hide1T === null ||
+    fadeMs === null ||
+    rodLengthM <= 0 ||
+    gravity <= 0 ||
+    show1T <= 0 ||
+    hide1T <= 0 ||
+    fadeMs < 0
+  ) {
+    return null;
+  }
+
+  const base: PendulumStimulusUnit = {
+    id,
+    type: "pendulumStimulus",
+    theta0Deg,
+    omega0DegPerSec,
+    rodLengthM,
+    gravity,
+    totalTimeT: 0,
+    show1T,
+    hide1T,
+    fadeMs,
+  };
+  const periodSec = analyzePendulum({
+    theta0Rad: (theta0Deg * Math.PI) / 180,
+    omega0RadPerSec: (omega0DegPerSec * Math.PI) / 180,
+    rodLengthM,
+    gravity,
+  }).T;
+  return withSyncedTotalTimeT(base, periodSec);
 }
 
 function parseTrial(raw: unknown): Trial | null {
-  if (!isRecord(raw)) return null;
-  if (raw.kind === "practice") return null;
-  const id = typeof raw.id === "string" ? raw.id : newId();
-  if (!Array.isArray(raw.units)) return null;
-  const units: StimulusUnit[] = [];
-  for (const u of raw.units) {
-    const parsed = parseUnit(u);
-    if (parsed) units.push(parsed);
-  }
-  return { id, units };
+  if (!isRecord(raw) || !Array.isArray(raw.units)) return null;
+  const id = validId(raw);
+  if (!id) return null;
+  const units = raw.units.map(parseUnit);
+  if (units.some((unit) => unit === null)) return null;
+  return { id, units: units as StimulusUnit[] };
 }
 
-function parseBlockSegmentV3(raw: unknown): BlockSegment | null {
-  if (!isRecord(raw) || raw.kind !== "block") return null;
-  const id = typeof raw.id === "string" ? raw.id : newId();
-  if (Array.isArray(raw.children)) {
-    const children: Trial[] = [];
-    for (const c of raw.children) {
-      const parsed = parseTrial(c);
-      if (parsed) children.push(parsed);
-    }
-    return { kind: "block", id, children };
-  }
-  if (Array.isArray(raw.trials)) {
-    const children: Trial[] = [];
-    for (const t of raw.trials) {
-      const parsed = parseTrial(t);
-      if (parsed) children.push(parsed);
-    }
-    return { kind: "block", id, children };
-  }
-  return null;
-}
-
-function parsePracticeSegment(raw: unknown): PracticeSegment | null {
-  if (!isRecord(raw) || raw.kind !== "practice") return null;
-  const id = typeof raw.id === "string" ? raw.id : newId();
+function parseTrials(
+  raw: Record<string, unknown>,
+): Trial[] | null {
   if (!Array.isArray(raw.children)) return null;
-  const children: Trial[] = [];
-  for (const c of raw.children) {
-    const parsed = parseTrial(c);
-    if (parsed) children.push(parsed);
-  }
-  return { kind: "practice", id, children };
+  const children = raw.children.map(parseTrial);
+  if (children.some((trial) => trial === null)) return null;
+  return children as Trial[];
 }
 
-function parseRestSegment(raw: unknown): RestSegment | null {
+function parseSequenceItem(raw: unknown): TopLevelSequenceItem | null {
   if (!isRecord(raw)) return null;
-  if (raw.kind !== "rest") return null;
-  const id = typeof raw.id === "string" ? raw.id : newId();
-  if (!Array.isArray(raw.units)) return null;
-  const units: StimulusUnit[] = [];
-  for (const u of raw.units) {
-    const parsed = parseUnit(u);
-    if (parsed) units.push(parsed);
+  const id = validId(raw);
+  if (!id) return null;
+  if (raw.kind === "block" || raw.kind === "practice") {
+    const children = parseTrials(raw);
+    if (!children) return null;
+    return raw.kind === "block"
+      ? ({ kind: "block", id, children } satisfies BlockSegment)
+      : ({ kind: "practice", id, children } satisfies PracticeSegment);
   }
-  return { kind: "rest", id, units };
-}
-
-function parseSequenceItemV3(raw: unknown): TopLevelSequenceItem | null {
-  if (!isRecord(raw)) return null;
-  if (raw.kind === "rest") return parseRestSegment(raw);
-  if (raw.kind === "block") return parseBlockSegmentV3(raw);
-  if (raw.kind === "practice") return parsePracticeSegment(raw);
-  if (raw.kind === undefined && Array.isArray((raw as { trials?: unknown }).trials)) {
-    return parseBlockSegmentV3({ ...raw, kind: "block" });
+  if (raw.kind === "rest" && Array.isArray(raw.units)) {
+    const units = raw.units.map(parseUnit);
+    if (units.some((unit) => unit === null)) return null;
+    return {
+      kind: "rest",
+      id,
+      units: units as StimulusUnit[],
+    } satisfies RestSegment;
   }
   return null;
 }
 
-export function parseExperimentStimulusSet(raw: unknown): ExperimentStimulusSet | null {
-  if (!isRecord(raw)) return null;
-
-  if (raw.schemaVersion !== STIMULUS_SET_SCHEMA_VERSION) return null;
-  if (!Array.isArray(raw.sequence)) return null;
-
-  const sequence: TopLevelSequenceItem[] = [];
-  for (const item of raw.sequence) {
-    const parsed = parseSequenceItemV3(item);
-    if (parsed) sequence.push(parsed);
+export function parseExperimentStimulusSet(
+  raw: unknown,
+): ExperimentStimulusSet | null {
+  if (
+    !isRecord(raw) ||
+    raw.schemaVersion !== STIMULUS_SET_SCHEMA_VERSION ||
+    !Array.isArray(raw.sequence)
+  ) {
+    return null;
   }
-  if (sequence.length === 0) return null;
-  return { schemaVersion: STIMULUS_SET_SCHEMA_VERSION, sequence };
+  const sequence = raw.sequence.map(parseSequenceItem);
+  if (sequence.length === 0 || sequence.some((item) => item === null)) {
+    return null;
+  }
+  return {
+    schemaVersion: STIMULUS_SET_SCHEMA_VERSION,
+    sequence: sequence as TopLevelSequenceItem[],
+  };
 }
 
 export function saveStimulusSetToSession(set: ExperimentStimulusSet): void {
@@ -230,141 +162,46 @@ export function saveStimulusSetToSession(set: ExperimentStimulusSet): void {
 }
 
 export function loadStimulusSetFromSession(): ExperimentStimulusSet | null {
-  const s = sessionStorage.getItem(SESSION_STIMULUS_KEY);
-  if (!s) return null;
+  const serialized = sessionStorage.getItem(SESSION_STIMULUS_KEY);
+  if (!serialized) return null;
   try {
-    return parseExperimentStimulusSet(JSON.parse(s) as unknown);
+    return parseExperimentStimulusSet(JSON.parse(serialized) as unknown);
   } catch {
     return null;
   }
 }
 
-/** 清空当次实验会话（刺激集、被试信息等） */
-export function clearExperimentSession(): void {
-  sessionStorage.removeItem(SESSION_STIMULUS_KEY);
-  sessionStorage.removeItem(SESSION_SUBJECT_ID_KEY);
-  sessionStorage.removeItem(SESSION_MOTION_GROUP_KEY);
+export function saveParticipantToSession(participant: ParticipantInfo): void {
+  sessionStorage.setItem(SESSION_PARTICIPANT_KEY, JSON.stringify(participant));
 }
 
-function segmentLabel(item: TopLevelSequenceItem, sequence: TopLevelSequenceItem[]): string {
-  if (item.kind === "block") {
-    let n = 0;
-    for (const s of sequence) {
-      if (s.kind === "block") {
-        n += 1;
-        if (s.id === item.id) return `Block ${n}`;
-      }
-    }
-    return "Block";
+export function loadParticipantFromSession(): ParticipantInfo | null {
+  const serialized = sessionStorage.getItem(SESSION_PARTICIPANT_KEY);
+  if (!serialized) return null;
+  try {
+    const parsed = JSON.parse(serialized) as unknown;
+    return isParticipantInfo(parsed) ? parsed : null;
+  } catch {
+    return null;
   }
-  if (item.kind === "practice") {
-    let n = 0;
-    for (const s of sequence) {
-      if (s.kind === "practice") {
-        n += 1;
-        if (s.id === item.id) return `Practice ${n}`;
-      }
-    }
-    return "Practice";
-  }
-  let n = 0;
-  for (const s of sequence) {
-    if (s.kind === "rest") {
-      n += 1;
-      if (s.id === item.id) return `Rest ${n}`;
-    }
-  }
-  return "Rest";
+}
+
+export function clearExperimentSession(): void {
+  sessionStorage.removeItem(SESSION_STIMULUS_KEY);
+  sessionStorage.removeItem(SESSION_PARTICIPANT_KEY);
 }
 
 export function validateRunnableSet(set: ExperimentStimulusSet): string | null {
-  if (set.sequence.length === 0) return "请至少添加一段结构（Block、Rest 或 Practice）。";
-  for (let si = 0; si < set.sequence.length; si++) {
-    const item = set.sequence[si];
-    const lab = segmentLabel(item, set.sequence);
+  if (set.sequence.length === 0) return "刺激序列为空。";
+  for (const item of set.sequence) {
     if (item.kind === "block" || item.kind === "practice") {
-      if (item.children.length === 0) return `${lab} 中没有任何 Trial。`;
-      for (let ci = 0; ci < item.children.length; ci++) {
-        const t = item.children[ci]!;
-        if (t.units.length === 0) return `${lab} 的 Trial ${ci + 1} 没有任何刺激单元。`;
+      if (item.children.length === 0) return `${item.kind} 中没有 Trial。`;
+      if (item.children.some((trial) => trial.units.length === 0)) {
+        return `${item.kind} 中存在空 Trial。`;
       }
-    } else {
-      if (item.units.length === 0) return `${lab} 中没有任何刺激单元。`;
+    } else if (item.units.length === 0) {
+      return "休息或指导语段为空。";
     }
   }
   return null;
-}
-
-export function validateDesignWarnings(set: ExperimentStimulusSet): string[] {
-  const warnings: string[] = [];
-  set.sequence.forEach((item) => {
-    const lab = segmentLabel(item, set.sequence);
-    if (item.kind === "block" || item.kind === "practice") {
-      item.children.forEach((t, ci) => {
-        t.units.forEach((u, ui) => {
-          const loc = `${lab} Trial ${ci + 1} 单元 ${ui + 1}`;
-          pushUnitWarnings(warnings, loc, u);
-        });
-      });
-    } else {
-      item.units.forEach((u, ui) => {
-        const loc = `${lab} 单元 ${ui + 1}`;
-        pushUnitWarnings(warnings, loc, u);
-      });
-    }
-  });
-  return warnings;
-}
-
-function pushUnitWarnings(warnings: string[], loc: string, u: StimulusUnit): void {
-  if (u.type === "textDisplay" || u.type === "textControl") {
-    if (!u.text.trim()) {
-      warnings.push(`${loc}：文本为空。`);
-    }
-  }
-  if (u.type === "textDisplay" && u.durationMs <= 0) {
-    warnings.push(`${loc}：显示时间应大于 0 ms。`);
-  }
-  if (u.type === "imageDisplay" && u.durationMs <= 0) {
-    warnings.push(`${loc}：呈现时间应大于 0 ms。`);
-  }
-  if (u.type === "imageDisplay" || u.type === "imageControl") {
-    if (!sanitizeImageDataUrl(u.imageDataUrl)) {
-      warnings.push(`${loc}：请上传有效图片（PNG / JPEG / GIF / WebP）。`);
-    }
-  }
-  if (u.type === "pendulumDisplay" || u.type === "pendulumStimulus" || u.type === "pendulumPractice") {
-    if (u.rodLengthM <= 0 || u.gravity <= 0) {
-      warnings.push(`${loc}：杆长与重力加速度须为正值。`);
-    }
-    const p: PendulumParams = {
-      theta0Rad: (u.theta0Deg * Math.PI) / 180,
-      omega0RadPerSec: (u.omega0DegPerSec * Math.PI) / 180,
-      rodLengthM: u.rodLengthM,
-      gravity: u.gravity,
-    };
-    const E = pendulumEnergy(p);
-    const Ec = pendulumCriticalEnergy(u.rodLengthM, u.gravity);
-    if (pendulumRegime(E, u.rodLengthM, u.gravity) === "critical") {
-      warnings.push(`${loc}：能量接近分离点（E≈2mgl），周期数值可能极不稳定。`);
-    }
-    if (Math.abs(E - Ec) / Math.max(Ec, 1e-9) < 0.02) {
-      warnings.push(`${loc}：能量接近临界值，动力学处于分界附近。`);
-    }
-  }
-  if (u.type === "pendulumDisplay" && u.displayTimeT <= 0) {
-    warnings.push(`${loc}：显示时长（T 倍数）应大于 0。`);
-  }
-  if (u.type === "pendulumStimulus" || u.type === "pendulumPractice") {
-    const legacy = u.show2T > 0 || u.hide2T > 0;
-    if (u.show1T <= 0 || (legacy && u.show2T <= 0)) {
-      warnings.push(`${loc}：显示段（×T）应大于 0。`);
-    }
-    if (u.hide1T <= 0 || (legacy && u.hide2T <= 0)) {
-      warnings.push(`${loc}：隐藏段（秒）应大于 0。`);
-    }
-    if (!legacy && u.fadeMs !== undefined && (u.fadeMs < 0 || u.fadeMs > 30_000)) {
-      warnings.push(`${loc}：淡出时长（ms）异常。`);
-    }
-  }
 }

@@ -1,28 +1,29 @@
 {
-  "name": "jspsych-stimulus-editor",
+  "name": "intuition-physics-experiment",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run generate-masked-hum && tsc && vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
-    "verify-physics": "npx --yes tsx scripts/verify-pendulum-period.ts && npx --yes tsx scripts/verify-physics-precision.ts",
-    "verify-runtime-generator": "npx --yes tsx scripts/verify-runtime-generator.ts",
-    "verify-pendulum-arc-score": "npx --yes tsx scripts/verify-pendulum-arc-score.ts",
-    "generate-masked-hum": "npx --yes tsx scripts/generate-masked-hum-wav.ts",
-    "verify-all": "npm run verify-physics && npm run verify-runtime-generator && npm run verify-pendulum-arc-score"
+    "verify-physics": "tsx tests/verification/verify-pendulum-period.ts && tsx tests/verification/verify-physics-precision.ts",
+    "verify-runtime-generator": "tsx tests/verification/verify-runtime-generator.ts",
+    "verify-pendulum-arc-score": "tsx tests/verification/verify-pendulum-arc-score.ts",
+    "verify-export": "tsx tests/verification/verify-export-contract.ts",
+    "verify-recovery": "tsx tests/verification/verify-recovery.ts",
+    "verify-session": "tsx tests/verification/verify-start-session-flow.ts",
+    "verify-all": "npm run verify-physics && npm run verify-runtime-generator && npm run verify-pendulum-arc-score && npm run verify-export && npm run verify-recovery && npm run verify-session"
   },
   "dependencies": {
     "@jspsych/plugin-html-keyboard-response": "^2.1.0",
     "@stdlib/math-base-special-ellipj": "^0.4.1",
     "@stdlib/math-base-special-ellipk": "^0.2.4",
     "dompurify": "^3.4.5",
-    "jspsych": "^8.0.0",
-    "sortablejs": "^1.15.6"
+    "jspsych": "^8.0.0"
   },
   "devDependencies": {
-    "@types/sortablejs": "^1.15.8",
+    "tsx": "^4.20.6",
     "typescript": "~5.6.3",
     "vite": "^6.0.3"
   }

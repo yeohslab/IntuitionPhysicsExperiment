@@ -65,32 +65,7 @@ export function wrapInstructionHtml(html: string): string {
   return `<div class="stimulus-wrap stimulus-instruction">${sanitizeInstructionHtml(html)}</div>`;
 }
 
-/** @deprecated 请用 wrapInstructionHtml */
-export function wrapStimulus(text: string): string {
-  return wrapInstructionHtml(text);
-}
-
 /** 注视点：屏幕居中加号 */
 export function wrapFixationStimulus(symbol = "+"): string {
   return `<div class="stimulus-wrap stimulus-fixation" aria-hidden="true"><span class="fixation-cross">${escapeHtml(symbol)}</span></div>`;
-}
-
-/** 仅允许常见 raster 图片的 data URL，避免 XSS（如 SVG/script） */
-export function sanitizeImageDataUrl(url: string): string | null {
-  if (typeof url !== "string" || url.length === 0 || url.length > 20_000_000) return null;
-  const idx = url.indexOf("base64,");
-  if (idx === -1) return null;
-  const prefix = url.slice(0, idx + 7);
-  if (!/^data:image\/(png|jpeg|jpg|gif|webp);base64,$/i.test(prefix)) return null;
-  const body = url.slice(idx + 7).replace(/\s/g, "");
-  if (body.length === 0 || !/^[A-Za-z0-9+/=]+$/.test(body)) return null;
-  return prefix + body;
-}
-
-export function wrapImageStimulus(dataUrl: string): string {
-  const safe = sanitizeImageDataUrl(dataUrl);
-  if (!safe) {
-    return '<div class="stimulus-image-wrap stimulus-missing"><p>（图片无效或缺失）</p></div>';
-  }
-  return `<div class="stimulus-image-wrap"><img src="${safe}" alt="" /></div>`;
 }

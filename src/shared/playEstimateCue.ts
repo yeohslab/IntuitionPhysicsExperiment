@@ -148,7 +148,7 @@ function resetMaskedBufferLoad(): void {
 }
 
 /** 加载并解码 masked-hum.wav（结果缓存；失败可重试） */
-export async function loadMaskedHumBuffer(ctx: AudioContext): Promise<AudioBuffer | null> {
+async function loadMaskedHumBuffer(ctx: AudioContext): Promise<AudioBuffer | null> {
   if (maskedBuffer) return maskedBuffer;
   if (maskedBufferLoad) return maskedBufferLoad;
 
@@ -228,10 +228,6 @@ function requestMaskedHumStart(): void {
   })();
 }
 
-export function isExperimentAudioReady(): boolean {
-  return audioCtx?.state === "running";
-}
-
 export async function primeExperimentAudioInUserGesture(): Promise<boolean> {
   try {
     const Ctx = audioContextCtor();
@@ -252,11 +248,6 @@ export async function primeExperimentAudioInUserGesture(): Promise<boolean> {
 
 export function primeEstimateCueAudio(): void {
   void primeExperimentAudioInUserGesture();
-}
-
-/** @deprecated 使用 primeExperimentAudioInUserGesture */
-export async function primeEstimateCueAudioAsync(): Promise<void> {
-  await primeExperimentAudioInUserGesture();
 }
 
 export function playEstimateCue(): void {

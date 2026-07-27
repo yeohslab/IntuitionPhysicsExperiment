@@ -1,5 +1,6 @@
 import "./styles/main.css";
 import "./styles/start.css";
-import { initRouter } from "./router";
+import "./styles/runner.css";
+import { initRouter } from "./app/router";
 
 initRouter();

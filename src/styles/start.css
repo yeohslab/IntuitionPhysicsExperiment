@@ -88,3 +88,15 @@
 #start-dialog-status {
   margin: 0.75rem 0 0;
 }
+
+.start-recovery {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #f6c26b;
+  border-radius: 8px;
+  background: #fff7e6;
+}
+
+.start-recovery p {
+  margin: 0 0 0.5rem;
+}
