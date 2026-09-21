@@ -13,7 +13,7 @@ export type StimulusSetExportPayload = {
 };
 
 export function stimulusSetExportFilename(participant: ParticipantInfo): string {
-  return `stimulus_set_group${participant.motion_group}_subject${participant.subject_id}.json`;
+  return `stimulus_set_subject${participant.subject_id}.json`;
 }
 
 export function buildStimulusSetExportPayload(

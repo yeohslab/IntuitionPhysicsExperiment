@@ -17,11 +17,13 @@ import {
   loadParticipantFromSession,
   loadStimulusSetFromSession,
   validateRunnableSet,
+  clearExperimentSession,
 } from "../shared/storage";
 import { downloadStimulusSetJson } from "../shared/exportStimulusSetJson";
 import {
   checkpointActiveRecovery,
   clearRecoverySnapshot,
+  markRecoveryExported,
   updateRecoveryCursor,
   updateRecoveryRows,
 } from "../shared/recovery";
@@ -127,11 +129,12 @@ function runExperiment(
     done.hidden = false;
     done.innerHTML = `
       <h2>${status === "f" ? "实验已完成" : "实验已中断"}</h2>
-      <p>已尝试下载被试 CSV 与刺激集 JSON。若浏览器拦截了下载，请使用下方按钮。</p>
+      <p>已尝试下载被试 CSV 与刺激集 JSON。若浏览器拦截了下载，请使用下方按钮重新下载。</p>
+      <p class="hint muted">请在确认两个文件已成功保存到本地后，再点击「我已确认文件已保存」。在此之前，刷新或返回首页仍可重复导出。</p>
       <div class="runner-done__actions">
         <button type="button" class="btn btn-secondary" id="btn-redownload-data">重新下载 CSV</button>
         <button type="button" class="btn btn-secondary" id="btn-redownload-stimulus">重新下载刺激集</button>
-        <a href="#/start" class="btn btn-primary">返回实验首页</a>
+        <button type="button" class="btn btn-primary" id="btn-confirm-saved">我已确认文件已保存</button>
       </div>
     `;
     done.querySelector("#btn-redownload-data")?.addEventListener("click", () => {
@@ -140,6 +143,11 @@ function runExperiment(
     done.querySelector("#btn-redownload-stimulus")?.addEventListener("click", () => {
       downloadStimulusSetJson(set, participant);
     });
+    done.querySelector("#btn-confirm-saved")?.addEventListener("click", () => {
+      clearRecoverySnapshot();
+      clearExperimentSession();
+      location.hash = "#/start";
+    });
   };
 
   const finalize = (status: ExperimentStatus) => {
@@ -147,9 +155,10 @@ function runExperiment(
     finalized = true;
     const rows = dataRows(jsPsych);
     updateRecoveryRows(rows);
+    markRecoveryExported(rows, status);
     exportStimulusTrialsCsv(rows, participant, status);
     downloadStimulusSetJson(set, participant);
-    clearRecoverySnapshot();
+    clearExperimentSession();
     removePageListeners();
     activeRun = null;
     if (container.isConnected && (status === "f" || showDoneAfterInterrupt)) {

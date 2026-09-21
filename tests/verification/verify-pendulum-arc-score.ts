@@ -8,7 +8,12 @@ import {
   pendulumWMaxDeg,
   wrapDeltaThetaDeg,
   wrapAngleDeg,
+  degToRad,
 } from "../../src/experiment/physics/pendulumArcScore.ts";
+import {
+  pendulumAngleFromPointer,
+  type PendulumLayout,
+} from "../../src/experiment/physics/render/pendulumCanvas.ts";
 
 function assert(cond: boolean, msg: string): void {
   if (!cond) throw new Error(msg);
@@ -60,5 +65,33 @@ const rotActualDeg = pendulumAngleDegFromRad(7 * Math.PI);
 const rotEstDeg = pendulumAngleDegFromRad(Math.PI / 4);
 assert(rotActualDeg > -180 && rotActualDeg <= 180, "rotation actual deg wrapped");
 assert(rotEstDeg > -180 && rotEstDeg <= 180, "rotation est deg wrapped");
+
+const layout: PendulumLayout = {
+  canvasW: 800,
+  canvasH: 600,
+  anchorX: 400,
+  anchorY: 120,
+  rodPx: 200,
+};
+const wMaxOscDeg = 60;
+const maxOscRad = degToRad(wMaxOscDeg);
+const bobBeyond = {
+  x: layout.anchorX + layout.rodPx * Math.sin(degToRad(90)),
+  y: layout.anchorY + layout.rodPx * Math.cos(degToRad(90)),
+};
+const clampedOsc = pendulumAngleFromPointer(layout, bobBeyond.x, bobBeyond.y, {
+  regime: "oscillation",
+  wMaxDeg: wMaxOscDeg,
+});
+assert(Math.abs(clampedOsc - maxOscRad) < 1e-9, "oscillation pointer clamped to +w_max");
+const bobRotation = {
+  x: layout.anchorX + layout.rodPx * Math.sin(degToRad(90)),
+  y: layout.anchorY + layout.rodPx * Math.cos(degToRad(90)),
+};
+const unclampedRot = pendulumAngleFromPointer(layout, bobRotation.x, bobRotation.y, {
+  regime: "rotation",
+  wMaxDeg: 180,
+});
+assert(Math.abs(unclampedRot - degToRad(90)) < 1e-9, "rotation pointer not clamped");
 
 console.log("verify-pendulum-arc-score: OK");

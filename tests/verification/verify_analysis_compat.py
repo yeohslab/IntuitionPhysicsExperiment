@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(PROJECT_DIR / "analysis"))
+sys.path.insert(0, str(PROJECT_DIR / "archive" / "legacy-protocol" / "analysis-pipeline"))
 
 from preprocess import formal_block_trials, load_all_csv  # noqa: E402
 
@@ -38,7 +38,7 @@ def main() -> None:
         ).to_csv(data_dir / "experiment_data_subject0001.csv", index=False)
         pd.DataFrame(
             {
-                **{**common, "subject_id": ["0002"]},
+                **{**common, "subject_id": ["10002"]},
                 "data_schema_version": [2],
                 "experiment_status": ["f"],
                 "physics_kind": ["pendulum"],
@@ -47,7 +47,7 @@ def main() -> None:
                 "omega_x_t_deg_per_sec": [21.0],
                 "omega_x_t_rad_per_sec": [0.366519143],
             }
-        ).to_csv(data_dir / "experiment_data_subject0002_f.csv", index=False)
+        ).to_csv(data_dir / "experiment_data_subject10002_f.csv", index=False)
 
         loaded = load_all_csv(data_dir)
         formal = formal_block_trials(loaded)

@@ -1,12 +1,12 @@
 # 精简刺激集 JSON（schema v2）
 
-文件名保持 `stimulus_set_groupX_subjectXXXX.json`。首页手动导出、正常结束和中断结束共用同一序列化器。
+文件名保持 `stimulus_set_subject10001.json`（被试编号已含组别）。首页手动导出、正常结束和中断结束共用同一序列化器。
 
 ```json
 {
   "schema_version": 2,
   "participant": {
-    "subject_id": "0001",
+    "subject_id": "10001",
     "motion_group": 1,
     "gender_code": 0,
     "age_years": 20

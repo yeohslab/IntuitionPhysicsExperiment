@@ -95,15 +95,24 @@ export function pendulumThetaToCanvasArcAngle(thetaRad: number): number {
   return Math.atan2(Math.cos(thetaRad), Math.sin(thetaRad));
 }
 
-/** 从鼠标位置估计 θ（弧度） */
+/** 从鼠标位置估计 θ（弧度）；摆动组可选钳位到 ±w_max */
 export function pendulumAngleFromPointer(
   layout: PendulumLayout,
   logicalX: number,
   logicalY: number,
+  motionRange?: PendulumMotionRange,
 ): number {
   const dx = logicalX - layout.anchorX;
   const dy = logicalY - layout.anchorY;
-  return Math.atan2(dx, dy);
+  let thetaRad = Math.atan2(dx, dy);
+  if (
+    motionRange?.regime === "oscillation" &&
+    motionRange.wMaxDeg > 0
+  ) {
+    const maxRad = (motionRange.wMaxDeg * Math.PI) / 180;
+    thetaRad = Math.max(-maxRad, Math.min(maxRad, thetaRad));
+  }
+  return thetaRad;
 }
 
 function drawPendulumAnchor(ctx: CanvasRenderingContext2D, layout: PendulumLayout): void {

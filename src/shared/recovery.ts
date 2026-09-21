@@ -5,6 +5,9 @@ import { parseExperimentStimulusSet } from "./storage";
 
 const RECOVERY_KEY = "intuition-physics-recovery-v1";
 
+export type RecoveryExperimentStatus = "f" | "nf";
+export type RecoveryLifecycle = "running" | "exported";
+
 export type RecoveryPhase =
   | "generated"
   | "timeline_unit"
@@ -26,7 +29,9 @@ export interface RecoveryCursor {
 
 export interface RecoverySnapshot {
   version: 1;
-  status: "running";
+  lifecycle: RecoveryLifecycle;
+  /** 实验结束导出后写入；进行中快照无此字段 */
+  experiment_status?: RecoveryExperimentStatus;
   participant: ParticipantInfo;
   stimulus_set: ExperimentStimulusSet;
   rows: Record<string, unknown>[];
@@ -38,6 +43,18 @@ let activeSnapshot: RecoverySnapshot | null = null;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isRecoveryExperimentStatus(value: unknown): value is RecoveryExperimentStatus {
+  return value === "f" || value === "nf";
+}
+
+function parseLifecycle(raw: Record<string, unknown>): RecoveryLifecycle | null {
+  if (raw.lifecycle === "running" || raw.lifecycle === "exported") {
+    return raw.lifecycle;
+  }
+  if (raw.status === "running") return "running";
+  return null;
 }
 
 function writeSnapshot(snapshot: RecoverySnapshot): boolean {
@@ -57,7 +74,7 @@ export function beginRecoverySnapshot(
 ): boolean {
   return writeSnapshot({
     version: 1,
-    status: "running",
+    lifecycle: "running",
     participant: { ...participant },
     stimulus_set: stimulusSet,
     rows: [],
@@ -68,7 +85,7 @@ export function beginRecoverySnapshot(
 
 export function updateRecoveryRows(rows: readonly Record<string, unknown>[]): boolean {
   if (!activeSnapshot) activeSnapshot = loadRecoverySnapshot();
-  if (!activeSnapshot) return false;
+  if (!activeSnapshot || activeSnapshot.lifecycle === "exported") return false;
   return writeSnapshot({
     ...activeSnapshot,
     rows: rows.map((row) => ({ ...row })),
@@ -78,7 +95,7 @@ export function updateRecoveryRows(rows: readonly Record<string, unknown>[]): bo
 
 export function updateRecoveryCursor(cursor: RecoveryCursor): boolean {
   if (!activeSnapshot) activeSnapshot = loadRecoverySnapshot();
-  if (!activeSnapshot) return false;
+  if (!activeSnapshot || activeSnapshot.lifecycle === "exported") return false;
   return writeSnapshot({
     ...activeSnapshot,
     cursor: { ...activeSnapshot.cursor, ...cursor },
@@ -95,12 +112,37 @@ export function checkpointActiveRecovery(): boolean {
   });
 }
 
+/** 实验结束并尝试下载后：保留快照供首页/结束页重复导出，直至主试确认已保存。 */
+export function markRecoveryExported(
+  rows: readonly Record<string, unknown>[],
+  experimentStatus: RecoveryExperimentStatus,
+): boolean {
+  if (!activeSnapshot) activeSnapshot = loadRecoverySnapshot();
+  if (!activeSnapshot) return false;
+  return writeSnapshot({
+    ...activeSnapshot,
+    lifecycle: "exported",
+    experiment_status: experimentStatus,
+    rows: rows.map((row) => ({ ...row })),
+    cursor: { ...activeSnapshot.cursor, phase: "between_trials" },
+    updated_at: new Date().toISOString(),
+  });
+}
+
 export function loadRecoverySnapshot(): RecoverySnapshot | null {
   try {
     const serialized = localStorage.getItem(RECOVERY_KEY);
     if (!serialized) return null;
     const raw = JSON.parse(serialized) as unknown;
-    if (!isRecord(raw) || raw.version !== 1 || raw.status !== "running") return null;
+    if (!isRecord(raw) || raw.version !== 1) return null;
+    const lifecycle = parseLifecycle(raw);
+    if (!lifecycle) return null;
+    if (
+      lifecycle === "exported" &&
+      !isRecoveryExperimentStatus(raw.experiment_status)
+    ) {
+      return null;
+    }
     if (!isParticipantInfo(raw.participant)) return null;
     const stimulusSet = parseExperimentStimulusSet(raw.stimulus_set);
     if (!stimulusSet || !Array.isArray(raw.rows) || !isRecord(raw.cursor)) return null;
@@ -109,7 +151,10 @@ export function loadRecoverySnapshot(): RecoverySnapshot | null {
     if (typeof phase !== "string") return null;
     const snapshot: RecoverySnapshot = {
       version: 1,
-      status: "running",
+      lifecycle,
+      experiment_status: isRecoveryExperimentStatus(raw.experiment_status)
+        ? raw.experiment_status
+        : undefined,
       participant: raw.participant,
       stimulus_set: stimulusSet,
       rows,

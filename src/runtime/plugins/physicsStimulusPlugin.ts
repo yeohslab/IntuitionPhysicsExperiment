@@ -66,7 +66,7 @@ function mountEstimateFooter(footer: HTMLElement, simHint: HTMLElement): HTMLBut
   const panel = document.createElement("div");
   panel.className = "physics-estimate-ui";
   panel.innerHTML =
-    "<p class=\"physics-hint\">在<strong>橙色虚线轨迹</strong>上<strong>点击</strong>您认为摆杆在试次结束瞬间的位置，可<strong>拖动</strong>微调，然后确认。</p>";
+    "<p class=\"physics-hint\">在<strong>橙色虚线轨迹</strong>上<strong>点击</strong>您认为摆杆在遮挡阶段结束瞬间的位置，可<strong>拖动</strong>微调，然后确认。</p>";
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "physics-btn physics-btn--primary";
@@ -83,7 +83,7 @@ function mountTruthOnlyFeedbackFooter(footer: HTMLElement): HTMLParagraphElement
   const panel = document.createElement("div");
   panel.className = "physics-feedback-ui";
   panel.innerHTML =
-    "<p class=\"physics-hint muted\"><strong>橙色摆杆</strong>为您的选择，<strong>蓝色摆杆</strong>为该试次结束瞬间的真实指向。</p>";
+    "<p class=\"physics-hint muted\"><strong>橙色摆杆</strong>为您的选择，<strong>蓝色摆杆</strong>为遮挡阶段结束瞬间的真实指向。</p>";
   const continueHint = document.createElement("p");
   continueHint.className = "physics-hint muted physics-feedback-continue";
   continueHint.textContent = "按空格键继续";
@@ -434,13 +434,13 @@ class PhysicsStimulusPlugin {
         canvas.setPointerCapture(e.pointerId);
         capturedPointerId = e.pointerId;
         const { x, y } = pointerLogical(e);
-        thetaEstRad = pendulumAngleFromPointer(layout, x, y);
+        thetaEstRad = pendulumAngleFromPointer(layout, x, y, motionRange);
         redrawEstimate();
       };
       const onMove = (e: PointerEvent) => {
         if (!dragging || phase !== "estimate") return;
         const { x, y } = pointerLogical(e);
-        thetaEstRad = pendulumAngleFromPointer(layout, x, y);
+        thetaEstRad = pendulumAngleFromPointer(layout, x, y, motionRange);
         redrawEstimate();
       };
       const onUp = (e: PointerEvent) => {

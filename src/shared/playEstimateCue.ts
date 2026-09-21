@@ -22,6 +22,7 @@ function getMaskedHtmlAudio(): HTMLAudioElement {
   if (!maskedHtmlAudio) {
     maskedHtmlAudio = new Audio(maskedHumUrl);
     maskedHtmlAudio.preload = "auto";
+    maskedHtmlAudio.loop = true;
   }
   return maskedHtmlAudio;
 }
@@ -176,7 +177,8 @@ function startMaskedHumPlayback(ctx: AudioContext): boolean {
   try {
     const source = ctx.createBufferSource();
     source.buffer = maskedBuffer;
-    source.loop = false;
+    // fade+hide 最长约 2s + 1.2s < 10s WAV；循环以防极端 T 或未来参数仍覆盖全程
+    source.loop = true;
 
     const gain = ctx.createGain();
     gain.gain.value = MASKED_PLAYBACK_GAIN;

@@ -3,6 +3,7 @@ import {
   beginRecoverySnapshot,
   clearRecoverySnapshot,
   loadRecoverySnapshot,
+  markRecoveryExported,
   updateRecoveryCursor,
   updateRecoveryRows,
   type RecoveryPhase,
@@ -38,7 +39,7 @@ Object.defineProperty(globalThis, "localStorage", {
 });
 
 const participant: ParticipantInfo = {
-  subject_id: "0001",
+  subject_id: "10001",
   motion_group: 1,
   gender_code: 0,
   age_years: 20,
@@ -77,6 +78,28 @@ assert(
   "响应快照应成功",
 );
 assert(loadRecoverySnapshot()?.rows.length === 1, "恢复后应保留已完成响应");
+
+assert(
+  markRecoveryExported(
+    [
+      {
+        trial_type: "physics-stimulus",
+        segment_kind: "block",
+        unit_type: "pendulumStimulus",
+        formal_trial_index: 1,
+      },
+    ],
+    "f",
+  ),
+  "结束导出后应保留 exported 快照",
+);
+const exported = loadRecoverySnapshot();
+assert(exported?.lifecycle === "exported", "lifecycle 应为 exported");
+assert(exported?.experiment_status === "f", "应保留完成状态");
+assert(
+  !updateRecoveryRows([{ trial_type: "physics-stimulus" }]),
+  "exported 快照不应再被 running 更新覆盖",
+);
 
 clearRecoverySnapshot();
 storage.failWrites = true;

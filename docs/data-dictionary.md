@@ -7,7 +7,7 @@ CSV 只输出已经确认作答的正式 Block Trial。角度为顺时针正，`
 | 字段 | 类型/单位 | 含义 |
 |---|---|---|
 | `data_schema_version` | integer | 当前为 2 |
-| `subject_id` | string | 四位被试编号 |
+| `subject_id` | string | 被试编号：组别 + 四位组内序号（如 `10001`、`20015`） |
 | `motion_group` | integer | 1 摆动；2 旋转 |
 | `gender_code` | integer | 0 男；1 女 |
 | `age_years` | integer / year | 年龄 |
@@ -85,8 +85,8 @@ CSV 只输出已经确认作答的正式 Block Trial。角度为顺时针正，`
 
 ## 文件名与历史兼容
 
-- 完成：`experiment_data_subjectXXXX_f.csv`
-- 中断：`experiment_data_subjectXXXX_nf.csv`
+- 完成：`experiment_data_subject10001_f.csv`（`10001` = 组 1 + 序号 0001）
+- 中断：`experiment_data_subject10001_nf.csv`
 
-`analysis/preprocess.py` 会将历史 `physicsKind` 映射到 `physics_kind`，并将 `theta_actual_*`、`omega_actual_*` 映射到对应 `x_t` 列。新 CSV 不输出这些历史别名。
+归档版 `archive/legacy-protocol/analysis-pipeline/preprocess.py` 可将历史 `physicsKind` 映射到 `physics_kind`，并将 `theta_actual_*`、`omega_actual_*` 映射到对应 `x_t` 列（仅供旧数据复现）。新 CSV 不输出这些历史别名；**新数据采集在仓库外分析**。
 

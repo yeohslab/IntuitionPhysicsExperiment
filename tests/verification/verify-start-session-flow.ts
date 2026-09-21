@@ -3,11 +3,48 @@
  * 运行：npm run verify-session
  */
 import { generateRuntimeStimulusSet } from "../../src/experiment/stimulus/generateRuntimeSet.ts";
-import { parseExperimentStimulusSet } from "../../src/shared/storage.ts";
+import {
+  beginExperimentRunSession,
+  clearExperimentSession,
+  hasActiveExperimentRunSession,
+  loadParticipantFromSession,
+  loadStimulusSetFromSession,
+  parseExperimentStimulusSet,
+} from "../../src/shared/storage.ts";
 import type {
   ExperimentStimulusSet,
   PendulumStimulusUnit,
 } from "../../src/shared/experimentTypes.ts";
+import type { ParticipantInfo } from "../../src/shared/participant.ts";
+
+class MemorySessionStorage {
+  private values = new Map<string, string>();
+
+  getItem(key: string): string | null {
+    return this.values.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.values.set(key, value);
+  }
+
+  removeItem(key: string): void {
+    this.values.delete(key);
+  }
+}
+
+const sessionStorage = new MemorySessionStorage();
+Object.defineProperty(globalThis, "sessionStorage", {
+  configurable: true,
+  value: sessionStorage,
+});
+
+const participant: ParticipantInfo = {
+  subject_id: "10001",
+  motion_group: 1,
+  gender_code: 0,
+  age_years: 20,
+};
 
 function mulberry32(seed: number): () => number {
   let state = seed >>> 0;
@@ -57,6 +94,22 @@ if (fpPending !== fpExport) {
 }
 if (fpPending !== fpSession) {
   throw new Error("session 往返后与 pendingSet 指纹不一致");
+}
+
+beginExperimentRunSession(participant, pendingSet);
+if (!hasActiveExperimentRunSession()) {
+  throw new Error("beginExperimentRunSession 后应有有效 run session");
+}
+if (!loadParticipantFromSession() || !loadStimulusSetFromSession()) {
+  throw new Error("run session 应包含人口学与刺激集");
+}
+
+clearExperimentSession();
+if (hasActiveExperimentRunSession()) {
+  throw new Error("clearExperimentSession 后不应再允许进入 runner");
+}
+if (loadParticipantFromSession() || loadStimulusSetFromSession()) {
+  throw new Error("clearExperimentSession 应清除 session 数据");
 }
 
 const blocks = pendingSet.sequence.filter((x) => x.kind === "block").length;

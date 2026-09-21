@@ -16,8 +16,15 @@ import {
 } from "../../src/shared/exportStimulusSetJson.ts";
 import { generateRuntimeStimulusSet } from "../../src/experiment/stimulus/generateRuntimeSet.ts";
 import {
+  disambiguateDownloadFilename,
+  resetDownloadFilenameDisambiguation,
+} from "../../src/shared/download.ts";
+import {
+  buildSubjectId,
   normalizeAgeYears,
   normalizeGenderCode,
+  normalizeWithinGroupNumber,
+  isValidSubjectId,
   type MotionGroup,
   type ParticipantInfo,
 } from "../../src/shared/participant.ts";
@@ -48,11 +55,50 @@ function assertDemographicValidation(): void {
   for (const value of ["", 0, 121, -2, 20.5, "20.5"]) {
     assert(normalizeAgeYears(value) === null, `非法 age_years 未拒绝：${value}`);
   }
+  assert(normalizeWithinGroupNumber("1") === "0001", "组内序号应格式化为四位");
+  assert(buildSubjectId(1, "0001") === "10001", "被试编号应为组别+序号");
+  assert(buildSubjectId(2, "0015") === "20015", "被试编号应为组别+序号");
+  assert(isValidSubjectId("10001"), "10001 应合法");
+  assert(!isValidSubjectId("0001"), "旧四位编号应拒绝");
+  assert(!isValidSubjectId("30001"), "非法组别前缀应拒绝");
+  resetDownloadFilenameDisambiguation();
+  assert(
+    disambiguateDownloadFilename("experiment_data_subject10001_f.csv") ===
+      "experiment_data_subject10001_f.csv",
+    "首次下载应使用原文件名",
+  );
+  assert(
+    disambiguateDownloadFilename("experiment_data_subject10001_f.csv") ===
+      "experiment_data_subject10001_f (1).csv",
+    "第二次下载应加 (1)",
+  );
+  assert(
+    disambiguateDownloadFilename("stimulus_set_subject10001.json") ===
+      "stimulus_set_subject10001.json",
+    "不同文件名独立计数",
+  );
+  resetDownloadFilenameDisambiguation();
+  const participant: ParticipantInfo = {
+    subject_id: "10001",
+    motion_group: 1,
+    gender_code: 0,
+    age_years: 20,
+  };
+  const csvName = experimentDataFilename(participant.subject_id, "f");
+  const jsonName = stimulusSetExportFilename(participant.subject_id);
+  assert(csvName !== jsonName, "CSV 与 JSON 文件名应不同");
+  assert(
+    disambiguateDownloadFilename(csvName) === csvName &&
+      disambiguateDownloadFilename(jsonName) === jsonName,
+    "finalize 连续双下应各用原名（不同 basename，互不触发 (1) 后缀）",
+  );
+  resetDownloadFilenameDisambiguation();
 }
 
 function assertGroupExport(group: MotionGroup): void {
+  const within = "0001";
   const participant: ParticipantInfo = {
-    subject_id: "0001",
+    subject_id: buildSubjectId(group, within),
     motion_group: group,
     gender_code: 0,
     age_years: 20,
@@ -176,16 +222,18 @@ function assertGroupExport(group: MotionGroup): void {
   );
 
   assert(
-    experimentDataFilename("0001", "f") === "experiment_data_subject0001_f.csv",
+    experimentDataFilename(participant.subject_id, "f") ===
+      `experiment_data_subject${participant.subject_id}_f.csv`,
     "完成文件名不正确",
   );
   assert(
-    experimentDataFilename("0001", "nf") === "experiment_data_subject0001_nf.csv",
+    experimentDataFilename(participant.subject_id, "nf") ===
+      `experiment_data_subject${participant.subject_id}_nf.csv`,
     "中断文件名不正确",
   );
   assert(
     stimulusSetExportFilename(participant) ===
-      `stimulus_set_group${group}_subject0001.json`,
+      `stimulus_set_subject${participant.subject_id}.json`,
     "刺激集文件名不正确",
   );
   console.log(`组 ${group}：schema v2 144 Trial、CSV 与命名协议通过`);

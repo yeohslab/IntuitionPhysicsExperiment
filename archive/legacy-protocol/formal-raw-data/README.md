@@ -11,4 +11,4 @@
 
 ## 分析
 
-统计脚本入口：`data_analysis/analyze.py`（输出见 `data_analysis/output/`）。
+统计脚本入口：`analysis-pipeline/analyze.py`（输出见 `analysis-pipeline/output/`；既往结果见 `../analysis-output/`）。

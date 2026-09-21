@@ -15,6 +15,8 @@ import {
 
 export const SESSION_STIMULUS_KEY = "intuition-physics-stimulus-set";
 export const SESSION_PARTICIPANT_KEY = "intuition-physics-participant";
+/** 存在且与人口学/刺激集同时有效时，才允许进入 #/runner 开跑。 */
+export const SESSION_RUN_TOKEN_KEY = "intuition-physics-run-active";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -175,6 +177,26 @@ export function saveParticipantToSession(participant: ParticipantInfo): void {
   sessionStorage.setItem(SESSION_PARTICIPANT_KEY, JSON.stringify(participant));
 }
 
+export function markExperimentRunActive(): void {
+  sessionStorage.setItem(SESSION_RUN_TOKEN_KEY, "1");
+}
+
+export function hasActiveExperimentRunSession(): boolean {
+  if (sessionStorage.getItem(SESSION_RUN_TOKEN_KEY) !== "1") return false;
+  return (
+    loadParticipantFromSession() !== null && loadStimulusSetFromSession() !== null
+  );
+}
+
+export function beginExperimentRunSession(
+  participant: ParticipantInfo,
+  set: ExperimentStimulusSet,
+): void {
+  saveParticipantToSession(participant);
+  saveStimulusSetToSession(set);
+  markExperimentRunActive();
+}
+
 export function loadParticipantFromSession(): ParticipantInfo | null {
   const serialized = sessionStorage.getItem(SESSION_PARTICIPANT_KEY);
   if (!serialized) return null;
@@ -189,6 +211,7 @@ export function loadParticipantFromSession(): ParticipantInfo | null {
 export function clearExperimentSession(): void {
   sessionStorage.removeItem(SESSION_STIMULUS_KEY);
   sessionStorage.removeItem(SESSION_PARTICIPANT_KEY);
+  sessionStorage.removeItem(SESSION_RUN_TOKEN_KEY);
 }
 
 export function validateRunnableSet(set: ExperimentStimulusSet): string | null {

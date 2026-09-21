@@ -23,6 +23,8 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
       - run: npm ci
       - run: npm run verify-all
       - run: npm run build

@@ -1,9 +1,11 @@
 import { generateRuntimeStimulusSetAsync } from "../experiment/stimulus";
 import {
+  buildSubjectId,
   normalizeAgeYears,
   normalizeGenderCode,
   normalizeMotionGroup,
-  normalizeSubjectId,
+  normalizeWithinGroupNumber,
+  parseWithinGroupNumber,
   SUBJECT_ID_NUM_MAX,
   SUBJECT_ID_NUM_MIN,
   type ParticipantInfo,
@@ -11,6 +13,7 @@ import {
 import type { ExperimentStimulusSet } from "../shared/experimentTypes";
 import {
   clearExperimentSession,
+  beginExperimentRunSession,
   saveStimulusSetToSession,
   saveParticipantToSession,
 } from "../shared/storage";
@@ -66,8 +69,8 @@ export function mountStart(container: HTMLElement): void {
         <div id="start-new-participant">
         <label class="start-dialog__label" for="input-group">组别编号（1=摆动，2=旋转）</label>
         <input type="text" id="input-group" class="start-dialog__input" inputmode="numeric" pattern="[12]" autocomplete="off" maxlength="1" required placeholder="1 或 2" aria-label="组别编号" />
-        <label class="start-dialog__label" for="input-subject-id">组内被试编号</label>
-        <input type="text" id="input-subject-id" class="start-dialog__input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="4" required placeholder="例如 0001" aria-label="组内被试编号" />
+        <label class="start-dialog__label" for="input-subject-id">组内序号（与组别合并为被试编号，如 1+0001→10001）</label>
+        <input type="text" id="input-subject-id" class="start-dialog__input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="4" required placeholder="例如 0001" aria-label="组内序号" />
         <label class="start-dialog__label" for="input-gender">性别编码</label>
         <select id="input-gender" class="start-dialog__input" required aria-label="性别编码">
           <option value="">请选择</option>
@@ -114,12 +117,13 @@ export function mountStart(container: HTMLElement): void {
       errEl.hidden = false;
       return null;
     }
-    const subjectId = normalizeSubjectId(input.value);
-    if (!subjectId) {
-      errEl.textContent = `组内被试编号须为纯数字，且数值在 ${SUBJECT_ID_NUM_MIN}–${SUBJECT_ID_NUM_MAX} 之间（将格式化为四位前导零，如 0001）。`;
+    const withinGroupNumber = normalizeWithinGroupNumber(input.value);
+    if (!withinGroupNumber) {
+      errEl.textContent = `组内序号须为纯数字，且数值在 ${SUBJECT_ID_NUM_MIN}–${SUBJECT_ID_NUM_MAX} 之间（将格式化为四位前导零，如 0001）。`;
       errEl.hidden = false;
       return null;
     }
+    const subjectId = buildSubjectId(motionGroup, withinGroupNumber);
     errEl.hidden = true;
     const genderCode = normalizeGenderCode(genderInput.value);
     if (genderCode === null) {
@@ -204,7 +208,9 @@ export function mountStart(container: HTMLElement): void {
 
   const invalidateIfFormChanged = () => {
     const group = normalizeMotionGroup(groupInput.value);
-    const subjectId = normalizeSubjectId(input.value);
+    const withinGroupNumber = normalizeWithinGroupNumber(input.value);
+    const subjectId =
+      group && withinGroupNumber ? buildSubjectId(group, withinGroupNumber) : null;
     const genderCode = normalizeGenderCode(genderInput.value);
     const ageYears = normalizeAgeYears(ageInput.value);
     if (!group || !subjectId || genderCode === null || ageYears === null || !pendingForm) {
@@ -260,8 +266,7 @@ export function mountStart(container: HTMLElement): void {
       return;
     }
     try {
-      saveParticipantToSession(pendingForm);
-      saveStimulusSetToSession(pendingSet);
+      beginExperimentRunSession(pendingForm, pendingSet);
     } catch {
       errEl.textContent =
         "浏览器无法写入本次会话数据，已阻止实验开始。恢复快照仍保留，可在首页导出。";
@@ -327,12 +332,38 @@ export function mountStart(container: HTMLElement): void {
   const recovery = loadRecoverySnapshot();
   let restoredGeneratedSet = false;
   if (recovery) {
-    if (recovery.cursor.phase === "generated" && recovery.rows.length === 0) {
+    if (recovery.lifecycle === "exported") {
+      recoveryPanel.hidden = false;
+      newParticipantPanel.hidden = true;
+      const exportStatus = recovery.experiment_status ?? "nf";
+      recoveryDetail.textContent =
+        `被试 ${recovery.participant.subject_id} 的实验已结束（${exportStatus === "f" ? "完成" : "中断"}）。` +
+        `请确认 CSV 与 JSON 已保存到本地后再清除记录。`;
+      container.querySelector("#btn-export-recovery")?.addEventListener("click", () => {
+        exportStimulusTrialsCsv(recovery.rows, recovery.participant, exportStatus);
+        downloadStimulusSetJson(recovery.stimulus_set, recovery.participant);
+        recoveryDetail.textContent =
+          "已尝试下载两个文件；记录仍保留，可重复导出。确认文件已保存后请点击「丢弃记录」。";
+      });
+      container.querySelector("#btn-discard-recovery")?.addEventListener("click", () => {
+        if (!window.confirm("确认两个数据文件已保存到本地，并永久清除这份记录吗？")) return;
+        clearRecoverySnapshot();
+        clearExperimentSession();
+        recoveryPanel.hidden = true;
+        newParticipantPanel.hidden = false;
+        resetDialog();
+      });
+    } else if (recovery.cursor.phase === "generated" && recovery.rows.length === 0) {
       restoredGeneratedSet = true;
       pendingSet = recovery.stimulus_set;
       pendingForm = recovery.participant;
       groupInput.value = String(recovery.participant.motion_group);
-      input.value = recovery.participant.subject_id;
+      input.value =
+        parseWithinGroupNumber(
+          recovery.participant.subject_id,
+          recovery.participant.motion_group,
+        ) ??
+        recovery.participant.subject_id.replace(/^[12]/, "");
       genderInput.value = String(recovery.participant.gender_code);
       ageInput.value = String(recovery.participant.age_years);
       setReady(

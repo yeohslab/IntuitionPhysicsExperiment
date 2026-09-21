@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -9,8 +10,8 @@ import numpy as np
 import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PROJECT_DIR / "archive" / "legacy-protocol" / "formal-raw-data"
+LEGACY_DIR = SCRIPT_DIR.parent
+DATA_DIR = LEGACY_DIR / "formal-raw-data"
 OUTPUT_DIR = SCRIPT_DIR / "output"
 
 COL_E = "pendulum_E_J"
@@ -28,6 +29,18 @@ LEGACY_COLUMN_ALIASES = {
     "omega_actual_deg_per_sec": "omega_x_t_deg_per_sec",
     "omega_actual_rad_per_sec": "omega_x_t_rad_per_sec",
 }
+
+
+def normalize_subject_id_value(raw: object) -> str:
+    """新协议：10001（组别+序号）；旧协议：四位 0001。"""
+    s = str(raw).strip()
+    if s.endswith(".0") and s[:-2].isdigit():
+        s = s[:-2]
+    if re.fullmatch(r"[12]\d{4}", s):
+        return s
+    if re.fullmatch(r"\d+", s):
+        return f"{int(s):04d}"
+    return s
 
 
 @dataclass
@@ -55,7 +68,7 @@ def load_all_csv(data_dir: Path = DATA_DIR) -> pd.DataFrame:
         chunk["source_file"] = p.name
         frames.append(chunk)
     df = pd.concat(frames, ignore_index=True)
-    df["subject_id"] = df["subject_id"].astype(int).map(lambda x: f"{x:04d}")
+    df["subject_id"] = df["subject_id"].map(normalize_subject_id_value)
     df.attrs["data_dir"] = str(data_dir)
     return df
 

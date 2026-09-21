@@ -1,12 +1,13 @@
-/** 被试编号数值下限（含） */
+/** 组内序号数值下限（含） */
 export const SUBJECT_ID_NUM_MIN = 1;
-/** 被试编号数值上限（含），对应四位显示 9999 */
+/** 组内序号数值上限（含），对应四位显示 9999 */
 export const SUBJECT_ID_NUM_MAX = 9999;
 
 export type MotionGroup = 1 | 2;
 export type GenderCode = 0 | 1;
 
 export interface ParticipantInfo {
+  /** 被试编号：组别 + 四位组内序号，如 10001、20015 */
   subject_id: string;
   motion_group: MotionGroup;
   gender_code: GenderCode;
@@ -14,10 +15,10 @@ export interface ParticipantInfo {
 }
 
 /**
- * 校验并规范为四位前导零字符串（如 1 → "0001"，12 → "0012"）。
+ * 校验并规范组内序号为四位前导零字符串（如 1 → "0001"）。
  * 仅接受非空纯数字，且数值在 [SUBJECT_ID_NUM_MIN, SUBJECT_ID_NUM_MAX]。
  */
-export function normalizeSubjectId(raw: unknown): string | null {
+export function normalizeWithinGroupNumber(raw: unknown): string | null {
   if (typeof raw !== "string" && typeof raw !== "number") return null;
   const s = String(raw).trim();
   if (!/^\d+$/.test(s)) return null;
@@ -25,6 +26,34 @@ export function normalizeSubjectId(raw: unknown): string | null {
   if (!Number.isFinite(n) || n < SUBJECT_ID_NUM_MIN || n > SUBJECT_ID_NUM_MAX) return null;
   return String(n).padStart(4, "0");
 }
+
+/** 由组别与组内序号生成被试编号（组别 + 四位序号）。 */
+export function buildSubjectId(
+  motionGroup: MotionGroup,
+  withinGroupNumber: string,
+): string {
+  return `${motionGroup}${withinGroupNumber}`;
+}
+
+/** 被试编号格式：首位为组别 1/2，后四位为组内序号。 */
+export function isValidSubjectId(subjectId: string): boolean {
+  if (!/^[12]\d{4}$/.test(subjectId)) return false;
+  const within = parseInt(subjectId.slice(1), 10);
+  return within >= SUBJECT_ID_NUM_MIN && within <= SUBJECT_ID_NUM_MAX;
+}
+
+/** 从被试编号解析组内序号；若与 motionGroup 不匹配则返回 null。 */
+export function parseWithinGroupNumber(
+  subjectId: string,
+  motionGroup: MotionGroup,
+): string | null {
+  if (!isValidSubjectId(subjectId)) return null;
+  if (Number(subjectId[0]) !== motionGroup) return null;
+  return subjectId.slice(1);
+}
+
+/** @deprecated 使用 normalizeWithinGroupNumber；保留别名供旧引用迁移。 */
+export const normalizeSubjectId = normalizeWithinGroupNumber;
 
 /** 校验组别编号：1=摆动，2=旋转 */
 export function normalizeMotionGroup(raw: unknown): MotionGroup | null {
@@ -55,10 +84,11 @@ export function normalizeAgeYears(raw: unknown): number | null {
 export function isParticipantInfo(value: unknown): value is ParticipantInfo {
   if (typeof value !== "object" || value === null) return false;
   const raw = value as Record<string, unknown>;
+  const motionGroup = raw.motion_group;
+  if (motionGroup !== 1 && motionGroup !== 2) return false;
+  if (typeof raw.subject_id !== "string" || !isValidSubjectId(raw.subject_id)) return false;
+  if (Number(raw.subject_id[0]) !== motionGroup) return false;
   return (
-    typeof raw.subject_id === "string" &&
-    normalizeSubjectId(raw.subject_id) === raw.subject_id &&
-    (raw.motion_group === 1 || raw.motion_group === 2) &&
     (raw.gender_code === 0 || raw.gender_code === 1) &&
     typeof raw.age_years === "number" &&
     Number.isSafeInteger(raw.age_years) &&

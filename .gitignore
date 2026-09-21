@@ -16,3 +16,15 @@ __pycache__/
 *.local
 material/
 analysis/output/
+archive/legacy-protocol/analysis-pipeline/output/
+
+# 数据收集：本地主试/伦理材料（签名、证书、被试信息等），勿提交远程
+数据收集/**
+!数据收集/README.md
+
+# Office 临时锁文件
+~$*
+**/~$*
+
+# 本地提取的 docx 文本缓存
+**/_extracted_text*.txt
