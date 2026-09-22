@@ -1,4 +1,4 @@
-"""Verify that the analysis loader accepts legacy and schema-v2 CSV files."""
+"""Verify that the analysis loader accepts legacy, schema-v2, and schema-v3 CSV files."""
 
 from __future__ import annotations
 
@@ -48,11 +48,27 @@ def main() -> None:
                 "omega_x_t_rad_per_sec": [0.366519143],
             }
         ).to_csv(data_dir / "experiment_data_subject10002_f.csv", index=False)
+        pd.DataFrame(
+            {
+                **{**common, "subject_id": ["10003"]},
+                "data_schema_version": [3],
+                "experiment_status": ["f"],
+                "physics_kind": ["pendulum"],
+                "theta_x_t_deg": [12.0],
+                "theta_x_t_rad": [0.20943951],
+                "omega_x_t_deg_per_sec": [22.0],
+                "omega_x_t_rad_per_sec": [0.383972435],
+                "hide_has_turning": [True],
+                "hide_turn_count": [1],
+                "hide_first_turn_sec": [0.4],
+                "hide_first_turn_fraction": [0.5],
+            }
+        ).to_csv(data_dir / "experiment_data_subject10003_f.csv", index=False)
 
         loaded = load_all_csv(data_dir)
         formal = formal_block_trials(loaded)
-        assert len(formal) == 2
-        assert set(formal["data_schema_version"].astype(int)) == {1, 2}
+        assert len(formal) == 3
+        assert set(formal["data_schema_version"].astype(int)) == {1, 2, 3}
         assert formal["physics_kind"].notna().all()
         assert formal["theta_x_t_deg"].notna().all()
         assert formal["omega_x_t_rad_per_sec"].notna().all()

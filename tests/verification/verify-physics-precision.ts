@@ -14,6 +14,7 @@ import {
   completeEllipticK,
   jacobiSn,
 } from "../../src/experiment/physics/elliptic";
+import { analyzePendulumHideTurning } from "../../src/experiment/physics/pendulumHideTurning";
 
 const FAIL = (msg: string) => {
   console.error("FAIL:", msg);
@@ -170,6 +171,82 @@ function verifyPendulumRotation() {
   );
 }
 
+function verifyHideTurningAnalysis() {
+  const p: PendulumParams = {
+    theta0Rad: 0,
+    omega0RadPerSec: 0.8,
+    rodLengthM: 4,
+    gravity: 9.8,
+  };
+  const analysis = analyzePendulum(p);
+  const T = analysis.T;
+  const inside = analyzePendulumHideTurning(
+    p,
+    { show1T: 0.2, hide1T: 0.1 * T, fadeMs: 0 },
+    analysis,
+  );
+  const expectedFirst = 0.05 * T;
+  if (
+    !inside.hide_has_turning ||
+    inside.hide_turn_count !== 1 ||
+    inside.hide_first_turn_sec === null ||
+    Math.abs(inside.hide_first_turn_sec - expectedFirst) > 1e-7 ||
+    inside.hide_first_turn_fraction === null ||
+    Math.abs(inside.hide_first_turn_fraction - 0.5) > 1e-7
+  ) {
+    FAIL(`隐藏阶段内部转向识别错误：${JSON.stringify(inside)}`);
+    return;
+  }
+
+  const noTurn = analyzePendulumHideTurning(
+    p,
+    { show1T: 0, hide1T: 0.1 * T, fadeMs: 0 },
+    analysis,
+  );
+  const turnAtStart = analyzePendulumHideTurning(
+    p,
+    { show1T: 0.25, hide1T: 0.1 * T, fadeMs: 0 },
+    analysis,
+  );
+  const turnAtEnd = analyzePendulumHideTurning(
+    p,
+    { show1T: 0.15, hide1T: 0.1 * T, fadeMs: 0 },
+    analysis,
+  );
+  if (
+    noTurn.hide_has_turning ||
+    turnAtStart.hide_has_turning ||
+    turnAtEnd.hide_has_turning
+  ) {
+    FAIL(
+      `隐藏开区间边界判定错误：no=${JSON.stringify(noTurn)} start=${JSON.stringify(turnAtStart)} end=${JSON.stringify(turnAtEnd)}`,
+    );
+    return;
+  }
+
+  const rotation: PendulumParams = {
+    theta0Rad: 0,
+    omega0RadPerSec: 3,
+    rodLengthM: 4,
+    gravity: 9.8,
+  };
+  const rotationTurning = analyzePendulumHideTurning(rotation, {
+    show1T: 2.5,
+    hide1T: 1.2,
+    fadeMs: 500,
+  });
+  if (
+    rotationTurning.hide_has_turning ||
+    rotationTurning.hide_turn_count !== 0 ||
+    rotationTurning.hide_first_turn_sec !== null ||
+    rotationTurning.hide_first_turn_fraction !== null
+  ) {
+    FAIL(`旋转组转向分析应为零：${JSON.stringify(rotationTurning)}`);
+    return;
+  }
+  ok("隐藏阶段转向：开区间边界、首次时点与旋转零转向");
+}
+
 function verifyNonzeroInitialVelocity() {
   const deg = (d: number) => (d * Math.PI) / 180;
 
@@ -281,6 +358,7 @@ function main() {
   verifyNonzeroInitialVelocity();
   verifyPhaseFinderResolution();
   verifyPendulumRotation();
+  verifyHideTurningAnalysis();
   if (process.exitCode === 1) {
     console.error("\n校验未通过");
     process.exit(1);

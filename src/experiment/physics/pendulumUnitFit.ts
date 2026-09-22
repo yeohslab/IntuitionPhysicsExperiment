@@ -1,16 +1,19 @@
 import {
   PENDULUM_MASS_KG,
+  analyzePendulum,
   pendulumEnergy,
   pendulumPeriod,
   pendulumRegime,
+  pendulumThetaOmegaAt,
   type PendulumParams,
   type PendulumRegime,
 } from "./pendulum";
-import { simulatePendulumTrialOutcome } from "./pendulumHideConstraint";
+import { analyzePendulumHideTurning } from "./pendulumHideTurning";
 import { pendulumThetaAtSimEnd } from "./simEndState";
 import {
   fadeMsForPeriod,
   fadeTForRegime,
+  stimulusTotalSec,
   withSyncedTotalTimeT,
   type StimulusTimingMultiples,
 } from "./timePhases";
@@ -18,7 +21,8 @@ import {
 /** 仿真终态角与目标角的最大允许误差（rad） */
 export const THETA_END_TOL_RAD = Math.PI / 180;
 
-const MAX_TARGET_ATTEMPTS = 48;
+const MAX_TARGET_ATTEMPTS = 256;
+const FIT_ROTATION_SUBSTEP_SEC = 1 / 800;
 
 function uniform(lo: number, hi: number, rng: () => number): number {
   return lo + rng() * (hi - lo);
@@ -142,6 +146,25 @@ function theta0ScanRange(regime: PendulumRegime, thetaMax: number): { lo: number
   return { lo: -thetaMax, hi: thetaMax };
 }
 
+function thetaEndIfTurningMatches(
+  p: PendulumParams,
+  timing: StimulusTimingMultiples,
+  requiredHideTurning: boolean | undefined,
+): number | null {
+  if (requiredHideTurning === undefined) {
+    return pendulumThetaAtSimEnd(p, timing, FIT_ROTATION_SUBSTEP_SEC);
+  }
+  const analysis = analyzePendulum(p);
+  if (
+    analyzePendulumHideTurning(p, timing, analysis).hide_has_turning !==
+    requiredHideTurning
+  ) {
+    return null;
+  }
+  const simEndSec = stimulusTotalSec(timing, analysis.T);
+  return pendulumThetaOmegaAt(simEndSec, p, analysis).theta;
+}
+
 function tryInitialState(
   thetaRad: number,
   omegaRad: number,
@@ -151,6 +174,7 @@ function tryInitialState(
   thetaMax: number,
   l: number,
   g: number,
+  requiredHideTurning: boolean | undefined,
 ): FittedPendulumTimedFields | null {
   const theta0Deg = Math.round(((thetaRad * 180) / Math.PI) * 1e10) / 1e10;
   const omega0DegPerSec = Math.round(((omegaRad * 180) / Math.PI) * 1e10) / 1e10;
@@ -160,8 +184,8 @@ function tryInitialState(
     rodLengthM: l,
     gravity: g,
   };
-  const { thetaEnd: actualEnd, hideOk } = simulatePendulumTrialOutcome(p, timing, thetaMax, regime);
-  if (!hideOk) return null;
+  const actualEnd = thetaEndIfTurningMatches(p, timing, requiredHideTurning);
+  if (actualEnd === null) return null;
   const err = pendulumAngularErrorRad(actualEnd, targetThetaEndRad, regime, thetaMax);
   if (err > THETA_END_TOL_RAD) return null;
   return {
@@ -191,6 +215,7 @@ function scanFitForTarget(
   l: number,
   g: number,
   rng: () => number,
+  requiredHideTurning: boolean | undefined,
 ): FittedPendulumTimedFields | null {
   const { lo, hi } = theta0ScanRange(regime, thetaMax);
   const coarseSteps = regime === "rotation" ? 360 : 200;
@@ -210,8 +235,8 @@ function scanFitForTarget(
         rodLengthM: l,
         gravity: g,
       };
-      const { thetaEnd, hideOk } = simulatePendulumTrialOutcome(p, timing, thetaMax, regime);
-      if (!hideOk) continue;
+      const thetaEnd = thetaEndIfTurningMatches(p, timing, requiredHideTurning);
+      if (thetaEnd === null) continue;
       const err = pendulumAngularErrorRad(thetaEnd, targetThetaEndRad, regime, thetaMax);
       if (err < bestErr) {
         bestErr = err;
@@ -219,7 +244,17 @@ function scanFitForTarget(
         bestSign = sign;
       }
       if (err <= THETA_END_TOL_RAD) {
-        return tryInitialState(thetaRad, omegaRad, timing, targetThetaEndRad, regime, thetaMax, l, g);
+        return tryInitialState(
+          thetaRad,
+          omegaRad,
+          timing,
+          targetThetaEndRad,
+          regime,
+          thetaMax,
+          l,
+          g,
+          requiredHideTurning,
+        );
       }
     }
   }
@@ -238,8 +273,8 @@ function scanFitForTarget(
       rodLengthM: l,
       gravity: g,
     };
-    const { thetaEnd, hideOk } = simulatePendulumTrialOutcome(p, timing, thetaMax, regime);
-    if (!hideOk) return Number.POSITIVE_INFINITY;
+    const thetaEnd = thetaEndIfTurningMatches(p, timing, requiredHideTurning);
+    if (thetaEnd === null) return Number.POSITIVE_INFINITY;
     return pendulumAngularErrorRad(thetaEnd, targetThetaEndRad, regime, thetaMax);
   };
 
@@ -250,11 +285,31 @@ function scanFitForTarget(
     const f2 = errAt(m2);
     if (f1 <= THETA_END_TOL_RAD) {
       const omegaRad = omegaForEnergyAtTheta(E, m1, bestSign, l, g)!;
-      return tryInitialState(m1, omegaRad, timing, targetThetaEndRad, regime, thetaMax, l, g);
+      return tryInitialState(
+        m1,
+        omegaRad,
+        timing,
+        targetThetaEndRad,
+        regime,
+        thetaMax,
+        l,
+        g,
+        requiredHideTurning,
+      );
     }
     if (f2 <= THETA_END_TOL_RAD) {
       const omegaRad = omegaForEnergyAtTheta(E, m2, bestSign, l, g)!;
-      return tryInitialState(m2, omegaRad, timing, targetThetaEndRad, regime, thetaMax, l, g);
+      return tryInitialState(
+        m2,
+        omegaRad,
+        timing,
+        targetThetaEndRad,
+        regime,
+        thetaMax,
+        l,
+        g,
+        requiredHideTurning,
+      );
     }
     if (f1 < f2) b = m2;
     else a = m1;
@@ -262,10 +317,20 @@ function scanFitForTarget(
 
   const omegaRad = omegaForEnergyAtTheta(E, 0.5 * (a + b), bestSign, l, g);
   if (omegaRad === null) return null;
-  return tryInitialState(0.5 * (a + b), omegaRad, timing, targetThetaEndRad, regime, thetaMax, l, g);
+  return tryInitialState(
+    0.5 * (a + b),
+    omegaRad,
+    timing,
+    targetThetaEndRad,
+    regime,
+    thetaMax,
+    l,
+    g,
+    requiredHideTurning,
+  );
 }
 
-/** 离散 show/hide 水平下的试次拟合：终点角均匀、初速符号随机、hide 无转向 */
+/** 离散 show/hide 水平下的试次拟合：终点角均匀、初速符号随机；隐藏阶段允许转向 */
 export function fitPendulumDiscreteTrial(opts: {
   targetEnergyJ: number;
   show1T: number;
@@ -273,6 +338,7 @@ export function fitPendulumDiscreteTrial(opts: {
   rodLengthM: number;
   gravity: number;
   rng: () => number;
+  requiredHideTurning?: boolean;
   maxAttempts?: number;
 }): FittedPendulumTimedFields {
   const { targetEnergyJ: E, show1T, hide1T, rodLengthM: l, gravity: g, rng } = opts;
@@ -291,12 +357,22 @@ export function fitPendulumDiscreteTrial(opts: {
 
   for (let attempt = 0; attempt < maxTargets; attempt++) {
     const targetThetaEndRad = sampleTargetSimEndThetaRad(E, l, g, rng);
-    const fitted = scanFitForTarget(E, targetThetaEndRad, timing, regime, thetaMax, l, g, rng);
+    const fitted = scanFitForTarget(
+      E,
+      targetThetaEndRad,
+      timing,
+      regime,
+      thetaMax,
+      l,
+      g,
+      rng,
+      opts.requiredHideTurning,
+    );
     if (fitted) return fitted;
   }
 
   throw new Error(
-    `无法在 ${maxTargets} 个目标角内拟合离散试次：E=${E} J，show=${show1T}T，hide=${hide1T}s`,
+    `无法在 ${maxTargets} 个目标角内拟合离散试次：E=${E} J，show=${show1T}T，hide=${hide1T}s，requiredHideTurning=${String(opts.requiredHideTurning)}`,
   );
 }
 

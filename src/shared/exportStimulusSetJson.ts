@@ -7,7 +7,7 @@ import {
 import { triggerTextDownload } from "./download";
 
 export type StimulusSetExportPayload = {
-  schema_version: 2;
+  schema_version: 3;
   participant: ParticipantInfo;
   trials: PendulumTrialDescriptor[];
 };
@@ -21,7 +21,7 @@ export function buildStimulusSetExportPayload(
   participant: ParticipantInfo,
 ): StimulusSetExportPayload {
   return {
-    schema_version: 2,
+    schema_version: 3,
     participant: { ...participant },
     trials: collectPendulumTrialDescriptors(set, participant.motion_group),
   };

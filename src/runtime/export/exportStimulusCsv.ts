@@ -2,7 +2,7 @@ import type { DataCollection } from "jspsych";
 import type { ParticipantInfo } from "../../shared/participant";
 import { triggerTextDownload } from "../../shared/download";
 
-export const DATA_SCHEMA_VERSION = 2 as const;
+export const DATA_SCHEMA_VERSION = 3 as const;
 export const PHYSICS_STIMULUS_TRIAL_TYPE = "physics-stimulus";
 export type ExperimentStatus = "f" | "nf";
 
@@ -34,6 +34,10 @@ export const STIMULUS_CSV_COLUMNS = [
   "show_sec",
   "fade_sec",
   "hide_sec",
+  "hide_has_turning",
+  "hide_turn_count",
+  "hide_first_turn_sec",
+  "hide_first_turn_fraction",
   "speed_bar_v_max_m_per_sec",
   "w_max_deg",
   "theta_x_0_deg",

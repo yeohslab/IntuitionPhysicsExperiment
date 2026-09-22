@@ -1,4 +1,4 @@
-# CSV 数据字典（schema v2）
+# CSV 数据字典（schema v3）
 
 CSV 只输出已经确认作答的正式 Block Trial。角度为顺时针正，`theta` 折返到 `(-π, π]`；`omega` 保留方向，`linear_speed=l|omega|` 始终非负。空值在 CSV 中为空单元格。
 
@@ -6,7 +6,7 @@ CSV 只输出已经确认作答的正式 Block Trial。角度为顺时针正，`
 
 | 字段 | 类型/单位 | 含义 |
 |---|---|---|
-| `data_schema_version` | integer | 当前为 2 |
+| `data_schema_version` | integer | 当前为 3 |
 | `subject_id` | string | 被试编号：组别 + 四位组内序号（如 `10001`、`20015`） |
 | `motion_group` | integer | 1 摆动；2 旋转 |
 | `gender_code` | integer | 0 男；1 女 |
@@ -38,6 +38,10 @@ CSV 只输出已经确认作答的正式 Block Trial。角度为顺时针正，`
 | `show_sec` | number / s | 可视时长 |
 | `fade_sec` | number / s | 淡出时长 |
 | `hide_sec` | number / s | 遮挡时长 |
+| `hide_has_turning` | boolean | 隐藏开区间内角速度是否反号；淡出及隐藏起止边界不计入 |
+| `hide_turn_count` | integer | 隐藏开区间内转向次数；当前设计为0或1 |
+| `hide_first_turn_sec` | number / s or empty | 首次转向距隐藏阶段起点的秒数；无转向时为空 |
+| `hide_first_turn_fraction` | number or empty | 首次转向在隐藏阶段中的相对位置 `(0,1)`；无转向时为空 |
 | `speed_bar_v_max_m_per_sec` | number / m/s | 组内固定速度条上限 |
 | `w_max_deg` | number / degree | 允许作答的运动角范围半宽 |
 
@@ -89,4 +93,3 @@ CSV 只输出已经确认作答的正式 Block Trial。角度为顺时针正，`
 - 中断：`experiment_data_subject10001_nf.csv`
 
 归档版 `archive/legacy-protocol/analysis-pipeline/preprocess.py` 可将历史 `physicsKind` 映射到 `physics_kind`，并将 `theta_actual_*`、`omega_actual_*` 映射到对应 `x_t` 列（仅供旧数据复现）。新 CSV 不输出这些历史别名；**新数据采集在仓库外分析**。
-

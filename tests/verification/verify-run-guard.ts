@@ -36,6 +36,17 @@ function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
+function mulberry32(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state += 0x6d2b79f5;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 const sessionStorage = new MemorySessionStorage();
 Object.defineProperty(globalThis, "sessionStorage", {
   configurable: true,
@@ -52,7 +63,7 @@ const participant: ParticipantInfo = {
 const set = generateRuntimeStimulusSet({
   group: 1,
   subjectId: participant.subject_id,
-  rng: () => 0.271828,
+  rng: mulberry32(27_182),
 });
 
 assert(!hasActiveExperimentRunSession(), "初始状态不应允许进入 runner");

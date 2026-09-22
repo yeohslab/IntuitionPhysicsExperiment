@@ -7,6 +7,7 @@ import {
   analyzePendulum,
   type PendulumParams,
 } from "../experiment/physics/pendulum";
+import { analyzePendulumHideTurning } from "../experiment/physics/pendulumHideTurning";
 import { pendulumStateAtSimEnd } from "../experiment/physics/simEndState";
 import {
   stimulusPhaseDurationsForExport,
@@ -43,6 +44,10 @@ export interface PendulumTrialDescriptor {
   show_sec: number;
   fade_sec: number;
   hide_sec: number;
+  hide_has_turning: boolean;
+  hide_turn_count: number;
+  hide_first_turn_sec: number | null;
+  hide_first_turn_fraction: number | null;
   speed_bar_v_max_m_per_sec: number;
   w_max_deg: number;
   theta_x_0_deg: number;
@@ -83,6 +88,7 @@ export function describePendulumTrial(
   const analysis = analyzePendulum(params);
   const timing = withSyncedTotalTimeT(unit, analysis.T);
   const phaseDurations = stimulusPhaseDurationsForExport(timing, analysis.T);
+  const hideTurning = analyzePendulumHideTurning(params, timing, analysis);
   const endState = pendulumStateAtSimEnd(params, timing);
   const theta0Rad = wrapAngleRad(params.theta0Rad);
   const thetaTRad = wrapAngleRad(endState.theta);
@@ -103,6 +109,7 @@ export function describePendulumTrial(
     gravity_m_per_sec2: unit.gravity,
     total_time_T: stimulusTotalTimeT(timing, analysis.T),
     ...phaseDurations,
+    ...hideTurning,
     speed_bar_v_max_m_per_sec: speedBarVMaxForGroup(motionGroup),
     w_max_deg: pendulumWMaxDeg(
       analysis.E,

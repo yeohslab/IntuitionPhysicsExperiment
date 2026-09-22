@@ -1,5 +1,5 @@
 /** 当前刺激集内存/会话格式版本（运行时 generateRuntimeStimulusSet 产出）。 */
-export const STIMULUS_SET_SCHEMA_VERSION = 6 as const;
+export const STIMULUS_SET_SCHEMA_VERSION = 7 as const;
 
 export type StimulusUnitType =
   | "textDisplay"

@@ -87,6 +87,13 @@ const fpExport = fingerprint(pendingSet);
 // 3. 开始：JSON 写入 session 再 parse（与 saveStimulusSetToSession / loadStimulusSetFromSession 相同）
 const loaded = parseExperimentStimulusSet(JSON.parse(JSON.stringify(pendingSet)) as unknown);
 if (!loaded) throw new Error("session 解析失败");
+const legacySchema6 = {
+  ...JSON.parse(JSON.stringify(pendingSet)),
+  schemaVersion: 6,
+};
+if (parseExperimentStimulusSet(legacySchema6) !== null) {
+  throw new Error("旧 schema v6 刺激缓存应失效");
+}
 const fpSession = fingerprint(loaded);
 
 if (fpPending !== fpExport) {

@@ -9,6 +9,11 @@ import {
 } from "../../src/experiment/stimulus/generateRuntimeSet.ts";
 import { fitPendulumDiscreteTrial } from "../../src/experiment/physics/pendulumUnitFit.ts";
 import {
+  pendulumEnergy,
+  type PendulumParams,
+} from "../../src/experiment/physics/pendulum.ts";
+import { analyzePendulumHideTurning } from "../../src/experiment/physics/pendulumHideTurning.ts";
+import {
   NUM_FORMAL_BLOCKS,
   TRIALS_PER_FORMAL_BLOCK,
   buildKeptEnergySegmentsForGroup,
@@ -112,6 +117,19 @@ function collectPracticeStimuli(set: ExperimentStimulusSet): PendulumStimulusUni
   return out;
 }
 
+function paramsFromStimulus(stimulus: PendulumStimulusUnit): PendulumParams {
+  return {
+    theta0Rad: (stimulus.theta0Deg * Math.PI) / 180,
+    omega0RadPerSec: (stimulus.omega0DegPerSec * Math.PI) / 180,
+    rodLengthM: stimulus.rodLengthM,
+    gravity: stimulus.gravity,
+  };
+}
+
+function turningForStimulus(stimulus: PendulumStimulusUnit) {
+  return analyzePendulumHideTurning(paramsFromStimulus(stimulus), stimulus);
+}
+
 function assertGeneratedSet(group: 1 | 2, seed: number): void {
   const rng = mulberry32(seed);
   const progress: number[] = [];
@@ -167,6 +185,46 @@ function assertGeneratedSet(group: 1 | 2, seed: number): void {
       throw new Error(`组 ${group} 非法 hide1T=${s.hide1T}`);
     }
   }
+  for (const stimulus of practiceStimuli) {
+    if (turningForStimulus(stimulus).hide_turn_count > 1) {
+      throw new Error(`组 ${group} 练习试次在隐藏阶段发生多次转向`);
+    }
+  }
+  if (group === 1) {
+    const comboCounts = new Map<string, number>();
+    const energyCounts = new Map<string, number>();
+    let totalTurning = 0;
+    for (const stimulus of stimuli) {
+      const turning = turningForStimulus(stimulus);
+      if (turning.hide_turn_count > 1) {
+        throw new Error("摆动组正式试次在隐藏阶段发生多次转向");
+      }
+      if (!turning.hide_has_turning) continue;
+      totalTurning += 1;
+      const combo = `${stimulus.show1T}|${stimulus.hide1T}`;
+      const energy = pendulumEnergy(paramsFromStimulus(stimulus)).toFixed(3);
+      comboCounts.set(combo, (comboCounts.get(combo) ?? 0) + 1);
+      energyCounts.set(energy, (energyCounts.get(energy) ?? 0) + 1);
+    }
+    if (totalTurning !== 67 && totalTurning !== 68) {
+      throw new Error(`摆动组正式转向总数应为 67/68，实际 ${totalTurning}`);
+    }
+    if (
+      comboCounts.size !== 9 ||
+      [...comboCounts.values()].some((count) => count !== 7 && count !== 8)
+    ) {
+      throw new Error(`摆动组时序格转向配额异常：${JSON.stringify([...comboCounts])}`);
+    }
+    if (
+      energyCounts.size !== NUM_FORMAL_BLOCKS ||
+      [...energyCounts.values()].some((count) => count !== 4 && count !== 5)
+    ) {
+      throw new Error(`摆动组能量水平转向配额异常：${JSON.stringify([...energyCounts])}`);
+    }
+    console.log(`摆动组正式转向平衡：${totalTurning}/${stimuli.length}，时序格 7/8，能量水平 4/5`);
+  } else if (stimuli.some((stimulus) => turningForStimulus(stimulus).hide_has_turning)) {
+    throw new Error("旋转组不应发生隐藏阶段转向");
+  }
   console.log(
     `组 ${group}（seed=${seed}）：练习 ${practiceTrials} + 正式 ${blocks.length}×${TRIALS_PER_FORMAL_BLOCK} OK`,
   );
@@ -175,5 +233,7 @@ function assertGeneratedSet(group: 1 | 2, seed: number): void {
 assertEnergySegments();
 assertOmegaSignBalance();
 assertGeneratedSet(1, 42_001);
+assertGeneratedSet(1, 42_003);
+assertGeneratedSet(1, 42_005);
 assertGeneratedSet(2, 42_002);
 console.log("verify-runtime-generator: 全部通过");

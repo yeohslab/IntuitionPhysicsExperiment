@@ -1,10 +1,10 @@
-# 精简刺激集 JSON（schema v2）
+# 精简刺激集 JSON（schema v3）
 
 文件名保持 `stimulus_set_subject10001.json`（被试编号已含组别）。首页手动导出、正常结束和中断结束共用同一序列化器。
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "participant": {
     "subject_id": "10001",
     "motion_group": 1,
@@ -25,6 +25,7 @@
 | 结构 | `segment_kind`, `block_index`, `trial_index_in_block`, `formal_trial_index` |
 | 物理 | `pendulum_E_J`, `pendulum_T_sec`, `pendulum_regime`, `rod_length_m`, `gravity_m_per_sec2` |
 | 时序 | `total_time_T`, `show_T`, `fade_T`, `hide_T`, `total_time_sec`, `show_sec`, `fade_sec`, `hide_sec` |
+| 隐藏转向 | `hide_has_turning`, `hide_turn_count`, `hide_first_turn_sec`, `hide_first_turn_fraction` |
 | 尺度 | `speed_bar_v_max_m_per_sec`, `w_max_deg` |
 | 初态 | `theta_x_0_deg`, `theta_x_0_rad`, `omega_x_0_deg_per_sec`, `omega_x_0_rad_per_sec`, `linear_speed_x_0_m_per_sec` |
 | 终态 | `theta_x_t_deg`, `theta_x_t_rad`, `omega_x_t_deg_per_sec`, `omega_x_t_rad_per_sec`, `linear_speed_x_t_m_per_sec` |
@@ -56,6 +57,10 @@
   "show_sec": 0,
   "fade_sec": 0,
   "hide_sec": 0.8,
+  "hide_has_turning": true,
+  "hide_turn_count": 1,
+  "hide_first_turn_sec": 0.4,
+  "hide_first_turn_fraction": 0.5,
   "speed_bar_v_max_m_per_sec": 11.9359750335,
   "w_max_deg": 0,
   "theta_x_0_deg": 0,
@@ -72,4 +77,3 @@
 ```
 
 示例中的零值仅用于展示结构；真实文件由生成器写入经验证的有限数。
-

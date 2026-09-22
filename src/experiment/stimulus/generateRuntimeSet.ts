@@ -13,12 +13,11 @@ import {
   type MotionGroup,
 } from "../physics/energySegments";
 import { pendulumEnergy, pendulumPeriod, pendulumRegime, type PendulumParams } from "../physics/pendulum";
+import { analyzePendulumHideTurning } from "../physics/pendulumHideTurning";
 import {
   assertUnitSimEndTheta,
   fitPendulumDiscreteTrial,
-  pendulumThetaMaxRad,
 } from "../physics/pendulumUnitFit";
-import { hideIntervalHasNoTurning } from "../physics/pendulumHideConstraint";
 import { HIDE_LEVELS_SEC, fadeTForGroup, showLevelsForGroup } from "../physics/timePhases";
 import {
   STIMULUS_SET_SCHEMA_VERSION,
@@ -71,6 +70,7 @@ function makePendulumStimulus(
   E: number,
   combo: TimingCombo,
   rng: () => number,
+  requiredHideTurning?: boolean,
 ): PendulumStimulusUnit {
   const fitted = fitPendulumDiscreteTrial({
     targetEnergyJ: E,
@@ -79,6 +79,7 @@ function makePendulumStimulus(
     rodLengthM: ROD_LENGTH_M,
     gravity: GRAVITY,
     rng,
+    requiredHideTurning,
   });
   assertUnitSimEndTheta(fitted, E, fitted.targetThetaEndRad);
   return {
@@ -99,19 +100,62 @@ function makeBlockForEnergy(
   seg: KeptEnergySegment,
   group: MotionGroup,
   rng: () => number,
+  requiredTurningByCombo: readonly boolean[] | undefined,
   onTrialGenerated?: () => void,
 ): BlockSegment {
-  const combos = allTimingCombos(group);
-  shuffleInPlace(combos, rng);
+  const plannedCombos = allTimingCombos(group).map((combo, comboIndex) => ({
+    combo,
+    requiredHideTurning: requiredTurningByCombo?.[comboIndex],
+  }));
+  shuffleInPlace(plannedCombos, rng);
   const children: Trial[] = [];
-  for (const combo of combos) {
+  for (const planned of plannedCombos) {
     children.push({
       id: newId(),
-      units: [makeFixation(), makePendulumStimulus(seg.Emid, combo, rng)],
+      units: [
+        makeFixation(),
+        makePendulumStimulus(
+          seg.Emid,
+          planned.combo,
+          rng,
+          planned.requiredHideTurning,
+        ),
+      ],
     });
     onTrialGenerated?.();
   }
   return { kind: "block", id: newId(), children };
+}
+
+/**
+ * 随机置换后的奇偶棋盘：15×9 时，每列 7/8 个 true、每行 4/5 个 true。
+ * true 表示要求隐藏阶段发生一次转向。
+ */
+function buildFormalHideTurningPlan(
+  energyCount: number,
+  comboCount: number,
+  rng: () => number,
+): boolean[][] {
+  const energyOrder = Array.from({ length: energyCount }, (_, index) => index);
+  const comboOrder = Array.from({ length: comboCount }, (_, index) => index);
+  shuffleInPlace(energyOrder, rng);
+  shuffleInPlace(comboOrder, rng);
+  const energyRank = Array<number>(energyCount);
+  const comboRank = Array<number>(comboCount);
+  energyOrder.forEach((energyIndex, rank) => {
+    energyRank[energyIndex] = rank;
+  });
+  comboOrder.forEach((comboIndex, rank) => {
+    comboRank[comboIndex] = rank;
+  });
+  const offset = rng() < 0.5 ? 0 : 1;
+  return Array.from({ length: energyCount }, (_, energyIndex) =>
+    Array.from(
+      { length: comboCount },
+      (_, comboIndex) =>
+        (energyRank[energyIndex]! + comboRank[comboIndex]! + offset) % 2 === 0,
+    ),
+  );
 }
 
 /** 练习 Block：固定练习能量 × 组内 3×3 timing；与正式试次同构（pendulumStimulus） */
@@ -165,8 +209,22 @@ export function generateRuntimeStimulusSet(opts: GenerateRuntimeSetOptions): Exp
     opts.onProgress?.(completedTrials, TOTAL_RUNTIME_TRIALS);
   };
   const segments = buildKeptEnergySegmentsForGroup(opts.group);
-  const blocks = segments.map((seg) =>
-    makeBlockForEnergy(seg, opts.group, rng, reportTrialGenerated),
+  const formalTurningPlan =
+    opts.group === 1
+      ? buildFormalHideTurningPlan(
+          segments.length,
+          allTimingCombos(opts.group).length,
+          rng,
+        )
+      : undefined;
+  const blocks = segments.map((seg, energyIndex) =>
+    makeBlockForEnergy(
+      seg,
+      opts.group,
+      rng,
+      formalTurningPlan?.[energyIndex],
+      reportTrialGenerated,
+    ),
   );
   shuffleInPlace(blocks, rng);
 
@@ -200,6 +258,66 @@ function pendulumParamsFromUnit(u: PendulumStimulusUnit): PendulumParams {
 
 function comboKey(show1T: number, hide1T: number): string {
   return `${show1T}|${hide1T}`;
+}
+
+function pendulumStimulusFromTrial(trial: Trial): PendulumStimulusUnit {
+  const stimulus = trial.units.find(
+    (unit): unit is PendulumStimulusUnit => unit.type === "pendulumStimulus",
+  );
+  if (!stimulus) throw new Error(`Trial ${trial.id} 缺少 pendulumStimulus`);
+  return stimulus;
+}
+
+function assertFormalHideTurningBalance(
+  blocks: readonly BlockSegment[],
+  group: MotionGroup,
+): void {
+  const comboTurningCounts = new Map<string, number>();
+  let totalTurning = 0;
+  for (const block of blocks) {
+    let blockTurning = 0;
+    for (const trial of block.children) {
+      const stimulus = pendulumStimulusFromTrial(trial);
+      const turning = analyzePendulumHideTurning(
+        pendulumParamsFromUnit(stimulus),
+        stimulus,
+      );
+      if (turning.hide_turn_count > 1) {
+        throw new Error(
+          `正式 Trial ${trial.id} 在隐藏阶段转向 ${turning.hide_turn_count} 次，超出当前设计上限`,
+        );
+      }
+      const key = comboKey(stimulus.show1T, stimulus.hide1T);
+      if (turning.hide_has_turning) {
+        blockTurning += 1;
+        totalTurning += 1;
+        comboTurningCounts.set(key, (comboTurningCounts.get(key) ?? 0) + 1);
+      } else if (!comboTurningCounts.has(key)) {
+        comboTurningCounts.set(key, 0);
+      }
+    }
+    if (group === 1 && blockTurning !== 4 && blockTurning !== 5) {
+      throw new Error(`摆动组正式 Block 转向数应为 4/5，实际 ${blockTurning}`);
+    }
+    if (group === 2 && blockTurning !== 0) {
+      throw new Error(`旋转组正式 Block 不应发生转向，实际 ${blockTurning}`);
+    }
+  }
+
+  if (group === 1) {
+    for (const combo of allTimingCombos(group)) {
+      const key = comboKey(combo.show1T, combo.hide1T);
+      const turningCount = comboTurningCounts.get(key) ?? 0;
+      if (turningCount !== 7 && turningCount !== 8) {
+        throw new Error(`摆动组时序格 ${key} 转向数应为 7/8，实际 ${turningCount}`);
+      }
+    }
+    if (totalTurning !== 67 && totalTurning !== 68) {
+      throw new Error(`摆动组正式转向总数应为 67/68，实际 ${totalTurning}`);
+    }
+  } else if (totalTurning !== 0) {
+    throw new Error(`旋转组正式转向总数应为 0，实际 ${totalTurning}`);
+  }
 }
 
 function assertTimedPendulumBlock(
@@ -236,15 +354,6 @@ function assertTimedPendulumBlock(
     if (regime !== expectedRegime && regime !== "critical") {
       throw new Error(`Block ${blockId} 试次能量 ${E} J 的 regime=${regime}，期望 ${expectedRegime}`);
     }
-    const thetaMax = pendulumThetaMaxRad(E, stim.rodLengthM, stim.gravity);
-    const timing = {
-      show1T: stim.show1T,
-      hide1T: stim.hide1T,
-      fadeMs: stim.fadeMs,
-    };
-    if (!hideIntervalHasNoTurning(pendulumParamsFromUnit(stim), timing, thetaMax, regime)) {
-      throw new Error(`Block ${blockId} 试次 ${stim.id} 违反 hide 无转向约束`);
-    }
     const T = pendulumPeriod(E, stim.rodLengthM, stim.gravity);
     const fadeT = (stim.fadeMs ?? 0) / 1000 / T;
     if (Math.abs(fadeT - expectedFadeT) > 1e-6) {
@@ -258,9 +367,11 @@ function assertTimedPendulumBlock(
   }
 }
 
-/** 生成后自检：正式 Block、练习 Block、timing、regime、hide 约束 */
+/** 生成后自检：正式 Block、练习 Block、timing、regime 与终态精度 */
 export function assertRuntimeStimulusSet(set: ExperimentStimulusSet, group: MotionGroup): void {
-  const formalBlocks = set.sequence.filter((x) => x.kind === "block");
+  const formalBlocks = set.sequence.filter(
+    (item): item is BlockSegment => item.kind === "block",
+  );
   if (formalBlocks.length !== NUM_FORMAL_BLOCKS) {
     throw new Error(`正式 Block 应为 ${NUM_FORMAL_BLOCKS}，实际 ${formalBlocks.length}`);
   }
@@ -278,7 +389,7 @@ export function assertRuntimeStimulusSet(set: ExperimentStimulusSet, group: Moti
     );
   }
   for (const block of formalBlocks) {
-    if (block.kind !== "block") continue;
     assertTimedPendulumBlock(block.id, block.children, group, null);
   }
+  assertFormalHideTurningBalance(formalBlocks, group);
 }

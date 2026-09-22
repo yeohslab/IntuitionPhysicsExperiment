@@ -1,5 +1,5 @@
 /**
- * schema v2 刺激集和 CSV 导出协议自检。
+ * schema v3 刺激集和 CSV 导出协议自检。
  * 运行：npm run verify-export
  */
 import {
@@ -109,7 +109,7 @@ function assertGroupExport(group: MotionGroup): void {
     rng: mulberry32(71_000 + group),
   });
   const payload = buildStimulusSetExportPayload(set, participant);
-  assert(payload.schema_version === 2, "刺激集 schema_version 应为 2");
+  assert(payload.schema_version === 3, "刺激集 schema_version 应为 3");
   assert(payload.trials.length === 144, `组 ${group} 刺激 Trial 应为 144`);
   assert(
     payload.trials.filter((trial) => trial.segment_kind === "practice").length === 9,
@@ -137,6 +137,39 @@ function assertGroupExport(group: MotionGroup): void {
       Math.abs(trial.speed_bar_v_max_m_per_sec - expectedVMax) < 1e-12,
       `组 ${group} Vmax 不统一`,
     );
+    assert(
+      trial.hide_has_turning === (trial.hide_turn_count > 0),
+      `组 ${group} 转向布尔值与次数不一致`,
+    );
+    assert(
+      Number.isInteger(trial.hide_turn_count) &&
+        trial.hide_turn_count >= 0 &&
+        trial.hide_turn_count <= 1,
+      `组 ${group} hide_turn_count 非法`,
+    );
+    if (trial.hide_has_turning) {
+      assert(
+        trial.hide_first_turn_sec !== null &&
+          trial.hide_first_turn_sec > 0 &&
+          trial.hide_first_turn_sec < trial.hide_sec,
+        `组 ${group} 首次转向秒数非法`,
+      );
+      assert(
+        trial.hide_first_turn_fraction !== null &&
+          trial.hide_first_turn_fraction > 0 &&
+          trial.hide_first_turn_fraction < 1,
+        `组 ${group} 首次转向相对位置非法`,
+      );
+    } else {
+      assert(
+        trial.hide_first_turn_sec === null &&
+          trial.hide_first_turn_fraction === null,
+        `组 ${group} 无转向 Trial 的首次转向字段应为空`,
+      );
+    }
+    if (group === 2) {
+      assert(!trial.hide_has_turning, "旋转组不应记录隐藏阶段转向");
+    }
     for (const [key, value] of Object.entries(trial)) {
       if (typeof value === "number") {
         assert(Number.isFinite(value), `${key} 应为有限数`);
@@ -236,7 +269,7 @@ function assertGroupExport(group: MotionGroup): void {
       `stimulus_set_subject${participant.subject_id}.json`,
     "刺激集文件名不正确",
   );
-  console.log(`组 ${group}：schema v2 144 Trial、CSV 与命名协议通过`);
+  console.log(`组 ${group}：schema v3 144 Trial、转向字段、CSV 与命名协议通过`);
 }
 
 assertDemographicValidation();
