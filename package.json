@@ -9,13 +9,14 @@
     "preview": "vite preview",
     "verify-physics": "tsx tests/verification/verify-pendulum-period.ts && tsx tests/verification/verify-physics-precision.ts",
     "verify-runtime-generator": "tsx tests/verification/verify-runtime-generator.ts",
+    "verify-experiment-2": "tsx tests/verification/verify-experiment-2.ts",
     "verify-pendulum-arc-score": "tsx tests/verification/verify-pendulum-arc-score.ts",
     "verify-export": "tsx tests/verification/verify-export-contract.ts",
     "verify-recovery": "tsx tests/verification/verify-recovery.ts",
     "verify-session": "tsx tests/verification/verify-start-session-flow.ts",
     "verify-run-guard": "tsx tests/verification/verify-run-guard.ts",
     "verify-analysis": "uv run python tests/verification/verify_analysis_compat.py",
-    "verify-all": "npm run verify-physics && npm run verify-runtime-generator && npm run verify-pendulum-arc-score && npm run verify-export && npm run verify-recovery && npm run verify-session && npm run verify-run-guard && npm run verify-analysis"
+    "verify-all": "npm run verify-physics && npm run verify-runtime-generator && npm run verify-experiment-2 && npm run verify-pendulum-arc-score && npm run verify-export && npm run verify-recovery && npm run verify-session && npm run verify-run-guard && npm run verify-analysis"
   },
   "dependencies": {
     "@jspsych/plugin-html-keyboard-response": "^2.1.0",

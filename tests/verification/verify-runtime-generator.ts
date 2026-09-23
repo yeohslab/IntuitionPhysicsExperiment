@@ -6,7 +6,7 @@ import {
   assertRuntimeStimulusSet,
   generateRuntimeStimulusSet,
   TOTAL_RUNTIME_TRIALS,
-} from "../../src/experiment/stimulus/generateRuntimeSet.ts";
+} from "../../src/experiments/experiment-1/generateRuntimeSet.ts";
 import { fitPendulumDiscreteTrial } from "../../src/experiment/physics/pendulumUnitFit.ts";
 import {
   pendulumEnergy,

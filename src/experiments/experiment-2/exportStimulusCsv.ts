@@ -1,15 +1,17 @@
 import type { DataCollection } from "jspsych";
-import type { ParticipantInfo } from "../../shared/participant";
 import { triggerTextDownload } from "../../shared/download";
+import type { Experiment2ParticipantInfo } from "../../shared/participant";
+import type { ExperimentStatus } from "../../runtime/export/exportStimulusCsv";
+import { EXPERIMENT_2_FORMAL_TRIALS, EXPERIMENT_2_PROTOCOL_VERSION } from "./protocol";
 
-export const DATA_SCHEMA_VERSION = 3 as const;
-export const PHYSICS_STIMULUS_TRIAL_TYPE = "physics-stimulus";
-export type ExperimentStatus = "f" | "nf";
+export const EXPERIMENT_2_DATA_SCHEMA_VERSION = 1 as const;
+const PHYSICS_STIMULUS_TRIAL_TYPE = "physics-stimulus";
 
-export const STIMULUS_CSV_COLUMNS = [
+export const EXPERIMENT_2_STIMULUS_CSV_COLUMNS = [
+  "experiment_id",
+  "protocol_version",
   "data_schema_version",
   "subject_id",
-  "motion_group",
   "gender_code",
   "age_years",
   "experiment_status",
@@ -21,6 +23,7 @@ export const STIMULUS_CSV_COLUMNS = [
   "trial_index_in_block",
   "formal_trial_index",
   "physics_kind",
+  "motion_condition",
   "pendulum_E_J",
   "pendulum_T_sec",
   "pendulum_regime",
@@ -38,7 +41,9 @@ export const STIMULUS_CSV_COLUMNS = [
   "hide_turn_count",
   "hide_first_turn_sec",
   "hide_first_turn_fraction",
-  "speed_bar_v_max_m_per_sec",
+  "speed_cue_type",
+  "speed_color_v_min_m_per_sec",
+  "speed_color_v_max_m_per_sec",
   "w_max_deg",
   "theta_x_0_deg",
   "theta_x_0_rad",
@@ -65,31 +70,6 @@ export const STIMULUS_CSV_COLUMNS = [
   "visibility_pause_sec",
 ] as const;
 
-export function experimentDataFilename(
-  subjectId: string,
-  status: ExperimentStatus,
-): string {
-  const id = subjectId.trim();
-  if (!id) return `experiment-1_data_${status}.csv`;
-  return `experiment-1_data_subject${id}_${status}.csv`;
-}
-
-function escapeCsvCell(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  const serialized = String(value);
-  if (/[",\r\n]/.test(serialized)) {
-    return `"${serialized.replace(/"/g, '""')}"`;
-  }
-  return serialized;
-}
-
-function rowToCsvLine(
-  row: Record<string, unknown>,
-  columns: readonly string[],
-): string {
-  return columns.map((column) => escapeCsvCell(row[column])).join(",");
-}
-
 function valuesFromData(
   data: DataCollection | readonly Record<string, unknown>[],
 ): Record<string, unknown>[] {
@@ -97,7 +77,7 @@ function valuesFromData(
   return (data.values() as Record<string, unknown>[]).map((row) => ({ ...row }));
 }
 
-export function selectFormalStimulusRows(
+export function selectExperiment2FormalRows(
   data: DataCollection | readonly Record<string, unknown>[],
 ): Record<string, unknown>[] {
   return valuesFromData(data).filter(
@@ -108,52 +88,73 @@ export function selectFormalStimulusRows(
   );
 }
 
-/** 只有时间线自然结束且 1–135 号正式响应各恰有一条时才视为完成。 */
-export function classifyExperimentStatus(
+export function classifyExperiment2Status(
   data: DataCollection | readonly Record<string, unknown>[],
   timelineEndedNaturally: boolean,
 ): ExperimentStatus {
   if (!timelineEndedNaturally) return "nf";
-  const indices = selectFormalStimulusRows(data).map((row) =>
+  const indices = selectExperiment2FormalRows(data).map((row) =>
     Number(row.formal_trial_index),
   );
   const unique = new Set(indices);
-  if (indices.length !== 135 || unique.size !== 135) return "nf";
-  for (let index = 1; index <= 135; index++) {
+  if (
+    indices.length !== EXPERIMENT_2_FORMAL_TRIALS ||
+    unique.size !== EXPERIMENT_2_FORMAL_TRIALS
+  ) {
+    return "nf";
+  }
+  for (let index = 1; index <= EXPERIMENT_2_FORMAL_TRIALS; index++) {
     if (!unique.has(index)) return "nf";
   }
   return "f";
 }
 
-export function buildStimulusTrialsCsv(
-  data: DataCollection | readonly Record<string, unknown>[],
-  participant: ParticipantInfo,
+function escapeCsvCell(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  const text = String(value);
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+export function experiment2DataFilename(
+  subjectId: string,
   status: ExperimentStatus,
 ): string {
-  const rows = selectFormalStimulusRows(data).map((row) => ({
+  return `experiment-2_data_subject${subjectId}_${status}.csv`;
+}
+
+export function buildExperiment2StimulusTrialsCsv(
+  data: DataCollection | readonly Record<string, unknown>[],
+  participant: Experiment2ParticipantInfo,
+  status: ExperimentStatus,
+): string {
+  const rows: Record<string, unknown>[] = selectExperiment2FormalRows(data).map((row) => ({
     ...row,
-    data_schema_version: DATA_SCHEMA_VERSION,
+    experiment_id: "experiment-2",
+    protocol_version: EXPERIMENT_2_PROTOCOL_VERSION,
+    data_schema_version: EXPERIMENT_2_DATA_SCHEMA_VERSION,
     subject_id: participant.subject_id,
-    motion_group: participant.motion_group,
     gender_code: participant.gender_code,
     age_years: participant.age_years,
     experiment_status: status,
   }));
-  const lines = [
-    STIMULUS_CSV_COLUMNS.join(","),
-    ...rows.map((row) => rowToCsvLine(row, STIMULUS_CSV_COLUMNS)),
-  ];
-  return `${lines.join("\r\n")}\r\n`;
+  return `${[
+    EXPERIMENT_2_STIMULUS_CSV_COLUMNS.join(","),
+    ...rows.map((row) =>
+      EXPERIMENT_2_STIMULUS_CSV_COLUMNS.map((column) =>
+        escapeCsvCell(row[column]),
+      ).join(","),
+    ),
+  ].join("\r\n")}\r\n`;
 }
 
-export function exportStimulusTrialsCsv(
+export function exportExperiment2StimulusTrialsCsv(
   data: DataCollection | readonly Record<string, unknown>[],
-  participant: ParticipantInfo,
+  participant: Experiment2ParticipantInfo,
   status: ExperimentStatus,
 ): void {
   triggerTextDownload(
-    buildStimulusTrialsCsv(data, participant, status),
-    experimentDataFilename(participant.subject_id, status),
+    buildExperiment2StimulusTrialsCsv(data, participant, status),
+    experiment2DataFilename(participant.subject_id, status),
     "text/csv;charset=utf-8",
   );
 }

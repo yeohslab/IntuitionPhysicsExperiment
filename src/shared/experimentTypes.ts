@@ -1,5 +1,7 @@
 /** 当前刺激集内存/会话格式版本（运行时 generateRuntimeStimulusSet 产出）。 */
 export const STIMULUS_SET_SCHEMA_VERSION = 7 as const;
+/** 实验二运行时刺激集版本；与实验一独立演进。 */
+export const EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
 
 export type StimulusUnitType =
   | "textDisplay"
@@ -69,7 +71,17 @@ export type TopLevelSequenceItem =
   | RestSegment
   | PracticeSegment;
 
-export interface ExperimentStimulusSet {
-  schemaVersion: typeof STIMULUS_SET_SCHEMA_VERSION;
+export interface RuntimeStimulusSet {
+  schemaVersion: number;
   sequence: TopLevelSequenceItem[];
+}
+
+/** 实验一运行时刺激集。 */
+export interface ExperimentStimulusSet extends RuntimeStimulusSet {
+  schemaVersion: typeof STIMULUS_SET_SCHEMA_VERSION;
+}
+
+/** 实验二运行时刺激集。 */
+export interface Experiment2StimulusSet extends RuntimeStimulusSet {
+  schemaVersion: typeof EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION;
 }

@@ -1,9 +1,15 @@
-import type { ParticipantInfo } from "./participant";
-import type { ExperimentStimulusSet } from "./experimentTypes";
-import { isParticipantInfo } from "./participant";
-import { parseExperimentStimulusSet } from "./storage";
+import type { ExperimentId } from "../experiments/types";
+import type { RuntimeStimulusSet } from "./experimentTypes";
+import type { AnyParticipantInfo } from "./participant";
+import { isExperiment2ParticipantInfo, isParticipantInfo } from "./participant";
+import {
+  parseExperiment2StimulusSet,
+  parseExperimentStimulusSet,
+} from "./storage";
 
-const RECOVERY_KEY = "intuition-physics-recovery-v1";
+export const LEGACY_RECOVERY_KEY = "intuition-physics-recovery-v1";
+export const EXPERIMENT_1_RECOVERY_KEY =
+  "intuition-physics:experiment-1:recovery-v1";
 
 export type RecoveryExperimentStatus = "f" | "nf";
 export type RecoveryLifecycle = "running" | "exported";
@@ -30,16 +36,19 @@ export interface RecoveryCursor {
 export interface RecoverySnapshot {
   version: 1;
   lifecycle: RecoveryLifecycle;
-  /** 实验结束导出后写入；进行中快照无此字段 */
   experiment_status?: RecoveryExperimentStatus;
-  participant: ParticipantInfo;
-  stimulus_set: ExperimentStimulusSet;
+  participant: AnyParticipantInfo;
+  stimulus_set: RuntimeStimulusSet;
   rows: Record<string, unknown>[];
   cursor: RecoveryCursor;
   updated_at: string;
 }
 
-let activeSnapshot: RecoverySnapshot | null = null;
+const activeSnapshots = new Map<ExperimentId, RecoverySnapshot>();
+
+function recoveryKey(experimentId: ExperimentId): string {
+  return `intuition-physics:${experimentId}:recovery-v1`;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -50,29 +59,47 @@ function isRecoveryExperimentStatus(value: unknown): value is RecoveryExperiment
 }
 
 function parseLifecycle(raw: Record<string, unknown>): RecoveryLifecycle | null {
-  if (raw.lifecycle === "running" || raw.lifecycle === "exported") {
-    return raw.lifecycle;
-  }
-  if (raw.status === "running") return "running";
-  return null;
+  if (raw.lifecycle === "running" || raw.lifecycle === "exported") return raw.lifecycle;
+  return raw.status === "running" ? "running" : null;
 }
 
-function writeSnapshot(snapshot: RecoverySnapshot): boolean {
+function parseParticipant(
+  experimentId: ExperimentId,
+  value: unknown,
+): AnyParticipantInfo | null {
+  if (experimentId === "experiment-1") return isParticipantInfo(value) ? value : null;
+  return isExperiment2ParticipantInfo(value) ? value : null;
+}
+
+function parseStimulusSet(
+  experimentId: ExperimentId,
+  value: unknown,
+): RuntimeStimulusSet | null {
+  return experimentId === "experiment-1"
+    ? parseExperimentStimulusSet(value)
+    : parseExperiment2StimulusSet(value);
+}
+
+function writeSnapshot(
+  experimentId: ExperimentId,
+  snapshot: RecoverySnapshot,
+): boolean {
   try {
-    localStorage.setItem(RECOVERY_KEY, JSON.stringify(snapshot));
-    activeSnapshot = snapshot;
+    localStorage.setItem(recoveryKey(experimentId), JSON.stringify(snapshot));
+    activeSnapshots.set(experimentId, snapshot);
     return true;
   } catch (error) {
-    console.error("无法保存实验恢复快照", error);
+    console.error(`无法保存 ${experimentId} 恢复快照`, error);
     return false;
   }
 }
 
 export function beginRecoverySnapshot(
-  participant: ParticipantInfo,
-  stimulusSet: ExperimentStimulusSet,
+  participant: AnyParticipantInfo,
+  stimulusSet: RuntimeStimulusSet,
+  experimentId: ExperimentId = "experiment-1",
 ): boolean {
-  return writeSnapshot({
+  return writeSnapshot(experimentId, {
     version: 1,
     lifecycle: "running",
     participant: { ...participant },
@@ -83,97 +110,127 @@ export function beginRecoverySnapshot(
   });
 }
 
-export function updateRecoveryRows(rows: readonly Record<string, unknown>[]): boolean {
-  if (!activeSnapshot) activeSnapshot = loadRecoverySnapshot();
-  if (!activeSnapshot || activeSnapshot.lifecycle === "exported") return false;
-  return writeSnapshot({
-    ...activeSnapshot,
+export function updateRecoveryRows(
+  rows: readonly Record<string, unknown>[],
+  experimentId: ExperimentId = "experiment-1",
+): boolean {
+  const active = activeSnapshots.get(experimentId) ?? loadRecoverySnapshot(experimentId);
+  if (!active || active.lifecycle === "exported") return false;
+  return writeSnapshot(experimentId, {
+    ...active,
     rows: rows.map((row) => ({ ...row })),
     updated_at: new Date().toISOString(),
   });
 }
 
-export function updateRecoveryCursor(cursor: RecoveryCursor): boolean {
-  if (!activeSnapshot) activeSnapshot = loadRecoverySnapshot();
-  if (!activeSnapshot || activeSnapshot.lifecycle === "exported") return false;
-  return writeSnapshot({
-    ...activeSnapshot,
-    cursor: { ...activeSnapshot.cursor, ...cursor },
+export function updateRecoveryCursor(
+  cursor: RecoveryCursor,
+  experimentId: ExperimentId = "experiment-1",
+): boolean {
+  const active = activeSnapshots.get(experimentId) ?? loadRecoverySnapshot(experimentId);
+  if (!active || active.lifecycle === "exported") return false;
+  return writeSnapshot(experimentId, {
+    ...active,
+    cursor: { ...active.cursor, ...cursor },
     updated_at: new Date().toISOString(),
   });
 }
 
-export function checkpointActiveRecovery(): boolean {
-  if (!activeSnapshot) activeSnapshot = loadRecoverySnapshot();
-  if (!activeSnapshot) return false;
-  return writeSnapshot({
-    ...activeSnapshot,
+export function checkpointActiveRecovery(
+  experimentId: ExperimentId = "experiment-1",
+): boolean {
+  const active = activeSnapshots.get(experimentId) ?? loadRecoverySnapshot(experimentId);
+  if (!active) return false;
+  return writeSnapshot(experimentId, {
+    ...active,
     updated_at: new Date().toISOString(),
   });
 }
 
-/** 实验结束并尝试下载后：保留快照供首页/结束页重复导出，直至主试确认已保存。 */
 export function markRecoveryExported(
   rows: readonly Record<string, unknown>[],
   experimentStatus: RecoveryExperimentStatus,
+  experimentId: ExperimentId = "experiment-1",
 ): boolean {
-  if (!activeSnapshot) activeSnapshot = loadRecoverySnapshot();
-  if (!activeSnapshot) return false;
-  return writeSnapshot({
-    ...activeSnapshot,
+  const active = activeSnapshots.get(experimentId) ?? loadRecoverySnapshot(experimentId);
+  if (!active) return false;
+  return writeSnapshot(experimentId, {
+    ...active,
     lifecycle: "exported",
     experiment_status: experimentStatus,
     rows: rows.map((row) => ({ ...row })),
-    cursor: { ...activeSnapshot.cursor, phase: "between_trials" },
+    cursor: { ...active.cursor, phase: "between_trials" },
     updated_at: new Date().toISOString(),
   });
 }
 
-export function loadRecoverySnapshot(): RecoverySnapshot | null {
+export function loadRecoverySnapshot(
+  experimentId: ExperimentId = "experiment-1",
+): RecoverySnapshot | null {
   try {
-    const serialized = localStorage.getItem(RECOVERY_KEY);
+    const serialized = localStorage.getItem(recoveryKey(experimentId));
     if (!serialized) return null;
     const raw = JSON.parse(serialized) as unknown;
     if (!isRecord(raw) || raw.version !== 1) return null;
     const lifecycle = parseLifecycle(raw);
     if (!lifecycle) return null;
-    if (
-      lifecycle === "exported" &&
-      !isRecoveryExperimentStatus(raw.experiment_status)
-    ) {
+    if (lifecycle === "exported" && !isRecoveryExperimentStatus(raw.experiment_status)) {
       return null;
     }
-    if (!isParticipantInfo(raw.participant)) return null;
-    const stimulusSet = parseExperimentStimulusSet(raw.stimulus_set);
-    if (!stimulusSet || !Array.isArray(raw.rows) || !isRecord(raw.cursor)) return null;
-    const rows = raw.rows.filter(isRecord).map((row) => ({ ...row }));
-    const phase = raw.cursor.phase;
-    if (typeof phase !== "string") return null;
+    const participant = parseParticipant(experimentId, raw.participant);
+    const stimulusSet = parseStimulusSet(experimentId, raw.stimulus_set);
+    if (!participant || !stimulusSet || !Array.isArray(raw.rows) || !isRecord(raw.cursor)) {
+      return null;
+    }
+    if (typeof raw.cursor.phase !== "string") return null;
     const snapshot: RecoverySnapshot = {
       version: 1,
       lifecycle,
       experiment_status: isRecoveryExperimentStatus(raw.experiment_status)
         ? raw.experiment_status
         : undefined,
-      participant: raw.participant,
+      participant,
       stimulus_set: stimulusSet,
-      rows,
+      rows: raw.rows.filter(isRecord).map((row) => ({ ...row })),
       cursor: raw.cursor as unknown as RecoveryCursor,
       updated_at:
         typeof raw.updated_at === "string" ? raw.updated_at : new Date(0).toISOString(),
     };
-    activeSnapshot = snapshot;
+    activeSnapshots.set(experimentId, snapshot);
     return snapshot;
   } catch {
     return null;
   }
 }
 
-export function clearRecoverySnapshot(): void {
-  activeSnapshot = null;
+export function clearRecoverySnapshot(
+  experimentId: ExperimentId = "experiment-1",
+): void {
+  activeSnapshots.delete(experimentId);
   try {
-    localStorage.removeItem(RECOVERY_KEY);
+    localStorage.removeItem(recoveryKey(experimentId));
   } catch (error) {
-    console.error("无法清除实验恢复快照", error);
+    console.error(`无法清除 ${experimentId} 恢复快照`, error);
+  }
+}
+
+/** 旧单实验恢复记录仅迁移到实验一；有效的新记录永远优先。 */
+export function migrateLegacyExperiment1Recovery(): boolean {
+  try {
+    const legacy = localStorage.getItem(LEGACY_RECOVERY_KEY);
+    if (!legacy) return false;
+    if (localStorage.getItem(EXPERIMENT_1_RECOVERY_KEY)) return false;
+    const raw = JSON.parse(legacy) as unknown;
+    if (!isRecord(raw) || !isParticipantInfo(raw.participant)) return false;
+    if (!parseExperimentStimulusSet(raw.stimulus_set)) return false;
+    localStorage.setItem(EXPERIMENT_1_RECOVERY_KEY, legacy);
+    if (!loadRecoverySnapshot("experiment-1")) {
+      localStorage.removeItem(EXPERIMENT_1_RECOVERY_KEY);
+      return false;
+    }
+    localStorage.removeItem(LEGACY_RECOVERY_KEY);
+    return true;
+  } catch {
+    return false;
   }
 }

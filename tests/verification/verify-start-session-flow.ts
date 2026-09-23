@@ -2,20 +2,32 @@
  * 验证首页流程：确认生成的 pendingSet 与写入 session 后再读取的内容一致。
  * 运行：npm run verify-session
  */
-import { generateRuntimeStimulusSet } from "../../src/experiment/stimulus/generateRuntimeSet.ts";
+import { generateRuntimeStimulusSet } from "../../src/experiments/experiment-1/generateRuntimeSet.ts";
 import {
   beginExperimentRunSession,
+  beginExperimentRunSessionForExperiment,
   clearExperimentSession,
   hasActiveExperimentRunSession,
+  LEGACY_SESSION_PARTICIPANT_KEY,
+  LEGACY_SESSION_RUN_TOKEN_KEY,
+  LEGACY_SESSION_STIMULUS_KEY,
   loadParticipantFromSession,
+  loadParticipantForExperiment,
   loadStimulusSetFromSession,
+  loadStimulusSetForExperiment,
+  migrateLegacyExperiment1Session,
+  parseExperiment2StimulusSet,
   parseExperimentStimulusSet,
 } from "../../src/shared/storage.ts";
 import type {
+  Experiment2StimulusSet,
   ExperimentStimulusSet,
   PendulumStimulusUnit,
 } from "../../src/shared/experimentTypes.ts";
-import type { ParticipantInfo } from "../../src/shared/participant.ts";
+import type {
+  Experiment2ParticipantInfo,
+  ParticipantInfo,
+} from "../../src/shared/participant.ts";
 
 class MemorySessionStorage {
   private values = new Map<string, string>();
@@ -118,6 +130,62 @@ if (hasActiveExperimentRunSession()) {
 if (loadParticipantFromSession() || loadStimulusSetFromSession()) {
   throw new Error("clearExperimentSession 应清除 session 数据");
 }
+
+sessionStorage.setItem(LEGACY_SESSION_PARTICIPANT_KEY, JSON.stringify(participant));
+sessionStorage.setItem(LEGACY_SESSION_STIMULUS_KEY, JSON.stringify(pendingSet));
+sessionStorage.setItem(LEGACY_SESSION_RUN_TOKEN_KEY, "1");
+if (!migrateLegacyExperiment1Session()) {
+  throw new Error("旧实验一 session 应迁移到命名空间");
+}
+if (!hasActiveExperimentRunSession("experiment-1")) {
+  throw new Error("迁移后实验一 run session 应有效");
+}
+if (
+  sessionStorage.getItem(LEGACY_SESSION_PARTICIPANT_KEY) ||
+  sessionStorage.getItem(LEGACY_SESSION_STIMULUS_KEY) ||
+  sessionStorage.getItem(LEGACY_SESSION_RUN_TOKEN_KEY)
+) {
+  throw new Error("成功迁移后应删除旧 session 键");
+}
+clearExperimentSession("experiment-1");
+
+const experiment2Participant: Experiment2ParticipantInfo = {
+  subject_id: "E2-0001",
+  gender_code: 1,
+  age_years: 21,
+};
+const experiment2Set: Experiment2StimulusSet = {
+  schemaVersion: 1,
+  sequence: [
+    {
+      kind: "rest",
+      id: "exp2-rest",
+      units: [{ id: "exp2-text", type: "textControl", text: "test", key: " " }],
+    },
+  ],
+};
+if (!parseExperiment2StimulusSet(experiment2Set)) {
+  throw new Error("实验二 schema v1 应可解析");
+}
+beginExperimentRunSessionForExperiment(
+  "experiment-2",
+  experiment2Participant,
+  experiment2Set,
+);
+if (!hasActiveExperimentRunSession("experiment-2")) {
+  throw new Error("实验二 run session 应有效");
+}
+if (hasActiveExperimentRunSession("experiment-1")) {
+  throw new Error("实验二 session 不得激活实验一");
+}
+clearExperimentSession("experiment-1");
+if (
+  !loadParticipantForExperiment("experiment-2") ||
+  !loadStimulusSetForExperiment("experiment-2")
+) {
+  throw new Error("清除实验一不得影响实验二 session");
+}
+clearExperimentSession("experiment-2");
 
 const blocks = pendingSet.sequence.filter((x) => x.kind === "block").length;
 const trialsPerBlock = pendingSet.sequence.find((x) => x.kind === "block")?.children.length ?? 0;

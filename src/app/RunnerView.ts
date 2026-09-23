@@ -1,25 +1,23 @@
 import { initJsPsych, type JsPsych } from "jspsych";
 import "jspsych/css/jspsych.css";
 import "../styles/physics.css";
-import type { ExperimentStimulusSet } from "../shared/experimentTypes";
-import type { ParticipantInfo } from "../shared/participant";
-import { buildTimeline } from "../runtime/buildTimeline";
-import {
-  classifyExperimentStatus,
-  exportStimulusTrialsCsv,
-  type ExperimentStatus,
-} from "../runtime/export/exportStimulusCsv";
+import type {
+  AnyRuntimeStimulusSet,
+  ExperimentDefinition,
+  ExperimentId,
+} from "../experiments/types";
+import type { AnyParticipantInfo } from "../shared/participant";
+import type { ExperimentStatus } from "../runtime/export/exportStimulusCsv";
+import { getExperimentDefinition } from "../experiments/registry";
 import {
   cancelStaleKeyboardListeners,
   wireRunnerControls,
 } from "../runtime/stimulusControl";
 import {
-  loadParticipantFromSession,
-  loadStimulusSetFromSession,
-  validateRunnableSet,
+  loadParticipantForExperiment,
+  loadStimulusSetForExperiment,
   clearExperimentSession,
 } from "../shared/storage";
-import { downloadStimulusSetJson } from "../shared/exportStimulusSetJson";
 import {
   checkpointActiveRecovery,
   clearRecoverySnapshot,
@@ -40,30 +38,33 @@ export function disposeRunner(): void {
   activeRun = null;
 }
 
-export function mountRunner(container: HTMLElement): void {
+export function mountRunner(container: HTMLElement, experimentId: ExperimentId): void {
   disposeRunner();
   container.innerHTML = "";
   container.className = "runner-view";
 
-  const set = loadStimulusSetFromSession();
-  const participant = loadParticipantFromSession();
+  const definition = getExperimentDefinition(experimentId) as ExperimentDefinition;
+  const set = definition.parseStimulusSet(loadStimulusSetForExperiment(experimentId));
+  const participant = definition.parseParticipant(
+    loadParticipantForExperiment(experimentId),
+  );
   const err = !participant
     ? "未找到有效的被试信息。请从首页重新开始。"
     : set
-      ? validateRunnableSet(set)
+      ? definition.validateStimulusSet(set)
       : "未找到要运行的刺激集。请从首页输入被试信息并开始。";
 
   if (!set || !participant || err) {
     container.innerHTML = `
       <div class="runner-panel runner-panel--error">
         <p>${escapeHtml(err ?? "未知错误")}</p>
-        <p><a href="#/start" class="btn btn-primary">返回实验首页</a></p>
+        <p><a href="${definition.startHash}" class="btn btn-primary">返回实验首页</a></p>
       </div>
     `;
     return;
   }
 
-  runExperiment(container, set, participant);
+  runExperiment(container, set, participant, definition);
 }
 
 function escapeHtml(value: string): string {
@@ -82,8 +83,9 @@ function dataRows(jsPsych: JsPsych): Record<string, unknown>[] {
 
 function runExperiment(
   container: HTMLElement,
-  set: ExperimentStimulusSet,
-  participant: ParticipantInfo,
+  set: AnyRuntimeStimulusSet,
+  participant: AnyParticipantInfo,
+  definition: ExperimentDefinition,
 ): void {
   const toolbar = document.createElement("div");
   toolbar.className = "runner-toolbar";
@@ -112,7 +114,7 @@ function runExperiment(
 
   const persistRows = () => {
     if (!jsPsych) return;
-    updateRecoveryRows(dataRows(jsPsych));
+    updateRecoveryRows(dataRows(jsPsych), definition.id);
   };
 
   const removePageListeners = () => {
@@ -138,15 +140,15 @@ function runExperiment(
       </div>
     `;
     done.querySelector("#btn-redownload-data")?.addEventListener("click", () => {
-      exportStimulusTrialsCsv(rows, participant, status);
+      definition.exportCsv(rows, participant, status);
     });
     done.querySelector("#btn-redownload-stimulus")?.addEventListener("click", () => {
-      downloadStimulusSetJson(set, participant);
+      definition.downloadStimulusJson(set, participant);
     });
     done.querySelector("#btn-confirm-saved")?.addEventListener("click", () => {
-      clearRecoverySnapshot();
-      clearExperimentSession();
-      location.hash = "#/start";
+      clearRecoverySnapshot(definition.id);
+      clearExperimentSession(definition.id);
+      location.hash = "#/";
     });
   };
 
@@ -154,11 +156,11 @@ function runExperiment(
     if (finalized) return;
     finalized = true;
     const rows = dataRows(jsPsych);
-    updateRecoveryRows(rows);
-    markRecoveryExported(rows, status);
-    exportStimulusTrialsCsv(rows, participant, status);
-    downloadStimulusSetJson(set, participant);
-    clearExperimentSession();
+    updateRecoveryRows(rows, definition.id);
+    markRecoveryExported(rows, status, definition.id);
+    definition.exportCsv(rows, participant, status);
+    definition.downloadStimulusJson(set, participant);
+    clearExperimentSession(definition.id);
     removePageListeners();
     activeRun = null;
     if (container.isConnected && (status === "f" || showDoneAfterInterrupt)) {
@@ -171,7 +173,7 @@ function runExperiment(
     requestedInterrupt = true;
     showDoneAfterInterrupt = showDone;
     persistRows();
-    checkpointActiveRecovery();
+    checkpointActiveRecovery(definition.id);
     window.dispatchEvent(new Event(PHYSICS_ABORT_EVENT));
     try {
       jsPsych.abortExperiment("实验已中断");
@@ -183,7 +185,7 @@ function runExperiment(
 
   const checkpointBeforeLeaving = () => {
     persistRows();
-    checkpointActiveRecovery();
+    checkpointActiveRecovery(definition.id);
   };
 
   jsPsych = initJsPsych({
@@ -215,17 +217,17 @@ function runExperiment(
           (segmentKind === "block" || segmentKind === "practice")
             ? "fixation"
             : "timeline_unit",
-      });
+      }, definition.id);
     },
     on_trial_finish: () => {
       persistRows();
-      updateRecoveryCursor({ phase: "between_trials" });
+      updateRecoveryCursor({ phase: "between_trials" }, definition.id);
     },
     on_data_update: () => {
       persistRows();
     },
     on_finish: () => {
-      const status = classifyExperimentStatus(
+      const status = definition.classifyStatus(
         dataRows(jsPsych),
         !requestedInterrupt,
       );
@@ -233,12 +235,7 @@ function runExperiment(
     },
   });
 
-  jsPsych.data.addProperties({
-    subject_id: participant.subject_id,
-    motion_group: participant.motion_group,
-    gender_code: participant.gender_code,
-    age_years: participant.age_years,
-  });
+  jsPsych.data.addProperties(definition.dataProperties(participant));
   wireRunnerControls(jsPsych, target);
 
   interruptButton.addEventListener("click", () => {
@@ -249,6 +246,6 @@ function runExperiment(
   window.addEventListener("beforeunload", checkpointBeforeLeaving);
   activeRun = { interrupt };
 
-  const timeline = buildTimeline(set, participant.motion_group);
+  const timeline = definition.buildTimeline(set, participant);
   void jsPsych.run(timeline as Parameters<JsPsych["run"]>[0]);
 }

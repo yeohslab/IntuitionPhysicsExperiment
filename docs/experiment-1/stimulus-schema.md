@@ -1,6 +1,6 @@
-# 精简刺激集 JSON（schema v3）
+# 实验一精简刺激集 JSON（schema v3）
 
-文件名保持 `stimulus_set_subject10001.json`（被试编号已含组别）。首页手动导出、正常结束和中断结束共用同一序列化器。
+文件名为 `experiment-1_stimulus_set_subject10001.json`（被试编号已含组别）。首页手动导出、正常结束和中断结束共用同一序列化器。
 
 ```json
 {

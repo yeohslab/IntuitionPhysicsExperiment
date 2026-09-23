@@ -14,6 +14,15 @@ export interface ParticipantInfo {
   age_years: number;
 }
 
+export interface Experiment2ParticipantInfo {
+  /** 实验二单组编号：E2- + 四位组内序号，如 E2-0001。 */
+  subject_id: string;
+  gender_code: GenderCode;
+  age_years: number;
+}
+
+export type AnyParticipantInfo = ParticipantInfo | Experiment2ParticipantInfo;
+
 /**
  * 校验并规范组内序号为四位前导零字符串（如 1 → "0001"）。
  * 仅接受非空纯数字，且数值在 [SUBJECT_ID_NUM_MIN, SUBJECT_ID_NUM_MAX]。
@@ -33,6 +42,21 @@ export function buildSubjectId(
   withinGroupNumber: string,
 ): string {
   return `${motionGroup}${withinGroupNumber}`;
+}
+
+export function buildExperiment2SubjectId(withinGroupNumber: string): string {
+  return `E2-${withinGroupNumber}`;
+}
+
+export function isValidExperiment2SubjectId(subjectId: string): boolean {
+  const match = /^E2-(\d{4})$/.exec(subjectId);
+  if (!match) return false;
+  const within = Number(match[1]);
+  return Number.isInteger(within) && within >= SUBJECT_ID_NUM_MIN && within <= SUBJECT_ID_NUM_MAX;
+}
+
+export function parseExperiment2WithinGroupNumber(subjectId: string): string | null {
+  return isValidExperiment2SubjectId(subjectId) ? subjectId.slice(3) : null;
 }
 
 /** 被试编号格式：首位为组别 1/2，后四位为组内序号。 */
@@ -89,6 +113,22 @@ export function isParticipantInfo(value: unknown): value is ParticipantInfo {
   if (typeof raw.subject_id !== "string" || !isValidSubjectId(raw.subject_id)) return false;
   if (Number(raw.subject_id[0]) !== motionGroup) return false;
   return (
+    (raw.gender_code === 0 || raw.gender_code === 1) &&
+    typeof raw.age_years === "number" &&
+    Number.isSafeInteger(raw.age_years) &&
+    raw.age_years >= 1 &&
+    raw.age_years <= 120
+  );
+}
+
+export function isExperiment2ParticipantInfo(
+  value: unknown,
+): value is Experiment2ParticipantInfo {
+  if (typeof value !== "object" || value === null) return false;
+  const raw = value as Record<string, unknown>;
+  return (
+    typeof raw.subject_id === "string" &&
+    isValidExperiment2SubjectId(raw.subject_id) &&
     (raw.gender_code === 0 || raw.gender_code === 1) &&
     typeof raw.age_years === "number" &&
     Number.isSafeInteger(raw.age_years) &&

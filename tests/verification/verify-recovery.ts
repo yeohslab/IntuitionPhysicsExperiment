@@ -1,14 +1,21 @@
-import { generateRuntimeStimulusSet } from "../../src/experiment/stimulus/generateRuntimeSet.ts";
+import { generateRuntimeStimulusSet } from "../../src/experiments/experiment-1/generateRuntimeSet.ts";
 import {
   beginRecoverySnapshot,
   clearRecoverySnapshot,
+  EXPERIMENT_1_RECOVERY_KEY,
+  LEGACY_RECOVERY_KEY,
   loadRecoverySnapshot,
   markRecoveryExported,
+  migrateLegacyExperiment1Recovery,
   updateRecoveryCursor,
   updateRecoveryRows,
   type RecoveryPhase,
 } from "../../src/shared/recovery.ts";
-import type { ParticipantInfo } from "../../src/shared/participant.ts";
+import type {
+  Experiment2ParticipantInfo,
+  ParticipantInfo,
+} from "../../src/shared/participant.ts";
+import type { Experiment2StimulusSet } from "../../src/shared/experimentTypes.ts";
 
 class MemoryStorage {
   private values = new Map<string, string>();
@@ -113,6 +120,46 @@ assert(
 );
 
 clearRecoverySnapshot();
+storage.setItem(
+  LEGACY_RECOVERY_KEY,
+  JSON.stringify({
+    version: 1,
+    lifecycle: "running",
+    participant,
+    stimulus_set: set,
+    rows: [],
+    cursor: { phase: "generated" },
+    updated_at: new Date().toISOString(),
+  }),
+);
+assert(migrateLegacyExperiment1Recovery(), "旧恢复快照应迁移到实验一命名空间");
+assert(loadRecoverySnapshot()?.participant.subject_id === participant.subject_id, "迁移后的恢复快照应可读");
+assert(storage.getItem(LEGACY_RECOVERY_KEY) === null, "迁移成功后应删除旧恢复键");
+assert(storage.getItem(EXPERIMENT_1_RECOVERY_KEY) !== null, "迁移后应写入实验一恢复键");
+clearRecoverySnapshot();
+const experiment2Participant: Experiment2ParticipantInfo = {
+  subject_id: "E2-0001",
+  gender_code: 1,
+  age_years: 21,
+};
+const experiment2Set: Experiment2StimulusSet = {
+  schemaVersion: 1,
+  sequence: [
+    {
+      kind: "rest",
+      id: "exp2-rest",
+      units: [{ id: "exp2-text", type: "textControl", text: "test", key: " " }],
+    },
+  ],
+};
+assert(
+  beginRecoverySnapshot(experiment2Participant, experiment2Set, "experiment-2"),
+  "实验二恢复快照应可独立保存",
+);
+assert(loadRecoverySnapshot("experiment-1") === null, "实验二恢复不得激活实验一");
+clearRecoverySnapshot("experiment-1");
+assert(loadRecoverySnapshot("experiment-2") !== null, "清除实验一不得影响实验二恢复快照");
+clearRecoverySnapshot("experiment-2");
 storage.failWrites = true;
 const originalConsoleError = console.error;
 try {

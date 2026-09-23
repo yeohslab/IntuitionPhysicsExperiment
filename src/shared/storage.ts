@@ -1,22 +1,39 @@
 import { analyzePendulum } from "../experiment/physics/pendulum";
 import { withSyncedTotalTimeT } from "../experiment/physics/timePhases";
-import { isParticipantInfo, type ParticipantInfo } from "./participant";
 import {
+  isExperiment2ParticipantInfo,
+  isParticipantInfo,
+  type AnyParticipantInfo,
+  type Experiment2ParticipantInfo,
+  type ParticipantInfo,
+} from "./participant";
+import {
+  EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION,
   STIMULUS_SET_SCHEMA_VERSION,
   type BlockSegment,
   type ExperimentStimulusSet,
+  type Experiment2StimulusSet,
   type PendulumStimulusUnit,
   type PracticeSegment,
   type RestSegment,
   type StimulusUnit,
   type TopLevelSequenceItem,
+  type RuntimeStimulusSet,
   type Trial,
 } from "./experimentTypes";
+import type { ExperimentId } from "../experiments/types";
 
-export const SESSION_STIMULUS_KEY = "intuition-physics-stimulus-set";
-export const SESSION_PARTICIPANT_KEY = "intuition-physics-participant";
-/** 存在且与人口学/刺激集同时有效时，才允许进入 #/runner 开跑。 */
-export const SESSION_RUN_TOKEN_KEY = "intuition-physics-run-active";
+export const LEGACY_SESSION_STIMULUS_KEY = "intuition-physics-stimulus-set";
+export const LEGACY_SESSION_PARTICIPANT_KEY = "intuition-physics-participant";
+export const LEGACY_SESSION_RUN_TOKEN_KEY = "intuition-physics-run-active";
+export const SESSION_STIMULUS_KEY = "intuition-physics:experiment-1:stimulus-set";
+export const SESSION_PARTICIPANT_KEY = "intuition-physics:experiment-1:participant";
+/** 存在且与人口学/刺激集同时有效时，才允许进入对应实验 runner。 */
+export const SESSION_RUN_TOKEN_KEY = "intuition-physics:experiment-1:run-active";
+
+function sessionKey(experimentId: ExperimentId, suffix: string): string {
+  return `intuition-physics:${experimentId}:${suffix}`;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -139,12 +156,13 @@ function parseSequenceItem(raw: unknown): TopLevelSequenceItem | null {
   return null;
 }
 
-export function parseExperimentStimulusSet(
+function parseRuntimeStimulusSet(
   raw: unknown,
-): ExperimentStimulusSet | null {
+  schemaVersion: number,
+): RuntimeStimulusSet | null {
   if (
     !isRecord(raw) ||
-    raw.schemaVersion !== STIMULUS_SET_SCHEMA_VERSION ||
+    raw.schemaVersion !== schemaVersion ||
     !Array.isArray(raw.sequence)
   ) {
     return null;
@@ -154,37 +172,101 @@ export function parseExperimentStimulusSet(
     return null;
   }
   return {
-    schemaVersion: STIMULUS_SET_SCHEMA_VERSION,
+    schemaVersion,
     sequence: sequence as TopLevelSequenceItem[],
   };
 }
 
+export function parseExperimentStimulusSet(
+  raw: unknown,
+): ExperimentStimulusSet | null {
+  return parseRuntimeStimulusSet(
+    raw,
+    STIMULUS_SET_SCHEMA_VERSION,
+  ) as ExperimentStimulusSet | null;
+}
+
+export function parseExperiment2StimulusSet(
+  raw: unknown,
+): Experiment2StimulusSet | null {
+  return parseRuntimeStimulusSet(
+    raw,
+    EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION,
+  ) as Experiment2StimulusSet | null;
+}
+
+function parseSetForExperiment(
+  experimentId: ExperimentId,
+  raw: unknown,
+): RuntimeStimulusSet | null {
+  return experimentId === "experiment-1"
+    ? parseExperimentStimulusSet(raw)
+    : parseExperiment2StimulusSet(raw);
+}
+
+function parseParticipantForExperiment(
+  experimentId: ExperimentId,
+  raw: unknown,
+): AnyParticipantInfo | null {
+  if (experimentId === "experiment-1") {
+    return isParticipantInfo(raw) ? raw : null;
+  }
+  return isExperiment2ParticipantInfo(raw) ? raw : null;
+}
+
 export function saveStimulusSetToSession(set: ExperimentStimulusSet): void {
-  sessionStorage.setItem(SESSION_STIMULUS_KEY, JSON.stringify(set));
+  saveStimulusSetForExperiment("experiment-1", set);
+}
+
+export function saveStimulusSetForExperiment(
+  experimentId: ExperimentId,
+  set: RuntimeStimulusSet,
+): void {
+  sessionStorage.setItem(sessionKey(experimentId, "stimulus-set"), JSON.stringify(set));
 }
 
 export function loadStimulusSetFromSession(): ExperimentStimulusSet | null {
-  const serialized = sessionStorage.getItem(SESSION_STIMULUS_KEY);
+  return loadStimulusSetForExperiment("experiment-1") as ExperimentStimulusSet | null;
+}
+
+export function loadStimulusSetForExperiment(
+  experimentId: ExperimentId,
+): RuntimeStimulusSet | null {
+  const serialized = sessionStorage.getItem(sessionKey(experimentId, "stimulus-set"));
   if (!serialized) return null;
   try {
-    return parseExperimentStimulusSet(JSON.parse(serialized) as unknown);
+    return parseSetForExperiment(experimentId, JSON.parse(serialized) as unknown);
   } catch {
     return null;
   }
 }
 
 export function saveParticipantToSession(participant: ParticipantInfo): void {
-  sessionStorage.setItem(SESSION_PARTICIPANT_KEY, JSON.stringify(participant));
+  saveParticipantForExperiment("experiment-1", participant);
+}
+
+export function saveParticipantForExperiment(
+  experimentId: ExperimentId,
+  participant: AnyParticipantInfo,
+): void {
+  sessionStorage.setItem(sessionKey(experimentId, "participant"), JSON.stringify(participant));
 }
 
 export function markExperimentRunActive(): void {
-  sessionStorage.setItem(SESSION_RUN_TOKEN_KEY, "1");
+  markExperimentRunActiveForExperiment("experiment-1");
 }
 
-export function hasActiveExperimentRunSession(): boolean {
-  if (sessionStorage.getItem(SESSION_RUN_TOKEN_KEY) !== "1") return false;
+export function markExperimentRunActiveForExperiment(experimentId: ExperimentId): void {
+  sessionStorage.setItem(sessionKey(experimentId, "run-active"), "1");
+}
+
+export function hasActiveExperimentRunSession(
+  experimentId: ExperimentId = "experiment-1",
+): boolean {
+  if (sessionStorage.getItem(sessionKey(experimentId, "run-active")) !== "1") return false;
   return (
-    loadParticipantFromSession() !== null && loadStimulusSetFromSession() !== null
+    loadParticipantForExperiment(experimentId) !== null &&
+    loadStimulusSetForExperiment(experimentId) !== null
   );
 }
 
@@ -192,29 +274,45 @@ export function beginExperimentRunSession(
   participant: ParticipantInfo,
   set: ExperimentStimulusSet,
 ): void {
-  saveParticipantToSession(participant);
-  saveStimulusSetToSession(set);
-  markExperimentRunActive();
+  beginExperimentRunSessionForExperiment("experiment-1", participant, set);
+}
+
+export function beginExperimentRunSessionForExperiment(
+  experimentId: ExperimentId,
+  participant: AnyParticipantInfo,
+  set: RuntimeStimulusSet,
+): void {
+  saveParticipantForExperiment(experimentId, participant);
+  saveStimulusSetForExperiment(experimentId, set);
+  markExperimentRunActiveForExperiment(experimentId);
 }
 
 export function loadParticipantFromSession(): ParticipantInfo | null {
-  const serialized = sessionStorage.getItem(SESSION_PARTICIPANT_KEY);
+  return loadParticipantForExperiment("experiment-1") as ParticipantInfo | null;
+}
+
+export function loadParticipantForExperiment(
+  experimentId: ExperimentId,
+): AnyParticipantInfo | null {
+  const serialized = sessionStorage.getItem(sessionKey(experimentId, "participant"));
   if (!serialized) return null;
   try {
     const parsed = JSON.parse(serialized) as unknown;
-    return isParticipantInfo(parsed) ? parsed : null;
+    return parseParticipantForExperiment(experimentId, parsed);
   } catch {
     return null;
   }
 }
 
-export function clearExperimentSession(): void {
-  sessionStorage.removeItem(SESSION_STIMULUS_KEY);
-  sessionStorage.removeItem(SESSION_PARTICIPANT_KEY);
-  sessionStorage.removeItem(SESSION_RUN_TOKEN_KEY);
+export function clearExperimentSession(
+  experimentId: ExperimentId = "experiment-1",
+): void {
+  sessionStorage.removeItem(sessionKey(experimentId, "stimulus-set"));
+  sessionStorage.removeItem(sessionKey(experimentId, "participant"));
+  sessionStorage.removeItem(sessionKey(experimentId, "run-active"));
 }
 
-export function validateRunnableSet(set: ExperimentStimulusSet): string | null {
+export function validateRunnableSet(set: RuntimeStimulusSet): string | null {
   if (set.sequence.length === 0) return "刺激序列为空。";
   for (const item of set.sequence) {
     if (item.kind === "block" || item.kind === "practice") {
@@ -228,3 +326,37 @@ export function validateRunnableSet(set: ExperimentStimulusSet): string | null {
   }
   return null;
 }
+
+/** 将旧单实验 sessionStorage 原子式迁移到实验一命名空间；已有新记录优先。 */
+export function migrateLegacyExperiment1Session(): boolean {
+  try {
+    const legacyParticipant = sessionStorage.getItem(LEGACY_SESSION_PARTICIPANT_KEY);
+    const legacySet = sessionStorage.getItem(LEGACY_SESSION_STIMULUS_KEY);
+    const legacyToken = sessionStorage.getItem(LEGACY_SESSION_RUN_TOKEN_KEY);
+    if (!legacyParticipant && !legacySet && !legacyToken) return false;
+    const participant = legacyParticipant
+      ? JSON.parse(legacyParticipant) as unknown
+      : null;
+    const set = legacySet ? JSON.parse(legacySet) as unknown : null;
+    if (!isParticipantInfo(participant) || !parseExperimentStimulusSet(set)) return false;
+
+    if (!sessionStorage.getItem(SESSION_PARTICIPANT_KEY)) {
+      sessionStorage.setItem(SESSION_PARTICIPANT_KEY, legacyParticipant!);
+    }
+    if (!sessionStorage.getItem(SESSION_STIMULUS_KEY)) {
+      sessionStorage.setItem(SESSION_STIMULUS_KEY, legacySet!);
+    }
+    if (legacyToken === "1" && !sessionStorage.getItem(SESSION_RUN_TOKEN_KEY)) {
+      sessionStorage.setItem(SESSION_RUN_TOKEN_KEY, "1");
+    }
+    if (!loadParticipantFromSession() || !loadStimulusSetFromSession()) return false;
+    sessionStorage.removeItem(LEGACY_SESSION_PARTICIPANT_KEY);
+    sessionStorage.removeItem(LEGACY_SESSION_STIMULUS_KEY);
+    sessionStorage.removeItem(LEGACY_SESSION_RUN_TOKEN_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export type { Experiment2ParticipantInfo };

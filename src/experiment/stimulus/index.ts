@@ -1,5 +1,6 @@
 /**
- * 运行时刺激集生成（正式实验唯一入口）。
+ * 实验一刺激生成的向后兼容入口。
+ * 新代码应从 src/experiments/experiment-1 导入。
  */
 export { generateRuntimeStimulusSet, assertRuntimeStimulusSet, allTimingCombos } from "./generateRuntimeSet";
 export type { GenerateRuntimeSetOptions, TimingCombo } from "./generateRuntimeSet";

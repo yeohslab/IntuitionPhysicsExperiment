@@ -1,64 +1,84 @@
 import { disposeRunner, mountRunner } from "./RunnerView";
 import { disposeStart, mountStart } from "./StartView";
-import { hasActiveExperimentRunSession } from "../shared/storage";
+import {
+  disposeExperiment2Start,
+  mountExperiment2Start,
+} from "./Experiment2StartView";
+import { mountExperimentPicker } from "./ExperimentPickerView";
+import type { ExperimentId } from "../experiments/types";
+import {
+  hasActiveExperimentRunSession,
+  migrateLegacyExperiment1Session,
+} from "../shared/storage";
+import { migrateLegacyExperiment1Recovery } from "../shared/recovery";
 
 function pathFromHash(): string {
   const raw = location.hash.replace(/^#/, "").split("?")[0].replace(/^\//, "");
-  return raw === "" ? "/start" : `/${raw}`;
+  return raw === "" ? "/" : `/${raw}`;
 }
 
-function redirectToStart(): void {
+function replaceHash(hash: string): void {
   const base = `${location.pathname}${location.search}`;
-  if (pathFromHash() === "/start") {
-    route();
-    return;
-  }
-  location.replace(`${base}#/start`);
+  location.replace(`${base}${hash}`);
+}
+
+function runnerExperiment(path: string): ExperimentId | null {
+  if (path === "/experiment-1/runner") return "experiment-1";
+  if (path === "/experiment-2/runner") return "experiment-2";
+  return null;
 }
 
 function route(): void {
   disposeRunner();
   disposeStart();
-
+  disposeExperiment2Start();
   const app = document.getElementById("app");
   if (!app) return;
   app.innerHTML = "";
-
   const path = pathFromHash();
 
   if (path === "/runner") {
-    if (!hasActiveExperimentRunSession()) {
-      redirectToStart();
-      return;
-    }
-    mountRunner(app);
+    replaceHash(
+      hasActiveExperimentRunSession("experiment-1")
+        ? "#/experiment-1/runner"
+        : "#/",
+    );
     return;
   }
-
-  mountStart(app);
+  const runnerId = runnerExperiment(path);
+  if (runnerId) {
+    if (!hasActiveExperimentRunSession(runnerId)) {
+      replaceHash(`#/${runnerId}/start`);
+      return;
+    }
+    mountRunner(app, runnerId);
+    return;
+  }
+  if (path === "/experiment-1/start") {
+    mountStart(app);
+    return;
+  }
+  if (path === "/experiment-2/start") {
+    mountExperiment2Start(app);
+    return;
+  }
+  if (path === "/" || path === "/start") {
+    mountExperimentPicker(app);
+    return;
+  }
+  replaceHash("#/");
 }
 
-/** 整页刷新统一回首页，由恢复快照决定恢复待开始状态或导出中断数据。 */
 export function initRouter(): void {
+  migrateLegacyExperiment1Session();
+  migrateLegacyExperiment1Recovery();
   window.addEventListener("hashchange", route);
-
   window.addEventListener("pageshow", (event) => {
     if (!event.persisted) return;
-    if (pathFromHash() === "/runner" && !hasActiveExperimentRunSession()) {
-      redirectToStart();
+    const experimentId = runnerExperiment(pathFromHash());
+    if (experimentId && !hasActiveExperimentRunSession(experimentId)) {
+      replaceHash(`#/${experimentId}/start`);
     }
   });
-
-  const path = pathFromHash();
-  if (path !== "/start") {
-    if (path === "/runner" && !hasActiveExperimentRunSession()) {
-      redirectToStart();
-      return;
-    }
-    if (path !== "/runner") {
-      location.replace("#/start");
-      return;
-    }
-  }
   route();
 }

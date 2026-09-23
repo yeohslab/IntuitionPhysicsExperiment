@@ -3,18 +3,19 @@ import { analyzePendulum } from "../experiment/physics/pendulum";
 import { withSyncedTotalTimeT } from "../experiment/physics/timePhases";
 import type {
   ExperimentStimulusSet,
+  RuntimeStimulusSet,
   StimulusUnit,
   Trial,
 } from "../shared/experimentTypes";
+import type { ExperimentId } from "../experiments/types";
 import { wrapFixationStimulus, wrapInstructionHtml } from "../shared/html";
-import { FIXATION_TEXT } from "../experiment/stimulus/instructions";
+import { FIXATION_TEXT } from "../experiments/experiment-1/instructions";
 import { normalizeKeyForJsPsych } from "../shared/keys";
 import { controlTrialPrompt } from "./stimulusControl";
 import PhysicsStimulusPlugin from "./plugins/physicsStimulusPlugin";
 import type { MotionGroup } from "../shared/participant";
 import {
   collectPendulumTrialDescriptors,
-  type PendulumTrialDescriptor,
 } from "../shared/trialDescriptor";
 
 export type UnitTrialContext = {
@@ -37,7 +38,8 @@ function stimulusHtmlForUnit(unit: StimulusUnit): string {
 function unitToTrial(
   unit: StimulusUnit,
   ctx: UnitTrialContext,
-  descriptor?: PendulumTrialDescriptor,
+  descriptor?: Record<string, unknown>,
+  experimentId: ExperimentId = "experiment-1",
 ): Record<string, unknown> {
   const data = {
     unitId: unit.id,
@@ -74,8 +76,12 @@ function unitToTrial(
         show1T: timing.show1T,
         hide1T: timing.hide1T,
         fadeMs: timing.fadeMs ?? 0,
-        unitMeta: descriptor ?? data,
-        data: descriptor ?? data,
+        unitMeta: descriptor
+          ? { ...descriptor, runtime_experiment_id: experimentId }
+          : { ...data, runtime_experiment_id: experimentId },
+        data: descriptor
+          ? { ...descriptor, runtime_experiment_id: experimentId }
+          : { ...data, runtime_experiment_id: experimentId },
       };
     }
     case "textDisplay": {
@@ -112,7 +118,8 @@ function buildSegmentWithTrialsTimeline(
   segmentId: string,
   segmentKind: "block" | "practice",
   children: Trial[],
-  descriptorByUnitId: ReadonlyMap<string, PendulumTrialDescriptor>,
+  descriptorByUnitId: ReadonlyMap<string, Record<string, unknown>>,
+  experimentId: ExperimentId,
 ): Record<string, unknown> {
   return {
     timeline: children.map((trial) => ({
@@ -122,7 +129,7 @@ function buildSegmentWithTrialsTimeline(
           segmentId,
           blockChildKind: "trial",
           blockChildId: trial.id,
-        }, descriptorByUnitId.get(unit.id)),
+        }, descriptorByUnitId.get(unit.id), experimentId),
       ),
     })),
   };
@@ -132,11 +139,23 @@ export function buildTimeline(
   set: ExperimentStimulusSet,
   motionGroup: MotionGroup,
 ): Record<string, unknown>[] {
+  return buildTimelineFromDescriptors(
+    set,
+    collectPendulumTrialDescriptors(set, motionGroup),
+    "experiment-1",
+  );
+}
+
+export function buildTimelineFromDescriptors(
+  set: RuntimeStimulusSet,
+  descriptors: readonly { unit_id: string }[],
+  experimentId: ExperimentId,
+): Record<string, unknown>[] {
   const sequence = set.sequence;
-  const descriptorByUnitId = new Map(
-    collectPendulumTrialDescriptors(set, motionGroup).map((descriptor) => [
+  const descriptorByUnitId = new Map<string, Record<string, unknown>>(
+    descriptors.map((descriptor) => [
       descriptor.unit_id,
-      descriptor,
+      { ...descriptor },
     ]),
   );
   const timeline: Record<string, unknown>[] = [];
@@ -148,6 +167,7 @@ export function buildTimeline(
           "block",
           item.children,
           descriptorByUnitId,
+          experimentId,
         ),
       );
     } else if (item.kind === "practice") {
@@ -157,6 +177,7 @@ export function buildTimeline(
           "practice",
           item.children,
           descriptorByUnitId,
+          experimentId,
         ),
       );
     } else {
@@ -167,7 +188,7 @@ export function buildTimeline(
         blockChildId: null,
       };
       for (const unit of item.units) {
-        timeline.push(unitToTrial(unit, ctx));
+        timeline.push(unitToTrial(unit, ctx, undefined, experimentId));
       }
     }
   }

@@ -63,11 +63,31 @@
   pointer-events: none;
 }
 
+.physics-speed-color-strips {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.physics-speed-color-strips--hidden {
+  visibility: hidden;
+}
+
+.physics-speed-color-strip {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid #000;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
 /* 仿真阶段隐藏光标，进入作答（estimate/arc/feedback）后恢复 */
 .physics-trial--stimulus.physics-trial--sim,
 .physics-trial--stimulus.physics-trial--sim .physics-canvas,
 .physics-trial--stimulus.physics-trial--sim .physics-canvas-frame,
 .physics-trial--stimulus.physics-trial--sim .physics-speed-bar-pair,
+.physics-trial--stimulus.physics-trial--sim .physics-speed-color-strips,
 .physics-trial--stimulus.physics-trial--sim .physics-footer {
   cursor: none;
 }

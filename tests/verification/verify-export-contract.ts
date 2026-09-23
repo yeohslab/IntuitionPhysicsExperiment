@@ -14,7 +14,7 @@ import {
   buildStimulusSetExportPayload,
   stimulusSetExportFilename,
 } from "../../src/shared/exportStimulusSetJson.ts";
-import { generateRuntimeStimulusSet } from "../../src/experiment/stimulus/generateRuntimeSet.ts";
+import { generateRuntimeStimulusSet } from "../../src/experiments/experiment-1/generateRuntimeSet.ts";
 import {
   disambiguateDownloadFilename,
   resetDownloadFilenameDisambiguation,
@@ -63,18 +63,18 @@ function assertDemographicValidation(): void {
   assert(!isValidSubjectId("30001"), "非法组别前缀应拒绝");
   resetDownloadFilenameDisambiguation();
   assert(
-    disambiguateDownloadFilename("experiment_data_subject10001_f.csv") ===
-      "experiment_data_subject10001_f.csv",
+    disambiguateDownloadFilename("experiment-1_data_subject10001_f.csv") ===
+      "experiment-1_data_subject10001_f.csv",
     "首次下载应使用原文件名",
   );
   assert(
-    disambiguateDownloadFilename("experiment_data_subject10001_f.csv") ===
-      "experiment_data_subject10001_f (1).csv",
+    disambiguateDownloadFilename("experiment-1_data_subject10001_f.csv") ===
+      "experiment-1_data_subject10001_f (1).csv",
     "第二次下载应加 (1)",
   );
   assert(
-    disambiguateDownloadFilename("stimulus_set_subject10001.json") ===
-      "stimulus_set_subject10001.json",
+    disambiguateDownloadFilename("experiment-1_stimulus_set_subject10001.json") ===
+      "experiment-1_stimulus_set_subject10001.json",
     "不同文件名独立计数",
   );
   resetDownloadFilenameDisambiguation();
@@ -256,17 +256,17 @@ function assertGroupExport(group: MotionGroup): void {
 
   assert(
     experimentDataFilename(participant.subject_id, "f") ===
-      `experiment_data_subject${participant.subject_id}_f.csv`,
+      `experiment-1_data_subject${participant.subject_id}_f.csv`,
     "完成文件名不正确",
   );
   assert(
     experimentDataFilename(participant.subject_id, "nf") ===
-      `experiment_data_subject${participant.subject_id}_nf.csv`,
+      `experiment-1_data_subject${participant.subject_id}_nf.csv`,
     "中断文件名不正确",
   );
   assert(
     stimulusSetExportFilename(participant) ===
-      `stimulus_set_subject${participant.subject_id}.json`,
+      `experiment-1_stimulus_set_subject${participant.subject_id}.json`,
     "刺激集文件名不正确",
   );
   console.log(`组 ${group}：schema v3 144 Trial、转向字段、CSV 与命名协议通过`);

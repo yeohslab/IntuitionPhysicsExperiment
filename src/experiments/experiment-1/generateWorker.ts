@@ -1,4 +1,4 @@
-import type { MotionGroup } from "../physics/energySegments";
+import type { MotionGroup } from "../../experiment/physics/energySegments";
 import type { ExperimentStimulusSet } from "../../shared/experimentTypes";
 import {
   generateRuntimeStimulusSet,

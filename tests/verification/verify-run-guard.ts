@@ -1,8 +1,8 @@
 /**
- * 验证 #/runner 进入条件（run token + session 人口学/刺激集）及 finalize 后不可重跑。
+ * 验证实验 runner 进入条件（run token + session 人口学/刺激集）及 finalize 后不可重跑。
  * 运行：npm run verify-run-guard
  */
-import { generateRuntimeStimulusSet } from "../../src/experiment/stimulus/generateRuntimeSet.ts";
+import { generateRuntimeStimulusSet } from "../../src/experiments/experiment-1/generateRuntimeSet.ts";
 import {
   beginExperimentRunSession,
   clearExperimentSession,

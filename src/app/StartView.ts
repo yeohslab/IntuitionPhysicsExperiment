@@ -1,4 +1,4 @@
-import { generateRuntimeStimulusSetAsync } from "../experiment/stimulus";
+import { experiment1Definition } from "../experiments/experiment-1/definition";
 import {
   buildSubjectId,
   normalizeAgeYears,
@@ -6,6 +6,7 @@ import {
   normalizeMotionGroup,
   normalizeWithinGroupNumber,
   parseWithinGroupNumber,
+  isParticipantInfo,
   SUBJECT_ID_NUM_MAX,
   SUBJECT_ID_NUM_MIN,
   type ParticipantInfo,
@@ -17,14 +18,12 @@ import {
   saveStimulusSetToSession,
   saveParticipantToSession,
 } from "../shared/storage";
-import { downloadStimulusSetJson } from "../shared/exportStimulusSetJson";
 import { primeExperimentAudioInUserGesture } from "../shared/playEstimateCue";
 import {
   beginRecoverySnapshot,
   clearRecoverySnapshot,
   loadRecoverySnapshot,
 } from "../shared/recovery";
-import { exportStimulusTrialsCsv } from "../runtime/export/exportStimulusCsv";
 
 let activeGenerationAbort: AbortController | null = null;
 
@@ -49,9 +48,10 @@ export function mountStart(container: HTMLElement): void {
 
   container.innerHTML = `
     <div class="start-panel">
-      <h1 class="start-panel__title">直觉物理实验</h1>
+      <h1 class="start-panel__title">直觉物理实验一</h1>
       <div class="start-panel__actions">
         <button type="button" class="btn btn-primary btn-lg" id="btn-start-exp">开始实验</button>
+        <a class="btn btn-ghost" href="#/">返回实验选择</a>
       </div>
       <p class="hint muted" id="start-error" hidden></p>
     </div>
@@ -254,7 +254,7 @@ export function mountStart(container: HTMLElement): void {
 
   exportBtn.addEventListener("click", () => {
     if (!pendingSet || !pendingForm) return;
-    downloadStimulusSetJson(pendingSet, pendingForm);
+    experiment1Definition.downloadStimulusJson(pendingSet, pendingForm);
   });
 
   runBtn.addEventListener("click", () => {
@@ -275,7 +275,7 @@ export function mountStart(container: HTMLElement): void {
     }
     dialog.close();
     void primeExperimentAudioInUserGesture().then(() => {
-      location.hash = "#/runner";
+      location.hash = "#/experiment-1/runner";
     });
   });
 
@@ -294,9 +294,7 @@ export function mountStart(container: HTMLElement): void {
 
     void (async () => {
       try {
-        const set = await generateRuntimeStimulusSetAsync({
-          group: form.motion_group,
-          subjectId: form.subject_id,
+        const set = await experiment1Definition.generateStimulusSet(form, {
           signal: generationAbort.signal,
           onProgress: (completedTrials, totalTrials) => {
             setGenerating(true, completedTrials, totalTrials);
@@ -331,17 +329,23 @@ export function mountStart(container: HTMLElement): void {
 
   const recovery = loadRecoverySnapshot();
   let restoredGeneratedSet = false;
-  if (recovery) {
+  if (
+    recovery &&
+    isParticipantInfo(recovery.participant) &&
+    recovery.stimulus_set.schemaVersion === 7
+  ) {
+    const recoveredParticipant = recovery.participant;
+    const recoveredSet = recovery.stimulus_set as ExperimentStimulusSet;
     if (recovery.lifecycle === "exported") {
       recoveryPanel.hidden = false;
       newParticipantPanel.hidden = true;
       const exportStatus = recovery.experiment_status ?? "nf";
       recoveryDetail.textContent =
-        `被试 ${recovery.participant.subject_id} 的实验已结束（${exportStatus === "f" ? "完成" : "中断"}）。` +
+        `被试 ${recoveredParticipant.subject_id} 的实验已结束（${exportStatus === "f" ? "完成" : "中断"}）。` +
         `请确认 CSV 与 JSON 已保存到本地后再清除记录。`;
       container.querySelector("#btn-export-recovery")?.addEventListener("click", () => {
-        exportStimulusTrialsCsv(recovery.rows, recovery.participant, exportStatus);
-        downloadStimulusSetJson(recovery.stimulus_set, recovery.participant);
+        experiment1Definition.exportCsv(recovery.rows, recoveredParticipant, exportStatus);
+        experiment1Definition.downloadStimulusJson(recoveredSet, recoveredParticipant);
         recoveryDetail.textContent =
           "已尝试下载两个文件；记录仍保留，可重复导出。确认文件已保存后请点击「丢弃记录」。";
       });
@@ -355,31 +359,31 @@ export function mountStart(container: HTMLElement): void {
       });
     } else if (recovery.cursor.phase === "generated" && recovery.rows.length === 0) {
       restoredGeneratedSet = true;
-      pendingSet = recovery.stimulus_set;
-      pendingForm = recovery.participant;
-      groupInput.value = String(recovery.participant.motion_group);
+      pendingSet = recoveredSet;
+      pendingForm = recoveredParticipant;
+      groupInput.value = String(recoveredParticipant.motion_group);
       input.value =
         parseWithinGroupNumber(
-          recovery.participant.subject_id,
-          recovery.participant.motion_group,
+          recoveredParticipant.subject_id,
+          recoveredParticipant.motion_group,
         ) ??
-        recovery.participant.subject_id.replace(/^[12]/, "");
-      genderInput.value = String(recovery.participant.gender_code);
-      ageInput.value = String(recovery.participant.age_years);
+        recoveredParticipant.subject_id.replace(/^[12]/, "");
+      genderInput.value = String(recoveredParticipant.gender_code);
+      ageInput.value = String(recoveredParticipant.age_years);
       setReady(
-        recovery.participant,
+        recoveredParticipant,
         "已恢复生成完成的刺激集，可直接导出或开始实验。",
       );
     } else {
       recoveryPanel.hidden = false;
       newParticipantPanel.hidden = true;
       recoveryDetail.textContent =
-        `被试 ${recovery.participant.subject_id}，组 ${recovery.participant.motion_group}，` +
+        `被试 ${recoveredParticipant.subject_id}，组 ${recoveredParticipant.motion_group}，` +
         `最后保存于 ${new Date(recovery.updated_at).toLocaleString()}，` +
         `阶段：${recovery.cursor.phase}。`;
       container.querySelector("#btn-export-recovery")?.addEventListener("click", () => {
-        exportStimulusTrialsCsv(recovery.rows, recovery.participant, "nf");
-        downloadStimulusSetJson(recovery.stimulus_set, recovery.participant);
+        experiment1Definition.exportCsv(recovery.rows, recoveredParticipant, "nf");
+        experiment1Definition.downloadStimulusJson(recoveredSet, recoveredParticipant);
         recoveryDetail.textContent =
           "已尝试下载两个文件；记录仍保留，可重复导出。确认文件已保存后请点击“丢弃记录”。";
       });

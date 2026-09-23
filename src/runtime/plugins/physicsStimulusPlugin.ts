@@ -48,6 +48,7 @@ import {
   absoluteSpeedBarLevel,
   mountSpeedIndicatorBar,
 } from "../components/speedIndicatorBar";
+import { mountSpeedColorStrips } from "../components/speedColorStrips";
 import { pendulumStateAtSimEnd } from "../../experiment/physics/simEndState";
 import {
   updateRecoveryCursor,
@@ -219,6 +220,10 @@ class PhysicsStimulusPlugin {
       hide1T: trial.hide1T,
       fadeMs: trial.fadeMs,
     };
+    const recoveryExperimentId =
+      trial.unitMeta.runtime_experiment_id === "experiment-2"
+        ? "experiment-2"
+        : "experiment-1";
 
     const pointerLogical = (e: PointerEvent) =>
       pointerToLogical(e.clientX, e.clientY, canvas, logicalW, logicalH);
@@ -253,14 +258,31 @@ class PhysicsStimulusPlugin {
     const wMaxDeg = pendulumWMaxDeg(analysis.E, analysis.regime, trial.rodLengthM, trial.gravity);
     const motionRange = { regime: analysis.regime, wMaxDeg };
     const rodL = trial.rodLengthM;
-    const speedBarVMax = Number(trial.unitMeta.speed_bar_v_max_m_per_sec);
-    const speedBar = mountSpeedIndicatorBar(canvasFrame, {
-      rodPx: layout.rodPx,
-      canvasCssW: cssW,
-      canvasCssH: cssH,
-      anchorX: layout.anchorX,
-      anchorY: layout.anchorY,
-    });
+    const useColorStrips = trial.unitMeta.speed_cue_type === "color-strips";
+    const speedCueVMax = Number(
+      useColorStrips
+        ? trial.unitMeta.speed_color_v_max_m_per_sec
+        : trial.unitMeta.speed_bar_v_max_m_per_sec,
+    );
+    const speedBar = useColorStrips
+      ? null
+      : mountSpeedIndicatorBar(canvasFrame, {
+          rodPx: layout.rodPx,
+          canvasCssW: cssW,
+          canvasCssH: cssH,
+          anchorX: layout.anchorX,
+          anchorY: layout.anchorY,
+        });
+    const speedColorStrips = useColorStrips
+      ? mountSpeedColorStrips(canvasFrame, {
+          rodPx: layout.rodPx,
+          canvasCssW: cssW,
+          canvasCssH: cssH,
+          anchorX: layout.anchorX,
+          anchorY: layout.anchorY,
+          vMaxMPerSec: speedCueVMax,
+        })
+      : null;
 
     let thetaActualRad = 0;
     let thetaEstRad = 0;
@@ -294,7 +316,7 @@ class PhysicsStimulusPlugin {
             ? null
             : Number(trial.unitMeta.formal_trial_index ?? 0),
         phase: recoveryPhase,
-      });
+      }, recoveryExperimentId);
     };
 
     function onVisibilityChange() {
@@ -393,7 +415,8 @@ class PhysicsStimulusPlugin {
     };
 
     const startEstimate = () => {
-      speedBar.hide();
+      speedBar?.hide();
+      speedColorStrips?.hide();
       phase = "estimate";
       checkpointPhase("estimate");
       syncSimCursor("estimate");
@@ -490,8 +513,12 @@ class PhysicsStimulusPlugin {
       drawPendulumStimulusFrame(ctx, layout, theta, motionRange, vis.alpha, guideStroke);
       // 组级绝对速度：v/V_max_group，v=l|ω|
       const v = rodL * Math.abs(omega);
-      const level = absoluteSpeedBarLevel(v, speedBarVMax);
-      speedBar.setLevels(level, level);
+      if (speedColorStrips) {
+        speedColorStrips.setSpeed(v);
+      } else if (speedBar) {
+        const level = absoluteSpeedBarLevel(v, speedCueVMax);
+        speedBar.setLevels(level, level);
+      }
 
       if (elapsed >= simEndSec) {
         simElapsedActualSec = elapsed;
