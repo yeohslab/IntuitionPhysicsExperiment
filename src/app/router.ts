@@ -2,7 +2,9 @@ import { disposeRunner, mountRunner } from "./RunnerView";
 import { disposeStart, mountStart } from "./StartView";
 import {
   disposeExperiment2Start,
+  disposeExperiment3Start,
   mountExperiment2Start,
+  mountExperiment3Start,
 } from "./Experiment2StartView";
 import { mountExperimentPicker } from "./ExperimentPickerView";
 import type { ExperimentId } from "../experiments/types";
@@ -25,6 +27,7 @@ function replaceHash(hash: string): void {
 function runnerExperiment(path: string): ExperimentId | null {
   if (path === "/experiment-1/runner") return "experiment-1";
   if (path === "/experiment-2/runner") return "experiment-2";
+  if (path === "/experiment-3/runner") return "experiment-3";
   return null;
 }
 
@@ -32,6 +35,7 @@ function route(): void {
   disposeRunner();
   disposeStart();
   disposeExperiment2Start();
+  disposeExperiment3Start();
   const app = document.getElementById("app");
   if (!app) return;
   app.innerHTML = "";
@@ -60,6 +64,10 @@ function route(): void {
   }
   if (path === "/experiment-2/start") {
     mountExperiment2Start(app);
+    return;
+  }
+  if (path === "/experiment-3/start") {
+    mountExperiment3Start(app);
     return;
   }
   if (path === "/" || path === "/start") {

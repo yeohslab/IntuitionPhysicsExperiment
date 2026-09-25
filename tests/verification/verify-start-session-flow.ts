@@ -17,15 +17,19 @@ import {
   loadStimulusSetForExperiment,
   migrateLegacyExperiment1Session,
   parseExperiment2StimulusSet,
+  parseExperiment3StimulusSet,
   parseExperimentStimulusSet,
 } from "../../src/shared/storage.ts";
-import type {
-  Experiment2StimulusSet,
-  ExperimentStimulusSet,
-  PendulumStimulusUnit,
+import {
+  EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION,
+  type Experiment2StimulusSet,
+  type Experiment3StimulusSet,
+  type ExperimentStimulusSet,
+  type PendulumStimulusUnit,
 } from "../../src/shared/experimentTypes.ts";
 import type {
   Experiment2ParticipantInfo,
+  Experiment3ParticipantInfo,
   ParticipantInfo,
 } from "../../src/shared/participant.ts";
 
@@ -155,7 +159,7 @@ const experiment2Participant: Experiment2ParticipantInfo = {
   age_years: 21,
 };
 const experiment2Set: Experiment2StimulusSet = {
-  schemaVersion: 1,
+  schemaVersion: EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION,
   sequence: [
     {
       kind: "rest",
@@ -165,7 +169,10 @@ const experiment2Set: Experiment2StimulusSet = {
   ],
 };
 if (!parseExperiment2StimulusSet(experiment2Set)) {
-  throw new Error("实验二 schema v1 应可解析");
+  throw new Error("实验二运行时 schema v3 应可解析");
+}
+if (parseExperiment2StimulusSet({ ...experiment2Set, schemaVersion: 2 })) {
+  throw new Error("实验二旧运行时 schema v2 应被拒绝");
 }
 beginExperimentRunSessionForExperiment(
   "experiment-2",
@@ -186,6 +193,44 @@ if (
   throw new Error("清除实验一不得影响实验二 session");
 }
 clearExperimentSession("experiment-2");
+
+const experiment3Participant: Experiment3ParticipantInfo = {
+  subject_id: "E3-0001",
+  gender_code: 0,
+  age_years: 22,
+};
+const experiment3Set: Experiment3StimulusSet = {
+  schemaVersion: 1,
+  sequence: [
+    {
+      kind: "rest",
+      id: "exp3-rest",
+      units: [{ id: "exp3-text", type: "textControl", text: "test", key: " " }],
+    },
+  ],
+};
+if (!parseExperiment3StimulusSet(experiment3Set)) {
+  throw new Error("实验三 schema v1 应可解析");
+}
+beginExperimentRunSessionForExperiment(
+  "experiment-3",
+  experiment3Participant,
+  experiment3Set,
+);
+if (!hasActiveExperimentRunSession("experiment-3")) {
+  throw new Error("实验三 run session 应有效");
+}
+if (hasActiveExperimentRunSession("experiment-1") || hasActiveExperimentRunSession("experiment-2")) {
+  throw new Error("实验三 session 不得激活其他实验");
+}
+clearExperimentSession("experiment-2");
+if (
+  !loadParticipantForExperiment("experiment-3") ||
+  !loadStimulusSetForExperiment("experiment-3")
+) {
+  throw new Error("清除实验二不得影响实验三 session");
+}
+clearExperimentSession("experiment-3");
 
 const blocks = pendingSet.sequence.filter((x) => x.kind === "block").length;
 const trialsPerBlock = pendingSet.sequence.find((x) => x.kind === "block")?.children.length ?? 0;

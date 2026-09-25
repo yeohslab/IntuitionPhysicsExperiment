@@ -21,7 +21,17 @@ export interface Experiment2ParticipantInfo {
   age_years: number;
 }
 
-export type AnyParticipantInfo = ParticipantInfo | Experiment2ParticipantInfo;
+export interface Experiment3ParticipantInfo {
+  /** 实验三单组编号：E3- + 四位组内序号，如 E3-0001。 */
+  subject_id: string;
+  gender_code: GenderCode;
+  age_years: number;
+}
+
+export type AnyParticipantInfo =
+  | ParticipantInfo
+  | Experiment2ParticipantInfo
+  | Experiment3ParticipantInfo;
 
 /**
  * 校验并规范组内序号为四位前导零字符串（如 1 → "0001"）。
@@ -48,6 +58,10 @@ export function buildExperiment2SubjectId(withinGroupNumber: string): string {
   return `E2-${withinGroupNumber}`;
 }
 
+export function buildExperiment3SubjectId(withinGroupNumber: string): string {
+  return `E3-${withinGroupNumber}`;
+}
+
 export function isValidExperiment2SubjectId(subjectId: string): boolean {
   const match = /^E2-(\d{4})$/.exec(subjectId);
   if (!match) return false;
@@ -57,6 +71,17 @@ export function isValidExperiment2SubjectId(subjectId: string): boolean {
 
 export function parseExperiment2WithinGroupNumber(subjectId: string): string | null {
   return isValidExperiment2SubjectId(subjectId) ? subjectId.slice(3) : null;
+}
+
+export function isValidExperiment3SubjectId(subjectId: string): boolean {
+  const match = /^E3-(\d{4})$/.exec(subjectId);
+  if (!match) return false;
+  const within = Number(match[1]);
+  return Number.isInteger(within) && within >= SUBJECT_ID_NUM_MIN && within <= SUBJECT_ID_NUM_MAX;
+}
+
+export function parseExperiment3WithinGroupNumber(subjectId: string): string | null {
+  return isValidExperiment3SubjectId(subjectId) ? subjectId.slice(3) : null;
 }
 
 /** 被试编号格式：首位为组别 1/2，后四位为组内序号。 */
@@ -129,6 +154,22 @@ export function isExperiment2ParticipantInfo(
   return (
     typeof raw.subject_id === "string" &&
     isValidExperiment2SubjectId(raw.subject_id) &&
+    (raw.gender_code === 0 || raw.gender_code === 1) &&
+    typeof raw.age_years === "number" &&
+    Number.isSafeInteger(raw.age_years) &&
+    raw.age_years >= 1 &&
+    raw.age_years <= 120
+  );
+}
+
+export function isExperiment3ParticipantInfo(
+  value: unknown,
+): value is Experiment3ParticipantInfo {
+  if (typeof value !== "object" || value === null) return false;
+  const raw = value as Record<string, unknown>;
+  return (
+    typeof raw.subject_id === "string" &&
+    isValidExperiment3SubjectId(raw.subject_id) &&
     (raw.gender_code === 0 || raw.gender_code === 1) &&
     typeof raw.age_years === "number" &&
     Number.isSafeInteger(raw.age_years) &&

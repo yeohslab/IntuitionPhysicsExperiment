@@ -2,17 +2,21 @@ import { analyzePendulum } from "../experiment/physics/pendulum";
 import { withSyncedTotalTimeT } from "../experiment/physics/timePhases";
 import {
   isExperiment2ParticipantInfo,
+  isExperiment3ParticipantInfo,
   isParticipantInfo,
   type AnyParticipantInfo,
   type Experiment2ParticipantInfo,
+  type Experiment3ParticipantInfo,
   type ParticipantInfo,
 } from "./participant";
 import {
   EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION,
+  EXPERIMENT_3_STIMULUS_SET_SCHEMA_VERSION,
   STIMULUS_SET_SCHEMA_VERSION,
   type BlockSegment,
   type ExperimentStimulusSet,
   type Experiment2StimulusSet,
+  type Experiment3StimulusSet,
   type PendulumStimulusUnit,
   type PracticeSegment,
   type RestSegment,
@@ -195,23 +199,33 @@ export function parseExperiment2StimulusSet(
   ) as Experiment2StimulusSet | null;
 }
 
+export function parseExperiment3StimulusSet(
+  raw: unknown,
+): Experiment3StimulusSet | null {
+  return parseRuntimeStimulusSet(
+    raw,
+    EXPERIMENT_3_STIMULUS_SET_SCHEMA_VERSION,
+  ) as Experiment3StimulusSet | null;
+}
+
 function parseSetForExperiment(
   experimentId: ExperimentId,
   raw: unknown,
 ): RuntimeStimulusSet | null {
-  return experimentId === "experiment-1"
-    ? parseExperimentStimulusSet(raw)
-    : parseExperiment2StimulusSet(raw);
+  if (experimentId === "experiment-1") return parseExperimentStimulusSet(raw);
+  if (experimentId === "experiment-2") return parseExperiment2StimulusSet(raw);
+  return parseExperiment3StimulusSet(raw);
 }
 
 function parseParticipantForExperiment(
   experimentId: ExperimentId,
   raw: unknown,
 ): AnyParticipantInfo | null {
-  if (experimentId === "experiment-1") {
-    return isParticipantInfo(raw) ? raw : null;
+  if (experimentId === "experiment-1") return isParticipantInfo(raw) ? raw : null;
+  if (experimentId === "experiment-2") {
+    return isExperiment2ParticipantInfo(raw) ? raw : null;
   }
-  return isExperiment2ParticipantInfo(raw) ? raw : null;
+  return isExperiment3ParticipantInfo(raw) ? raw : null;
 }
 
 export function saveStimulusSetToSession(set: ExperimentStimulusSet): void {
@@ -359,4 +373,4 @@ export function migrateLegacyExperiment1Session(): boolean {
   }
 }
 
-export type { Experiment2ParticipantInfo };
+export type { Experiment2ParticipantInfo, Experiment3ParticipantInfo };

@@ -1,7 +1,9 @@
 /** 当前刺激集内存/会话格式版本（运行时 generateRuntimeStimulusSet 产出）。 */
 export const STIMULUS_SET_SCHEMA_VERSION = 7 as const;
 /** 实验二运行时刺激集版本；与实验一独立演进。 */
-export const EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
+export const EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
+/** 实验三运行时刺激集版本；与其他实验独立演进。 */
+export const EXPERIMENT_3_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
 
 export type StimulusUnitType =
   | "textDisplay"
@@ -84,4 +86,9 @@ export interface ExperimentStimulusSet extends RuntimeStimulusSet {
 /** 实验二运行时刺激集。 */
 export interface Experiment2StimulusSet extends RuntimeStimulusSet {
   schemaVersion: typeof EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION;
+}
+
+/** 实验三运行时刺激集。 */
+export interface Experiment3StimulusSet extends RuntimeStimulusSet {
+  schemaVersion: typeof EXPERIMENT_3_STIMULUS_SET_SCHEMA_VERSION;
 }

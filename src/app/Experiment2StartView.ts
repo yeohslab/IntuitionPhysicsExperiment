@@ -1,16 +1,26 @@
 import { experiment2Definition } from "../experiments/experiment-2/definition";
+import { EXPERIMENT_2_TOTAL_RUNTIME_TRIALS } from "../experiments/experiment-2/protocol";
+import { experiment3Definition } from "../experiments/experiment-3/definition";
+import { EXPERIMENT_3_TOTAL_RUNTIME_TRIALS } from "../experiments/experiment-3/protocol";
 import {
   buildExperiment2SubjectId,
+  buildExperiment3SubjectId,
   isExperiment2ParticipantInfo,
+  isExperiment3ParticipantInfo,
   normalizeAgeYears,
   normalizeGenderCode,
   normalizeWithinGroupNumber,
   parseExperiment2WithinGroupNumber,
+  parseExperiment3WithinGroupNumber,
   SUBJECT_ID_NUM_MAX,
   SUBJECT_ID_NUM_MIN,
-  type Experiment2ParticipantInfo,
+  type AnyParticipantInfo,
 } from "../shared/participant";
-import type { Experiment2StimulusSet } from "../shared/experimentTypes";
+import type {
+  AnyRuntimeStimulusSet,
+  ExperimentDefinition,
+  ExperimentId,
+} from "../experiments/types";
 import {
   beginExperimentRunSessionForExperiment,
   clearExperimentSession,
@@ -24,13 +34,52 @@ import {
   loadRecoverySnapshot,
 } from "../shared/recovery";
 
-const EXPERIMENT_ID = "experiment-2" as const;
 let activeGenerationAbort: AbortController | null = null;
+
+type WithinSubjectStartConfig = {
+  experimentId: Extract<ExperimentId, "experiment-2" | "experiment-3">;
+  displayName: string;
+  subjectPrefix: "E2" | "E3";
+  runnerHash: string;
+  totalTrials: number;
+  definition: ExperimentDefinition;
+  buildSubjectId(within: string): string;
+  parseWithinGroupNumber(subjectId: string): string | null;
+  parseParticipant(value: unknown): AnyParticipantInfo | null;
+};
+
+const experiment2StartConfig: WithinSubjectStartConfig = {
+  experimentId: "experiment-2",
+  displayName: "实验二",
+  subjectPrefix: "E2",
+  runnerHash: "#/experiment-2/runner",
+  totalTrials: EXPERIMENT_2_TOTAL_RUNTIME_TRIALS,
+  definition: experiment2Definition as ExperimentDefinition,
+  buildSubjectId: buildExperiment2SubjectId,
+  parseWithinGroupNumber: parseExperiment2WithinGroupNumber,
+  parseParticipant: (value) =>
+    isExperiment2ParticipantInfo(value) ? value : null,
+};
+
+const experiment3StartConfig: WithinSubjectStartConfig = {
+  experimentId: "experiment-3",
+  displayName: "实验三",
+  subjectPrefix: "E3",
+  runnerHash: "#/experiment-3/runner",
+  totalTrials: EXPERIMENT_3_TOTAL_RUNTIME_TRIALS,
+  definition: experiment3Definition as ExperimentDefinition,
+  buildSubjectId: buildExperiment3SubjectId,
+  parseWithinGroupNumber: parseExperiment3WithinGroupNumber,
+  parseParticipant: (value) =>
+    isExperiment3ParticipantInfo(value) ? value : null,
+};
 
 export function disposeExperiment2Start(): void {
   activeGenerationAbort?.abort();
   activeGenerationAbort = null;
 }
+
+export const disposeExperiment3Start = disposeExperiment2Start;
 
 function escapeText(value: string): string {
   return value
@@ -41,11 +90,24 @@ function escapeText(value: string): string {
 }
 
 export function mountExperiment2Start(container: HTMLElement): void {
+  mountWithinSubjectStart(container, experiment2StartConfig);
+}
+
+export function mountExperiment3Start(container: HTMLElement): void {
+  mountWithinSubjectStart(container, experiment3StartConfig);
+}
+
+function mountWithinSubjectStart(
+  container: HTMLElement,
+  config: WithinSubjectStartConfig,
+): void {
+  const EXPERIMENT_ID = config.experimentId;
+  const experimentDefinition = config.definition;
   container.innerHTML = "";
   container.className = "start-view";
   container.innerHTML = `
     <div class="start-panel">
-      <h1 class="start-panel__title">直觉物理实验二</h1>
+      <h1 class="start-panel__title">直觉物理${config.displayName}</h1>
       <div class="start-panel__actions">
         <button type="button" class="btn btn-primary btn-lg" id="btn-start-exp2">开始实验</button>
         <a class="btn btn-ghost" href="#/">返回实验选择</a>
@@ -54,9 +116,9 @@ export function mountExperiment2Start(container: HTMLElement): void {
     </div>
     <dialog class="start-dialog" id="dialog-exp2-subject">
       <form class="start-dialog__form" id="form-exp2-subject">
-        <h2>输入实验二被试信息</h2>
+        <h2>输入${config.displayName}被试信息</h2>
         <div class="start-recovery" id="exp2-start-recovery" hidden>
-          <p><strong>检测到实验二未清除的记录。</strong></p>
+          <p><strong>检测到${config.displayName}未清除的记录。</strong></p>
           <p class="hint muted" id="exp2-recovery-detail"></p>
           <div class="start-dialog__buttons">
             <button type="button" class="btn btn-primary" id="btn-exp2-export-recovery">导出记录</button>
@@ -64,8 +126,8 @@ export function mountExperiment2Start(container: HTMLElement): void {
           </div>
         </div>
         <div id="exp2-new-participant">
-          <label class="start-dialog__label" for="exp2-subject-number">组内序号（保存为 E2-0001 格式）</label>
-          <input type="text" id="exp2-subject-number" class="start-dialog__input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="4" required placeholder="例如 0001" aria-label="实验二组内序号" />
+          <label class="start-dialog__label" for="exp2-subject-number">组内序号（保存为 ${config.subjectPrefix}-0001 格式）</label>
+          <input type="text" id="exp2-subject-number" class="start-dialog__input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="4" required placeholder="例如 0001" aria-label="${config.displayName}组内序号" />
           <label class="start-dialog__label" for="exp2-gender">性别编码</label>
           <select id="exp2-gender" class="start-dialog__input" required aria-label="性别编码">
             <option value="">请选择</option>
@@ -81,7 +143,7 @@ export function mountExperiment2Start(container: HTMLElement): void {
             <button type="button" class="btn btn-primary" id="btn-exp2-run-subject" disabled>开始</button>
             <button type="button" class="btn btn-ghost" id="btn-exp2-cancel-subject">取消</button>
           </div>
-          <p class="hint muted" id="exp2-generating" hidden>正在随机生成实验二刺激集，请稍候…</p>
+          <p class="hint muted" id="exp2-generating" hidden>正在随机生成${config.displayName}刺激集，请稍候…</p>
         </div>
       </form>
     </dialog>`;
@@ -100,10 +162,10 @@ export function mountExperiment2Start(container: HTMLElement): void {
   const recoveryDetail = container.querySelector("#exp2-recovery-detail") as HTMLElement;
   const newParticipantPanel = container.querySelector("#exp2-new-participant") as HTMLElement;
 
-  let pendingSet: Experiment2StimulusSet | null = null;
-  let pendingParticipant: Experiment2ParticipantInfo | null = null;
+  let pendingSet: AnyRuntimeStimulusSet | null = null;
+  let pendingParticipant: AnyParticipantInfo | null = null;
 
-  const readParticipant = (): Experiment2ParticipantInfo | null => {
+  const readParticipant = (): AnyParticipantInfo | null => {
     const within = normalizeWithinGroupNumber(numberInput.value);
     if (!within) {
       error.textContent = `组内序号须为 ${SUBJECT_ID_NUM_MIN}–${SUBJECT_ID_NUM_MAX}，并显示为四位数字。`;
@@ -124,7 +186,7 @@ export function mountExperiment2Start(container: HTMLElement): void {
     }
     error.hidden = true;
     return {
-      subject_id: buildExperiment2SubjectId(within),
+      subject_id: config.buildSubjectId(within),
       gender_code: genderCode,
       age_years: ageYears,
     };
@@ -139,8 +201,8 @@ export function mountExperiment2Start(container: HTMLElement): void {
     status.textContent = "";
   };
   const setReady = (
-    participant: Experiment2ParticipantInfo,
-    message = "实验二刺激集已生成，可导出 JSON 或开始实验。",
+    participant: AnyParticipantInfo,
+    message = `${config.displayName}刺激集已生成，可导出 JSON 或开始实验。`,
   ) => {
     pendingParticipant = participant;
     exportButton.disabled = false;
@@ -148,7 +210,7 @@ export function mountExperiment2Start(container: HTMLElement): void {
     status.textContent = message;
     status.hidden = false;
   };
-  const setGenerating = (on: boolean, completed = 0, total = 189) => {
+  const setGenerating = (on: boolean, completed = 0, total = config.totalTrials) => {
     generating.hidden = !on;
     generating.textContent = on
       ? `正在后台生成刺激集：${completed} / ${total} Trial。页面可以保持响应，请稍候…`
@@ -212,13 +274,13 @@ export function mountExperiment2Start(container: HTMLElement): void {
 
   exportButton.addEventListener("click", () => {
     if (pendingSet && pendingParticipant) {
-      experiment2Definition.downloadStimulusJson(pendingSet, pendingParticipant);
+      experimentDefinition.downloadStimulusJson(pendingSet, pendingParticipant);
     }
   });
   runButton.addEventListener("click", () => {
     if (!pendingSet || !pendingParticipant) return;
     if (!beginRecoverySnapshot(pendingParticipant, pendingSet, EXPERIMENT_ID)) {
-      error.textContent = "浏览器无法保存实验二恢复快照，已阻止实验开始。";
+      error.textContent = `浏览器无法保存${config.displayName}恢复快照，已阻止实验开始。`;
       error.hidden = false;
       return;
     }
@@ -229,13 +291,13 @@ export function mountExperiment2Start(container: HTMLElement): void {
         pendingSet,
       );
     } catch {
-      error.textContent = "浏览器无法写入实验二会话数据，已阻止实验开始。";
+      error.textContent = `浏览器无法写入${config.displayName}会话数据，已阻止实验开始。`;
       error.hidden = false;
       return;
     }
     dialog.close();
     void primeExperimentAudioInUserGesture().then(() => {
-      location.hash = "#/experiment-2/runner";
+      location.hash = config.runnerHash;
     });
   });
 
@@ -252,7 +314,7 @@ export function mountExperiment2Start(container: HTMLElement): void {
     setGenerating(true);
     void (async () => {
       try {
-        const set = await experiment2Definition.generateStimulusSet(participant, {
+        const set = await experimentDefinition.generateStimulusSet(participant, {
           signal: abort.signal,
           onProgress: (completed, total) => setGenerating(true, completed, total),
         });
@@ -260,7 +322,7 @@ export function mountExperiment2Start(container: HTMLElement): void {
         pendingSet = set;
         pendingParticipant = participant;
         if (!beginRecoverySnapshot(participant, set, EXPERIMENT_ID)) {
-          throw new Error("浏览器无法保存实验二恢复快照。请检查存储设置。");
+          throw new Error(`浏览器无法保存${config.displayName}恢复快照。请检查存储设置。`);
         }
         saveParticipantForExperiment(EXPERIMENT_ID, participant);
         saveStimulusSetForExperiment(EXPERIMENT_ID, set);
@@ -284,41 +346,42 @@ export function mountExperiment2Start(container: HTMLElement): void {
   let restoredGeneratedSet = false;
   if (
     recovery &&
-    isExperiment2ParticipantInfo(recovery.participant) &&
-    recovery.stimulus_set.schemaVersion === 1
+    config.parseParticipant(recovery.participant) &&
+    recovery.stimulus_set.schemaVersion ===
+      config.definition.internalStimulusSchemaVersion
   ) {
     const participant = recovery.participant;
-    const set = recovery.stimulus_set as Experiment2StimulusSet;
+    const set = recovery.stimulus_set as AnyRuntimeStimulusSet;
     if (recovery.lifecycle === "exported") {
       recoveryPanel.hidden = false;
       newParticipantPanel.hidden = true;
       const exportStatus = recovery.experiment_status ?? "nf";
       recoveryDetail.textContent =
-        `被试 ${participant.subject_id} 的实验二已结束（${exportStatus === "f" ? "完成" : "中断"}）。请确认两个文件已保存。`;
+        `被试 ${participant.subject_id} 的${config.displayName}已结束（${exportStatus === "f" ? "完成" : "中断"}）。请确认两个文件已保存。`;
       container.querySelector("#btn-exp2-export-recovery")?.addEventListener("click", () => {
-        experiment2Definition.exportCsv(recovery.rows, participant, exportStatus);
-        experiment2Definition.downloadStimulusJson(set, participant);
+        experimentDefinition.exportCsv(recovery.rows, participant, exportStatus);
+        experimentDefinition.downloadStimulusJson(set, participant);
       });
     } else if (recovery.cursor.phase === "generated" && recovery.rows.length === 0) {
       restoredGeneratedSet = true;
       pendingSet = set;
       pendingParticipant = participant;
-      numberInput.value = parseExperiment2WithinGroupNumber(participant.subject_id) ?? "";
+      numberInput.value = config.parseWithinGroupNumber(participant.subject_id) ?? "";
       genderInput.value = String(participant.gender_code);
       ageInput.value = String(participant.age_years);
-      setReady(participant, "已恢复生成完成的实验二刺激集，可直接开始。");
+      setReady(participant, `已恢复生成完成的${config.displayName}刺激集，可直接开始。`);
     } else {
       recoveryPanel.hidden = false;
       newParticipantPanel.hidden = true;
       recoveryDetail.textContent =
         `被试 ${participant.subject_id}，最后保存于 ${new Date(recovery.updated_at).toLocaleString()}，阶段：${recovery.cursor.phase}。`;
       container.querySelector("#btn-exp2-export-recovery")?.addEventListener("click", () => {
-        experiment2Definition.exportCsv(recovery.rows, participant, "nf");
-        experiment2Definition.downloadStimulusJson(set, participant);
+        experimentDefinition.exportCsv(recovery.rows, participant, "nf");
+        experimentDefinition.downloadStimulusJson(set, participant);
       });
     }
     container.querySelector("#btn-exp2-discard-recovery")?.addEventListener("click", () => {
-      if (!window.confirm("确认已保存文件，并永久清除这份实验二记录吗？")) return;
+      if (!window.confirm(`确认已保存文件，并永久清除这份${config.displayName}记录吗？`)) return;
       clearRecoverySnapshot(EXPERIMENT_ID);
       clearExperimentSession(EXPERIMENT_ID);
       recoveryPanel.hidden = true;

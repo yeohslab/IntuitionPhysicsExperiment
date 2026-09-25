@@ -1,17 +1,22 @@
 import type { ExperimentStatus } from "../runtime/export/exportStimulusCsv";
 import type {
   Experiment2StimulusSet,
+  Experiment3StimulusSet,
   ExperimentStimulusSet,
   RuntimeStimulusSet,
 } from "../shared/experimentTypes";
 import type {
   AnyParticipantInfo,
   Experiment2ParticipantInfo,
+  Experiment3ParticipantInfo,
   ParticipantInfo,
 } from "../shared/participant";
 
-export type ExperimentId = "experiment-1" | "experiment-2";
-export type AnyRuntimeStimulusSet = ExperimentStimulusSet | Experiment2StimulusSet;
+export type ExperimentId = "experiment-1" | "experiment-2" | "experiment-3";
+export type AnyRuntimeStimulusSet =
+  | ExperimentStimulusSet
+  | Experiment2StimulusSet
+  | Experiment3StimulusSet;
 
 export type SpeedCueConfig =
   | {
@@ -23,7 +28,7 @@ export type SpeedCueConfig =
       kind: "color-strips";
       minMPerSec: 0;
       maxMPerSec: number;
-      gradient: "green-yellow-red";
+      gradient: "blue-magenta-red";
     };
 
 export type GenerateStimulusSetOptions = {
@@ -73,4 +78,8 @@ export type Experiment1Definition = ExperimentDefinition<
 export type Experiment2Definition = ExperimentDefinition<
   Experiment2ParticipantInfo,
   Experiment2StimulusSet
+>;
+export type Experiment3Definition = ExperimentDefinition<
+  Experiment3ParticipantInfo,
+  Experiment3StimulusSet
 >;

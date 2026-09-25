@@ -13,9 +13,14 @@ import {
 } from "../../src/shared/recovery.ts";
 import type {
   Experiment2ParticipantInfo,
+  Experiment3ParticipantInfo,
   ParticipantInfo,
 } from "../../src/shared/participant.ts";
-import type { Experiment2StimulusSet } from "../../src/shared/experimentTypes.ts";
+import {
+  EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION,
+  type Experiment2StimulusSet,
+  type Experiment3StimulusSet,
+} from "../../src/shared/experimentTypes.ts";
 
 class MemoryStorage {
   private values = new Map<string, string>();
@@ -143,7 +148,7 @@ const experiment2Participant: Experiment2ParticipantInfo = {
   age_years: 21,
 };
 const experiment2Set: Experiment2StimulusSet = {
-  schemaVersion: 1,
+  schemaVersion: EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION,
   sequence: [
     {
       kind: "rest",
@@ -159,6 +164,45 @@ assert(
 assert(loadRecoverySnapshot("experiment-1") === null, "实验二恢复不得激活实验一");
 clearRecoverySnapshot("experiment-1");
 assert(loadRecoverySnapshot("experiment-2") !== null, "清除实验一不得影响实验二恢复快照");
+const experiment3Participant: Experiment3ParticipantInfo = {
+  subject_id: "E3-0001",
+  gender_code: 0,
+  age_years: 22,
+};
+const experiment3Set: Experiment3StimulusSet = {
+  schemaVersion: 1,
+  sequence: [
+    {
+      kind: "rest",
+      id: "exp3-rest",
+      units: [{ id: "exp3-text", type: "textControl", text: "test", key: " " }],
+    },
+  ],
+};
+assert(
+  beginRecoverySnapshot(experiment3Participant, experiment3Set, "experiment-3"),
+  "实验三恢复快照应可独立保存",
+);
+assert(loadRecoverySnapshot("experiment-2") !== null, "实验三恢复不得覆盖实验二");
+clearRecoverySnapshot("experiment-2");
+assert(loadRecoverySnapshot("experiment-3") !== null, "清除实验二不得影响实验三恢复快照");
+clearRecoverySnapshot("experiment-3");
+storage.setItem(
+  "intuition-physics:experiment-2:recovery-v1",
+  JSON.stringify({
+    version: 1,
+    lifecycle: "running",
+    participant: experiment2Participant,
+    stimulus_set: { ...experiment2Set, schemaVersion: 2 },
+    rows: [],
+    cursor: { phase: "generated" },
+    updated_at: new Date().toISOString(),
+  }),
+);
+assert(
+  loadRecoverySnapshot("experiment-2") === null,
+  "实验二旧运行时schema v2恢复快照应被拒绝",
+);
 clearRecoverySnapshot("experiment-2");
 storage.failWrites = true;
 const originalConsoleError = console.error;

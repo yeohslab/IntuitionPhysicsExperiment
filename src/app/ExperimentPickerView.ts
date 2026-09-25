@@ -21,7 +21,7 @@ export function mountExperimentPicker(container: HTMLElement): void {
   container.innerHTML = `<main class="experiment-picker">
     <header class="experiment-picker__header">
       <h1>直觉物理实验</h1>
-      <p>请选择本次需要运行的实验。两个实验的数据、恢复记录和刺激缓存相互独立。</p>
+      <p>请选择本次需要运行的实验。三个实验的数据、恢复记录和刺激缓存相互独立。</p>
     </header>
     <section class="experiment-picker__cards">${cards}</section>
   </main>`;

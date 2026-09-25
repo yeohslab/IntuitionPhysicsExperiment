@@ -41,16 +41,23 @@ function distanceToEnergySegment(Ec: number, Emin: number, Emax: number): number
   return Math.min(Math.abs(Ec - Emin), Math.abs(Ec - Emax));
 }
 
-/** 等分 [Emin, Emax] 后剔除最靠近 Ec 的一段，保留 15 个能量中点 */
-export function buildKeptEnergySegmentsForGroup(group: MotionGroup): KeptEnergySegment[] {
+/** 等分 [Emin, Emax] 后剔除最靠近 Ec 的一段，默认保留15个能量中点。 */
+export function buildKeptEnergySegmentsForGroup(
+  group: MotionGroup,
+  keptSegmentCount = NUM_FORMAL_BLOCKS,
+): KeptEnergySegment[] {
+  if (!Number.isInteger(keptSegmentCount) || keptSegmentCount < 1) {
+    throw new Error(`保留能量段数量须为正整数，实际 ${keptSegmentCount}`);
+  }
   const { Emin, Emax, regime } = energyBoundsForGroup(group);
   const Ec = pendulumCriticalEnergy(ROD_LENGTH_M, GRAVITY);
+  const segmentCount = keptSegmentCount + 1;
   const edges = Array.from(
-    { length: NUM_ENERGY_SEGMENTS + 1 },
-    (_, i) => Emin + (i / NUM_ENERGY_SEGMENTS) * (Emax - Emin),
+    { length: segmentCount + 1 },
+    (_, i) => Emin + (i / segmentCount) * (Emax - Emin),
   );
   const all: KeptEnergySegment[] = [];
-  for (let i = 0; i < NUM_ENERGY_SEGMENTS; i++) {
+  for (let i = 0; i < segmentCount; i++) {
     const segEmin = edges[i]!;
     const segEmax = edges[i + 1]!;
     all.push({ index: i, Emin: segEmin, Emax: segEmax, Emid: 0.5 * (segEmin + segEmax) });
@@ -66,8 +73,8 @@ export function buildKeptEnergySegmentsForGroup(group: MotionGroup): KeptEnergyS
     }
   }
   const kept = all.filter((_, i) => i !== dropIdx);
-  if (kept.length !== NUM_FORMAL_BLOCKS) {
-    throw new Error(`保留能量段应为 ${NUM_FORMAL_BLOCKS}，实际 ${kept.length}`);
+  if (kept.length !== keptSegmentCount) {
+    throw new Error(`保留能量段应为 ${keptSegmentCount}，实际 ${kept.length}`);
   }
   for (const seg of kept) {
     const r = pendulumRegime(seg.Emid, ROD_LENGTH_M, GRAVITY);

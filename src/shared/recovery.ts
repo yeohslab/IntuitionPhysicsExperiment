@@ -1,9 +1,14 @@
 import type { ExperimentId } from "../experiments/types";
 import type { RuntimeStimulusSet } from "./experimentTypes";
 import type { AnyParticipantInfo } from "./participant";
-import { isExperiment2ParticipantInfo, isParticipantInfo } from "./participant";
+import {
+  isExperiment2ParticipantInfo,
+  isExperiment3ParticipantInfo,
+  isParticipantInfo,
+} from "./participant";
 import {
   parseExperiment2StimulusSet,
+  parseExperiment3StimulusSet,
   parseExperimentStimulusSet,
 } from "./storage";
 
@@ -68,16 +73,19 @@ function parseParticipant(
   value: unknown,
 ): AnyParticipantInfo | null {
   if (experimentId === "experiment-1") return isParticipantInfo(value) ? value : null;
-  return isExperiment2ParticipantInfo(value) ? value : null;
+  if (experimentId === "experiment-2") {
+    return isExperiment2ParticipantInfo(value) ? value : null;
+  }
+  return isExperiment3ParticipantInfo(value) ? value : null;
 }
 
 function parseStimulusSet(
   experimentId: ExperimentId,
   value: unknown,
 ): RuntimeStimulusSet | null {
-  return experimentId === "experiment-1"
-    ? parseExperimentStimulusSet(value)
-    : parseExperiment2StimulusSet(value);
+  if (experimentId === "experiment-1") return parseExperimentStimulusSet(value);
+  if (experimentId === "experiment-2") return parseExperiment2StimulusSet(value);
+  return parseExperiment3StimulusSet(value);
 }
 
 function writeSnapshot(

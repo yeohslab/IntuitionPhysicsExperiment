@@ -54,6 +54,7 @@ import {
   updateRecoveryCursor,
   type RecoveryPhase,
 } from "../../shared/recovery";
+import type { ExperimentId } from "../../experiments/types";
 
 type KeyboardHandler = (e: KeyboardEvent) => void;
 type TrialPhase = "sim" | "estimate" | "feedback";
@@ -220,9 +221,13 @@ class PhysicsStimulusPlugin {
       hide1T: trial.hide1T,
       fadeMs: trial.fadeMs,
     };
-    const recoveryExperimentId =
-      trial.unitMeta.runtime_experiment_id === "experiment-2"
-        ? "experiment-2"
+    const runtimeExperimentId = String(
+      trial.unitMeta.runtime_experiment_id ?? "experiment-1",
+    );
+    const recoveryExperimentId: ExperimentId =
+      runtimeExperimentId === "experiment-2" ||
+      runtimeExperimentId === "experiment-3"
+        ? runtimeExperimentId
         : "experiment-1";
 
     const pointerLogical = (e: PointerEvent) =>
