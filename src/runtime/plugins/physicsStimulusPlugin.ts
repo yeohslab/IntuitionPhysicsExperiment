@@ -17,10 +17,10 @@ import {
   PENDULUM_GUIDE_ORANGE,
 } from "../../experiment/physics/render/pendulumCanvas";
 import {
-  playEstimateCue,
   prepareMaskedAmbientForTrial,
   stopMaskedAmbientSound,
   syncMaskedAmbientFromVisibility,
+  transitionMaskedAmbientToEstimateCue,
 } from "../../shared/playEstimateCue";
 import {
   setupHiDpiCanvas,
@@ -420,6 +420,9 @@ class PhysicsStimulusPlugin {
     };
 
     const startEstimate = () => {
+      // 音频交接、视觉切换与作答计时共用这一次同步边界。
+      const estimateBoundaryMs = performance.now();
+      transitionMaskedAmbientToEstimateCue();
       speedBar?.hide();
       speedColorStrips?.hide();
       phase = "estimate";
@@ -429,9 +432,8 @@ class PhysicsStimulusPlugin {
       thetaActualRad = endState.theta;
       thetaEstRad = 0;
       estimateInteracted = false;
-      estimateStartMs = performance.now();
+      estimateStartMs = estimateBoundaryMs;
       canvas.classList.add("physics-canvas--estimate");
-      void playEstimateCue();
       redrawEstimate();
       const confirmBtn = mountEstimateFooter(footer, simHint);
       confirmBtn.disabled = true;
@@ -528,7 +530,6 @@ class PhysicsStimulusPlugin {
       if (elapsed >= simEndSec) {
         simElapsedActualSec = elapsed;
         simEndOvershootMs = Math.max(0, (elapsed - simEndSec) * 1000);
-        stopMaskedAmbientSound();
         startEstimate();
         return;
       }

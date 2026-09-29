@@ -22,6 +22,7 @@ import {
   calculateSpeedColorStripGeometry,
   SPEED_COLOR_STRIP_GAP_PX,
   SPEED_COLOR_STRIP_HEIGHT_PX,
+  SPEED_COLOR_PALETTE_HEX,
   speedColorForLevel,
 } from "../../src/runtime/components/speedColorStrips.ts";
 import { EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION } from "../../src/shared/experimentTypes.ts";
@@ -67,10 +68,33 @@ assert(
 );
 assert(absoluteSpeedColorLevel(Infinity, EXPERIMENT_2_SPEED_COLOR_V_MAX_M_PER_SEC) === 0, "非法速度应回落为0");
 assert(absoluteSpeedColorLevel(999, EXPERIMENT_2_SPEED_COLOR_V_MAX_M_PER_SEC) === 1, "超上限速度应钳制");
-assert(speedColorForLevel(0) === "hsl(240.000 90% 50%)", "低速应为蓝色");
-assert(speedColorForLevel(0.5) === "hsl(300.000 90% 50%)", "半速应为紫红色");
-assert(speedColorForLevel(1) === "hsl(360.000 90% 50%)", "高速应为红色");
-assert(speedColorForLevel(Infinity) === speedColorForLevel(0), "非法level应回落到蓝色端点");
+assert(SPEED_COLOR_PALETTE_HEX.length === 7, "实验二应使用7个连续色带锚点");
+const expectedAnchorColors = [
+  "rgb(59 82 139)",
+  "rgb(44 114 142)",
+  "rgb(33 145 140)",
+  "rgb(40 174 128)",
+  "rgb(94 201 98)",
+  "rgb(173 220 48)",
+  "rgb(253 231 37)",
+];
+expectedAnchorColors.forEach((color, index) => {
+  assert(
+    speedColorForLevel(index / (expectedAnchorColors.length - 1)) === color,
+    `色带锚点 ${index + 1} 应匹配预定颜色`,
+  );
+});
+assert(speedColorForLevel(0) === expectedAnchorColors[0], "低速应为深蓝色");
+assert(speedColorForLevel(0.5) === expectedAnchorColors[3], "半速应为青绿色");
+assert(speedColorForLevel(1) === expectedAnchorColors[6], "高速应为亮黄色");
+assert(speedColorForLevel(Infinity) === speedColorForLevel(0), "非法level应回落到深蓝色端点");
+const denselySampledColors = Array.from({ length: 101 }, (_, index) =>
+  speedColorForLevel(index / 100),
+);
+assert(
+  new Set(denselySampledColors).size === denselySampledColors.length,
+  "色带密集采样不应出现颜色分档或平台",
+);
 assert(SPEED_COLOR_STRIP_HEIGHT_PX === 28, "实验二色带厚度应为28 px");
 assert(SPEED_COLOR_STRIP_GAP_PX === 4, "实验二色带与运动范围间距应为4 px");
 for (const [canvasWidth, canvasHeight] of [
@@ -93,8 +117,11 @@ for (const [canvasWidth, canvasHeight] of [
 }
 const welcomeText = experiment2WelcomeText();
 assert(
-  welcomeText.includes("蓝色") && welcomeText.includes("紫红色") && !welcomeText.includes("绿色"),
-  "实验二指导语应描述蓝—紫红—红映射",
+  welcomeText.includes("深蓝色") &&
+    welcomeText.includes("青绿色") &&
+    welcomeText.includes("亮黄色") &&
+    !welcomeText.includes("紫红色"),
+  "实验二指导语应描述深蓝—青绿—亮黄映射",
 );
 
 let lastProgress = 0;

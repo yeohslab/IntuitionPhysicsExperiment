@@ -11,7 +11,7 @@ export function experiment2WelcomeText(): string {
 <p><strong>淡出与遮挡阶段</strong>: 单摆逐渐消失后仍继续运动，请在心中模拟。</p>
 <p><strong>汇报阶段</strong>: 在橙色虚线轨迹上报告遮挡结束瞬间的摆杆方向。</p>
 <p><strong>反馈阶段</strong>（仅练习 Trial）: 橙色摆杆是您的选择，蓝色摆杆是真实位置。</p>
-<p>仿真期间画面上方和下方会显示两条同步颜色提示。蓝色表示 0 m/s，颜色经紫红色连续过渡，红色表示 ${EXPERIMENT_2_SPEED_COLOR_V_MAX_M_PER_SEC.toFixed(2)} m/s；所有 Trial 使用同一尺度。</p>
+<p>仿真期间画面上方和下方会显示两条同步颜色提示。深蓝色表示 0 m/s，颜色经青绿色连续过渡，亮黄色表示 ${EXPERIMENT_2_SPEED_COLOR_V_MAX_M_PER_SEC.toFixed(2)} m/s；所有 Trial 使用同一尺度。</p>
 </div>
 <p>按空格键进入下一段文本</p>`;
 }

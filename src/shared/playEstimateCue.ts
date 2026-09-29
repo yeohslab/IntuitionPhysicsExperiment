@@ -1,5 +1,5 @@
-// public/audio；相对 base，兼容 GitHub Pages 项目站
-const maskedHumUrl = `${import.meta.env.BASE_URL}audio/masked-hum.wav`;
+// public/audio；相对 base，兼容 GitHub Pages 项目站与 Node 验证环境
+const maskedHumUrl = `${import.meta.env?.BASE_URL ?? "/"}audio/masked-hum.wav`;
 
 let audioCtx: AudioContext | null = null;
 /** 运行时 GainNode；WAV 峰值 0.25 */
@@ -122,7 +122,7 @@ function disconnectMaskedPlayback(
   } catch {
     /* already disconnected */
   }
-  clearMaskedPlaybackNodes();
+  if (maskedSource === source) clearMaskedPlaybackNodes();
 }
 
 function playEstimateCueAt(ctx: AudioContext, t0: number): void {
@@ -130,8 +130,8 @@ function playEstimateCueAt(ctx: AudioContext, t0: number): void {
   const gain = ctx.createGain();
   osc.type = "sine";
   osc.frequency.value = 880;
-  gain.gain.setValueAtTime(0.0001, t0);
-  gain.gain.exponentialRampToValueAtTime(PING_PEAK_GAIN, t0 + 0.01);
+  // 瞬态从边界时刻直接起音，不再用10 ms渐强延后可听峰值。
+  gain.gain.setValueAtTime(PING_PEAK_GAIN, t0);
   gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.07);
   osc.connect(gain);
   gain.connect(ctx.destination);
@@ -141,6 +141,20 @@ function playEstimateCueAt(ctx: AudioContext, t0: number): void {
     osc.disconnect();
     gain.disconnect();
   };
+}
+
+/**
+ * 在同一个 Web Audio 时间锚点停止掩蔽音并启动估计提示音。
+ * 参数化停止回调使时间合同可在无浏览器音频设备时验证。
+ */
+export function scheduleSynchronizedEstimateBoundary(
+  ctx: AudioContext,
+  stopMaskedAt: (boundaryTimeSec: number) => void,
+): number {
+  const boundaryTimeSec = ctx.currentTime;
+  stopMaskedAt(boundaryTimeSec);
+  playEstimateCueAt(ctx, boundaryTimeSec);
+  return boundaryTimeSec;
 }
 
 function resetMaskedBufferLoad(): void {
@@ -188,10 +202,9 @@ function startMaskedHumPlayback(ctx: AudioContext): boolean {
     source.start(ctx.currentTime);
 
     source.onended = () => {
-      if (maskedSource === source) {
-        disconnectMaskedPlayback(source, gain);
-        maskedStartedThisTrial = false;
-      }
+      const wasCurrentSource = maskedSource === source;
+      disconnectMaskedPlayback(source, gain);
+      if (wasCurrentSource) maskedStartedThisTrial = false;
     };
 
     maskedSource = source;
@@ -252,48 +265,66 @@ export function primeEstimateCueAudio(): void {
   void primeExperimentAudioInUserGesture();
 }
 
-export function playEstimateCue(): void {
-  void (async () => {
+function stopMaskedWebAudioAt(boundaryTimeSec: number): void {
+  if (!maskedPlaying || !maskedSource || !maskedGain) return;
+  try {
+    const source = maskedSource;
+    const gain = maskedGain;
+    clearMaskedPlaybackNodes();
     try {
-      const ctx = await ensureAudioContextRunning();
-      if (!ctx) return;
-      playEstimateCueAt(ctx, ctx.currentTime);
+      gain.gain.cancelScheduledValues(boundaryTimeSec);
+      gain.gain.setValueAtTime(0, boundaryTimeSec);
     } catch {
-      /* autoplay policy or missing API */
+      /* gain may already be disconnected */
     }
-  })();
+    try {
+      source.stop(boundaryTimeSec);
+    } catch {
+      /* already stopped */
+    }
+    source.onended = () => disconnectMaskedPlayback(source, gain);
+  } catch {
+    clearMaskedPlaybackNodes();
+  }
 }
 
 export function stopMaskedAmbientSound(): void {
   maskedWantsPlay = false;
   stopMaskedHtmlPlayback();
   maskedStartedThisTrial = false;
-  if (!maskedPlaying || !maskedSource || !maskedGain) return;
-  try {
-    const ctx = getAudioContext();
-    const source = maskedSource;
-    const gain = maskedGain;
-    clearMaskedPlaybackNodes();
-
-    if (!ctx) {
-      try {
-        source.stop();
-      } catch {
-        /* */
-      }
-      disconnectMaskedPlayback(source, gain);
-      return;
-    }
-
-    try {
-      source.stop(ctx.currentTime + 0.001);
-    } catch {
-      /* already stopped */
-    }
-    disconnectMaskedPlayback(source, gain);
-  } catch {
-    clearMaskedPlaybackNodes();
+  const ctx = getAudioContext();
+  if (ctx) {
+    stopMaskedWebAudioAt(ctx.currentTime);
+    return;
   }
+  if (!maskedPlaying || !maskedSource || !maskedGain) return;
+  const source = maskedSource;
+  const gain = maskedGain;
+  clearMaskedPlaybackNodes();
+  try {
+    source.stop();
+  } catch {
+    /* already stopped */
+  }
+  disconnectMaskedPlayback(source, gain);
+}
+
+/**
+ * 遮挡结束的唯一声学边界：持续音停止与估计提示音起音同刻。
+ * 该路径故意保持同步；AudioContext 不可用时只停止掩蔽音，不延后补播。
+ */
+export function transitionMaskedAmbientToEstimateCue(): void {
+  maskedWantsPlay = false;
+  stopMaskedHtmlPlayback();
+  maskedStartedThisTrial = false;
+
+  const ctx = getAudioContext();
+  if (!ctx || ctx.state !== "running") {
+    stopMaskedAmbientSound();
+    return;
+  }
+
+  scheduleSynchronizedEstimateBoundary(ctx, stopMaskedWebAudioAt);
 }
 
 export function syncMaskedAmbientFromVisibility(

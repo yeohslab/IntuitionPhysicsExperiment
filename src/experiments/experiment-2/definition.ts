@@ -39,7 +39,7 @@ export const experiment2Definition: Experiment2Definition = {
     kind: "color-strips",
     minMPerSec: 0,
     maxMPerSec: EXPERIMENT_2_SPEED_COLOR_V_MAX_M_PER_SEC,
-    gradient: "blue-magenta-red",
+    gradient: "viridis-blue-yellow",
   }),
   parseParticipant: (value) =>
     isExperiment2ParticipantInfo(value) ? value : null,

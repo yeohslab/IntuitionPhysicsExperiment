@@ -28,10 +28,50 @@ export function absoluteSpeedColorLevel(
   return clamp01(Math.abs(linearSpeedMPerSec) / vMaxMPerSec);
 }
 
-/** 固定饱和度/亮度的色相插值：0=蓝，0.5=紫红，1=红。 */
+/**
+ * Viridis 风格的连续速度色带。去掉原色带中辨识度较低的洋红段，
+ * 以等距锚点覆盖深蓝→青绿→亮黄；锚点之间始终连续插值，不做速度分档。
+ */
+export const SPEED_COLOR_PALETTE_HEX = [
+  "#3B528B",
+  "#2C728E",
+  "#21918C",
+  "#28AE80",
+  "#5EC962",
+  "#ADDC30",
+  "#FDE725",
+] as const;
+
+type RgbColor = readonly [red: number, green: number, blue: number];
+
+const SPEED_COLOR_PALETTE_RGB: readonly RgbColor[] = [
+  [59, 82, 139],
+  [44, 114, 142],
+  [33, 145, 140],
+  [40, 174, 128],
+  [94, 201, 98],
+  [173, 220, 48],
+  [253, 231, 37],
+];
+
+function interpolateChannel(from: number, to: number, amount: number): number {
+  return Math.round(from + (to - from) * amount);
+}
+
+/** 0=深蓝，0.5=青绿，1=亮黄；相邻锚点间按 RGB 连续插值。 */
 export function speedColorForLevel(level: number): string {
-  const hue = 240 + 120 * clamp01(level);
-  return `hsl(${hue.toFixed(3)} 90% 50%)`;
+  const scaled = clamp01(level) * (SPEED_COLOR_PALETTE_RGB.length - 1);
+  const fromIndex = Math.min(
+    Math.floor(scaled),
+    SPEED_COLOR_PALETTE_RGB.length - 2,
+  );
+  const amount = scaled - fromIndex;
+  const from = SPEED_COLOR_PALETTE_RGB[fromIndex]!;
+  const to = SPEED_COLOR_PALETTE_RGB[fromIndex + 1]!;
+  const red = interpolateChannel(from[0], to[0], amount);
+  const green = interpolateChannel(from[1], to[1], amount);
+  const blue = interpolateChannel(from[2], to[2], amount);
+  return `rgb(${red} ${green} ${blue})`;
 }
 
 export type MountSpeedColorStripsOpts = {
