@@ -22,9 +22,12 @@ import {
   calculateSpeedColorStripGeometry,
   SPEED_COLOR_STRIP_GAP_PX,
   SPEED_COLOR_STRIP_HEIGHT_PX,
-  SPEED_COLOR_PALETTE_HEX,
   speedColorForLevel,
 } from "../../src/runtime/components/speedColorStrips.ts";
+import {
+  pendulumLayout,
+  PENDULUM_BOB_RADIUS_PX,
+} from "../../src/experiment/physics/render/pendulumCanvas.ts";
 import { EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION } from "../../src/shared/experimentTypes.ts";
 import { experiment2WelcomeText } from "../../src/experiments/experiment-2/instructions.ts";
 import {
@@ -68,26 +71,22 @@ assert(
 );
 assert(absoluteSpeedColorLevel(Infinity, EXPERIMENT_2_SPEED_COLOR_V_MAX_M_PER_SEC) === 0, "非法速度应回落为0");
 assert(absoluteSpeedColorLevel(999, EXPERIMENT_2_SPEED_COLOR_V_MAX_M_PER_SEC) === 1, "超上限速度应钳制");
-assert(SPEED_COLOR_PALETTE_HEX.length === 7, "实验二应使用7个连续色带锚点");
-const expectedAnchorColors = [
-  "rgb(59 82 139)",
-  "rgb(44 114 142)",
-  "rgb(33 145 140)",
-  "rgb(40 174 128)",
-  "rgb(94 201 98)",
-  "rgb(173 220 48)",
-  "rgb(253 231 37)",
-];
-expectedAnchorColors.forEach((color, index) => {
+const expectedTurboSamples = [
+  [0, "rgb(35 23 27)"],
+  [0.25, "rgb(38 189 225)"],
+  [0.5, "rgb(150 250 80)"],
+  [0.75, "rgb(255 128 29)"],
+  [1, "rgb(144 13 0)"],
+] as const;
+expectedTurboSamples.forEach(([level, color]) => {
   assert(
-    speedColorForLevel(index / (expectedAnchorColors.length - 1)) === color,
-    `色带锚点 ${index + 1} 应匹配预定颜色`,
+    speedColorForLevel(level) === color,
+    `Turbo 色带在 level=${level} 时应匹配标准采样颜色`,
   );
 });
-assert(speedColorForLevel(0) === expectedAnchorColors[0], "低速应为深蓝色");
-assert(speedColorForLevel(0.5) === expectedAnchorColors[3], "半速应为青绿色");
-assert(speedColorForLevel(1) === expectedAnchorColors[6], "高速应为亮黄色");
-assert(speedColorForLevel(Infinity) === speedColorForLevel(0), "非法level应回落到深蓝色端点");
+assert(speedColorForLevel(-1) === speedColorForLevel(0), "负数level应钳制到Turbo低速端点");
+assert(speedColorForLevel(2) === speedColorForLevel(1), "超限level应钳制到Turbo高速端点");
+assert(speedColorForLevel(Infinity) === speedColorForLevel(0), "非法level应回落到Turbo低速端点");
 const denselySampledColors = Array.from({ length: 101 }, (_, index) =>
   speedColorForLevel(index / 100),
 );
@@ -101,27 +100,52 @@ for (const [canvasWidth, canvasHeight] of [
   [1000, 650],
   [360, 234],
 ] as const) {
-  const rodPx = Math.min(canvasWidth, canvasHeight) * 0.36;
+  const edgeClearancePx =
+    SPEED_COLOR_STRIP_HEIGHT_PX +
+    SPEED_COLOR_STRIP_GAP_PX +
+    PENDULUM_BOB_RADIUS_PX;
+  const layout = pendulumLayout(canvasWidth, canvasHeight, edgeClearancePx);
   const geometry = calculateSpeedColorStripGeometry({
-    rodPx,
-    anchorX: canvasWidth / 2,
-    anchorY: rodPx + 32,
+    rodPx: layout.rodPx,
+    anchorX: layout.anchorX,
+    anchorY: layout.anchorY,
   });
   assert(geometry.topPx >= 0, `${canvasWidth}px画布顶部色带不得越界`);
   assert(
     geometry.bottomPx + geometry.heightPx <= canvasHeight,
     `${canvasWidth}px画布底部色带不得越界`,
   );
-  assert(geometry.widthPx === 2 * rodPx, "色带长度应保持为摆球运动直径");
+  assert(geometry.widthPx === 2 * layout.rodPx, "色带长度应保持为摆球运动直径");
   assert(geometry.heightPx === 28, "桌面和窄窗口的色带厚度都应固定为28 px");
+  const topBobEdgePx =
+    layout.anchorY - layout.rodPx - PENDULUM_BOB_RADIUS_PX;
+  const bottomBobEdgePx =
+    layout.anchorY + layout.rodPx + PENDULUM_BOB_RADIUS_PX;
+  assert(
+    Math.abs(
+      topBobEdgePx -
+        (geometry.topPx + geometry.heightPx) -
+        SPEED_COLOR_STRIP_GAP_PX,
+    ) < 1e-9,
+    "顶部色带应与摆球最高点外缘保持4 px间距",
+  );
+  assert(
+    Math.abs(
+      geometry.bottomPx - bottomBobEdgePx - SPEED_COLOR_STRIP_GAP_PX,
+    ) < 1e-9,
+    "底部色带应与摆球最低点外缘保持4 px间距",
+  );
 }
 const welcomeText = experiment2WelcomeText();
 assert(
-  welcomeText.includes("深蓝色") &&
-    welcomeText.includes("青绿色") &&
-    welcomeText.includes("亮黄色") &&
-    !welcomeText.includes("紫红色"),
-  "实验二指导语应描述深蓝—青绿—亮黄映射",
+  welcomeText.includes("深蓝紫色") &&
+    welcomeText.includes("亮蓝") &&
+    welcomeText.includes("青绿") &&
+    welcomeText.includes("亮黄") &&
+    welcomeText.includes("橙红") &&
+    welcomeText.includes("深红色") &&
+    welcomeText.includes("没有分档"),
+  "实验二指导语应描述连续Turbo映射",
 );
 
 let lastProgress = 0;

@@ -1,3 +1,5 @@
+import { PENDULUM_BOB_RADIUS_PX } from "../../experiment/physics/render/pendulumCanvas";
+
 /** 实验二只读速度提示：上下两条固定尺寸色块，以颜色编码绝对线速度。 */
 export type SpeedColorStrips = {
   root: HTMLElement;
@@ -28,49 +30,55 @@ export function absoluteSpeedColorLevel(
   return clamp01(Math.abs(linearSpeedMPerSec) / vMaxMPerSec);
 }
 
-/**
- * Viridis 风格的连续速度色带。去掉原色带中辨识度较低的洋红段，
- * 以等距锚点覆盖深蓝→青绿→亮黄；锚点之间始终连续插值，不做速度分档。
- */
-export const SPEED_COLOR_PALETTE_HEX = [
-  "#3B528B",
-  "#2C728E",
-  "#21918C",
-  "#28AE80",
-  "#5EC962",
-  "#ADDC30",
-  "#FDE725",
-] as const;
-
-type RgbColor = readonly [red: number, green: number, blue: number];
-
-const SPEED_COLOR_PALETTE_RGB: readonly RgbColor[] = [
-  [59, 82, 139],
-  [44, 114, 142],
-  [33, 145, 140],
-  [40, 174, 128],
-  [94, 201, 98],
-  [173, 220, 48],
-  [253, 231, 37],
+type TurboCoefficients = readonly [
+  constant: number,
+  linear: number,
+  quadratic: number,
+  cubic: number,
+  quartic: number,
+  quintic: number,
 ];
 
-function interpolateChannel(from: number, to: number, amount: number): number {
-  return Math.round(from + (to - from) * amount);
+// Google Research Turbo colormap polynomial approximation:
+// https://research.google/blog/turbo-an-improved-rainbow-colormap-for-visualization/
+const TURBO_RED: TurboCoefficients = [
+  0.13572138,
+  4.6153926,
+  -42.66032258,
+  132.13108234,
+  -152.94239396,
+  59.28637943,
+];
+const TURBO_GREEN: TurboCoefficients = [
+  0.09140261,
+  2.19418839,
+  4.84296658,
+  -14.18503333,
+  4.27729857,
+  2.82956604,
+];
+const TURBO_BLUE: TurboCoefficients = [
+  0.1066733,
+  12.64194608,
+  -60.58204836,
+  110.36276771,
+  -89.90310912,
+  27.34824973,
+];
+
+function turboChannel(level: number, coefficients: TurboCoefficients): number {
+  const [c0, c1, c2, c3, c4, c5] = coefficients;
+  const value =
+    c0 + level * (c1 + level * (c2 + level * (c3 + level * (c4 + level * c5))));
+  return Math.round(clamp01(value) * 255);
 }
 
-/** 0=深蓝，0.5=青绿，1=亮黄；相邻锚点间按 RGB 连续插值。 */
+/** 0=深蓝紫，颜色连续经过亮蓝、青绿、亮黄和橙红，1=深红。 */
 export function speedColorForLevel(level: number): string {
-  const scaled = clamp01(level) * (SPEED_COLOR_PALETTE_RGB.length - 1);
-  const fromIndex = Math.min(
-    Math.floor(scaled),
-    SPEED_COLOR_PALETTE_RGB.length - 2,
-  );
-  const amount = scaled - fromIndex;
-  const from = SPEED_COLOR_PALETTE_RGB[fromIndex]!;
-  const to = SPEED_COLOR_PALETTE_RGB[fromIndex + 1]!;
-  const red = interpolateChannel(from[0], to[0], amount);
-  const green = interpolateChannel(from[1], to[1], amount);
-  const blue = interpolateChannel(from[2], to[2], amount);
+  const normalizedLevel = clamp01(level);
+  const red = turboChannel(normalizedLevel, TURBO_RED);
+  const green = turboChannel(normalizedLevel, TURBO_GREEN);
+  const blue = turboChannel(normalizedLevel, TURBO_BLUE);
   return `rgb(${red} ${green} ${blue})`;
 }
 
@@ -106,9 +114,11 @@ export function calculateSpeedColorStripGeometry(
     topPx:
       opts.anchorY -
       opts.rodPx -
+      PENDULUM_BOB_RADIUS_PX -
       gap -
       SPEED_COLOR_STRIP_HEIGHT_PX,
-    bottomPx: opts.anchorY + opts.rodPx + gap,
+    bottomPx:
+      opts.anchorY + opts.rodPx + PENDULUM_BOB_RADIUS_PX + gap,
   };
 }
 

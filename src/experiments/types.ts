@@ -28,7 +28,7 @@ export type SpeedCueConfig =
       kind: "color-strips";
       minMPerSec: 0;
       maxMPerSec: number;
-      gradient: "viridis-blue-yellow";
+      gradient: "turbo";
     };
 
 export type GenerateStimulusSetOptions = {

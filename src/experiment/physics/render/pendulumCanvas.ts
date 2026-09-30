@@ -62,14 +62,23 @@ export function pendulumGuideStrokeForSimVisibility(vis: {
   return PENDULUM_GUIDE_BLACK;
 }
 
-export function pendulumLayout(canvasW: number, canvasH: number): PendulumLayout {
-  const rodPx = Math.min(canvasW, canvasH) * 0.36;
-  const topMargin = 32;
+export function pendulumLayout(
+  canvasW: number,
+  canvasH: number,
+  verticalEdgeClearancePx = 32,
+): PendulumLayout {
+  const edgeClearance = Math.max(0, verticalEdgeClearancePx);
+  const baseRodPx = Math.min(canvasW, canvasH) * 0.36;
+  const maxRodPxForVerticalClearance = Math.max(
+    1,
+    (canvasH - 2 * edgeClearance) / 2,
+  );
+  const rodPx = Math.min(baseRodPx, maxRodPxForVerticalClearance);
   return {
     canvasW,
     canvasH,
     anchorX: canvasW / 2,
-    anchorY: rodPx + topMargin,
+    anchorY: rodPx + edgeClearance,
     rodPx,
   };
 }

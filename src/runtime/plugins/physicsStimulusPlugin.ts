@@ -14,6 +14,7 @@ import {
   drawPendulumFeedbackTruth,
   pendulumAngleFromPointer,
   pendulumGuideStrokeForSimVisibility,
+  PENDULUM_BOB_RADIUS_PX,
   PENDULUM_GUIDE_ORANGE,
 } from "../../experiment/physics/render/pendulumCanvas";
 import {
@@ -48,7 +49,11 @@ import {
   absoluteSpeedBarLevel,
   mountSpeedIndicatorBar,
 } from "../components/speedIndicatorBar";
-import { mountSpeedColorStrips } from "../components/speedColorStrips";
+import {
+  mountSpeedColorStrips,
+  SPEED_COLOR_STRIP_GAP_PX,
+  SPEED_COLOR_STRIP_HEIGHT_PX,
+} from "../components/speedColorStrips";
 import { pendulumStateAtSimEnd } from "../../experiment/physics/simEndState";
 import {
   updateRecoveryCursor,
@@ -198,7 +203,16 @@ class PhysicsStimulusPlugin {
     const canvasFrame = display_element.querySelector(".physics-canvas-frame") as HTMLElement;
     const footer = display_element.querySelector(".physics-footer") as HTMLElement;
     const simHint = display_element.querySelector(".physics-sim-hint") as HTMLElement;
-    const layout = pendulumLayout(cssW, cssH);
+    const useColorStrips = trial.unitMeta.speed_cue_type === "color-strips";
+    const colorStripEdgeClearancePx =
+      SPEED_COLOR_STRIP_HEIGHT_PX +
+      SPEED_COLOR_STRIP_GAP_PX +
+      PENDULUM_BOB_RADIUS_PX;
+    const layout = pendulumLayout(
+      cssW,
+      cssH,
+      useColorStrips ? colorStripEdgeClearancePx : undefined,
+    );
 
     let raf = 0;
     let phase: TrialPhase = "sim";
@@ -263,7 +277,6 @@ class PhysicsStimulusPlugin {
     const wMaxDeg = pendulumWMaxDeg(analysis.E, analysis.regime, trial.rodLengthM, trial.gravity);
     const motionRange = { regime: analysis.regime, wMaxDeg };
     const rodL = trial.rodLengthM;
-    const useColorStrips = trial.unitMeta.speed_cue_type === "color-strips";
     const speedCueVMax = Number(
       useColorStrips
         ? trial.unitMeta.speed_color_v_max_m_per_sec
