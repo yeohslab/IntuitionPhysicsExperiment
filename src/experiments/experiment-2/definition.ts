@@ -23,7 +23,7 @@ import { generateExperiment2RuntimeStimulusSetAsync } from "./generateRuntimeSet
 export const experiment2Definition: Experiment2Definition = {
   id: "experiment-2",
   title: "实验二",
-  summary: "上下颜色速度条；摆动与低能量旋转 Block 混合呈现。",
+  summary: "协议 2.0.0：遮挡时长分 Block；10 能量 × 5 终点基准。",
   protocolVersion: EXPERIMENT_2_PROTOCOL_VERSION,
   internalStimulusSchemaVersion: EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION,
   dataSchemaVersion: EXPERIMENT_2_DATA_SCHEMA_VERSION,

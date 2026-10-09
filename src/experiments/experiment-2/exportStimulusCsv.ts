@@ -119,7 +119,7 @@ export function experiment2DataFilename(
   subjectId: string,
   status: ExperimentStatus,
 ): string {
-  return `experiment-2_data_subject${subjectId}_${status}.csv`;
+  return `experiment-2_v2.0_data_subject${subjectId}_${status}.csv`;
 }
 
 export function buildExperiment2StimulusTrialsCsv(

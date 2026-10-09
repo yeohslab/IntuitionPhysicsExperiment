@@ -18,8 +18,8 @@ export function experiment2WelcomeText(): string {
 
 export function experiment2StructureText(): string {
   return `<h1>实验结构</h1>
-<p>共 1 个混合练习 Block（9 个练习 Trial，含反馈）和 15 个正式 Block（各 9 个正式 Trial，无反馈）。</p>
-<p>正式 Block 包含摆动和旋转两类运动，顺序随机。</p>
+<p>共 1 个混合练习 Block（9 个练习 Trial，含反馈）和 3 个正式 Block（各 50 个正式 Trial，无反馈）。</p>
+<p>每个正式 Block 对应一种遮挡时长（0.7 s、1.0 s 或 1.3 s）；Block 内试次顺序随机。</p>
 <p>按空格开始练习阶段</p>`;
 }
 

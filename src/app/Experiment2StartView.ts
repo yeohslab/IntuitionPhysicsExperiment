@@ -1,5 +1,7 @@
 import { experiment2Definition } from "../experiments/experiment-2/definition";
 import { EXPERIMENT_2_TOTAL_RUNTIME_TRIALS } from "../experiments/experiment-2/protocol";
+import { experiment2V1Definition } from "../experiments/experiment-2-v1/definition";
+import { EXPERIMENT_2_TOTAL_RUNTIME_TRIALS as EXPERIMENT_2_V1_TOTAL_RUNTIME_TRIALS } from "../experiments/experiment-2-v1/protocol";
 import { experiment3Definition } from "../experiments/experiment-3/definition";
 import { EXPERIMENT_3_TOTAL_RUNTIME_TRIALS } from "../experiments/experiment-3/protocol";
 import {
@@ -37,7 +39,10 @@ import {
 let activeGenerationAbort: AbortController | null = null;
 
 type WithinSubjectStartConfig = {
-  experimentId: Extract<ExperimentId, "experiment-2" | "experiment-3">;
+  experimentId: Extract<
+    ExperimentId,
+    "experiment-2" | "experiment-2-v1" | "experiment-3"
+  >;
   displayName: string;
   subjectPrefix: "E2" | "E3";
   runnerHash: string;
@@ -55,6 +60,19 @@ const experiment2StartConfig: WithinSubjectStartConfig = {
   runnerHash: "#/experiment-2/runner",
   totalTrials: EXPERIMENT_2_TOTAL_RUNTIME_TRIALS,
   definition: experiment2Definition as ExperimentDefinition,
+  buildSubjectId: buildExperiment2SubjectId,
+  parseWithinGroupNumber: parseExperiment2WithinGroupNumber,
+  parseParticipant: (value) =>
+    isExperiment2ParticipantInfo(value) ? value : null,
+};
+
+const experiment2V1StartConfig: WithinSubjectStartConfig = {
+  experimentId: "experiment-2-v1",
+  displayName: "实验二 V1.0",
+  subjectPrefix: "E2",
+  runnerHash: "#/experiment-2-v1/runner",
+  totalTrials: EXPERIMENT_2_V1_TOTAL_RUNTIME_TRIALS,
+  definition: experiment2V1Definition as ExperimentDefinition,
   buildSubjectId: buildExperiment2SubjectId,
   parseWithinGroupNumber: parseExperiment2WithinGroupNumber,
   parseParticipant: (value) =>
@@ -92,6 +110,12 @@ function escapeText(value: string): string {
 export function mountExperiment2Start(container: HTMLElement): void {
   mountWithinSubjectStart(container, experiment2StartConfig);
 }
+
+export function mountExperiment2V1Start(container: HTMLElement): void {
+  mountWithinSubjectStart(container, experiment2V1StartConfig);
+}
+
+export const disposeExperiment2V1Start = disposeExperiment2Start;
 
 export function mountExperiment3Start(container: HTMLElement): void {
   mountWithinSubjectStart(container, experiment3StartConfig);

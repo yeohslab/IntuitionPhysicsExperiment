@@ -12,7 +12,11 @@ import type {
   ParticipantInfo,
 } from "../shared/participant";
 
-export type ExperimentId = "experiment-1" | "experiment-2" | "experiment-3";
+export type ExperimentId =
+  | "experiment-1"
+  | "experiment-2"
+  | "experiment-2-v1"
+  | "experiment-3";
 export type AnyRuntimeStimulusSet =
   | ExperimentStimulusSet
   | Experiment2StimulusSet

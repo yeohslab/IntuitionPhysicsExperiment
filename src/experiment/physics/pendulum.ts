@@ -276,15 +276,26 @@ export class PendulumRotationIntegrator {
   /** 推进物理时间 dt（秒），固定子步长 */
   step(dt: number, maxSubStep = 1 / 4000): void {
     if (dt <= 0) return;
-    let rem = dt;
+    this.advance(dt, maxSubStep);
+  }
+
+  /** 沿同一辛格式倒推 dt 秒。 */
+  stepBackward(dt: number, maxSubStep = 1 / 4000): void {
+    if (dt <= 0) return;
+    this.advance(-dt, maxSubStep);
+  }
+
+  private advance(signedDt: number, maxSubStep: number): void {
+    let rem = Math.abs(signedDt);
+    const direction = signedDt < 0 ? -1 : 1;
     while (rem > 1e-12) {
-      const h = Math.min(rem, maxSubStep);
+      const h = direction * Math.min(rem, maxSubStep);
       const a0 = this.acc(this.theta);
       const omegaHalf = this.omega + 0.5 * h * a0;
       this.theta += h * omegaHalf;
       const a1 = this.acc(this.theta);
       this.omega = omegaHalf + 0.5 * h * a1;
-      rem -= h;
+      rem -= Math.abs(h);
       this.tAccum += h;
     }
   }

@@ -73,7 +73,7 @@ function parseParticipant(
   value: unknown,
 ): AnyParticipantInfo | null {
   if (experimentId === "experiment-1") return isParticipantInfo(value) ? value : null;
-  if (experimentId === "experiment-2") {
+  if (experimentId === "experiment-2" || experimentId === "experiment-2-v1") {
     return isExperiment2ParticipantInfo(value) ? value : null;
   }
   return isExperiment3ParticipantInfo(value) ? value : null;
@@ -84,7 +84,9 @@ function parseStimulusSet(
   value: unknown,
 ): RuntimeStimulusSet | null {
   if (experimentId === "experiment-1") return parseExperimentStimulusSet(value);
-  if (experimentId === "experiment-2") return parseExperiment2StimulusSet(value);
+  if (experimentId === "experiment-2" || experimentId === "experiment-2-v1") {
+    return parseExperiment2StimulusSet(value);
+  }
   return parseExperiment3StimulusSet(value);
 }
 

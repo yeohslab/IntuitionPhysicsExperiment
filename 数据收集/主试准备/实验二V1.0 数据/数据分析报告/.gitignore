@@ -1,0 +1,9 @@
+src/out/*
+!src/out/Experiment2DataReport.pdf
+
+src/figures/*.aux
+src/figures/*.fdb_latexmk
+src/figures/*.fls
+src/figures/*.log
+src/figures/*.synctex.gz
+src/figures/*.xdv

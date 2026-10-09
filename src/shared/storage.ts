@@ -213,7 +213,9 @@ function parseSetForExperiment(
   raw: unknown,
 ): RuntimeStimulusSet | null {
   if (experimentId === "experiment-1") return parseExperimentStimulusSet(raw);
-  if (experimentId === "experiment-2") return parseExperiment2StimulusSet(raw);
+  if (experimentId === "experiment-2" || experimentId === "experiment-2-v1") {
+    return parseExperiment2StimulusSet(raw);
+  }
   return parseExperiment3StimulusSet(raw);
 }
 
@@ -222,7 +224,7 @@ function parseParticipantForExperiment(
   raw: unknown,
 ): AnyParticipantInfo | null {
   if (experimentId === "experiment-1") return isParticipantInfo(raw) ? raw : null;
-  if (experimentId === "experiment-2") {
+  if (experimentId === "experiment-2" || experimentId === "experiment-2-v1") {
     return isExperiment2ParticipantInfo(raw) ? raw : null;
   }
   return isExperiment3ParticipantInfo(raw) ? raw : null;

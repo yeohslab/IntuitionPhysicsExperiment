@@ -1,6 +1,7 @@
 import {
   PENDULUM_MASS_KG,
   analyzePendulum,
+  PendulumRotationIntegrator,
   pendulumEnergy,
   pendulumPeriod,
   pendulumRegime,
@@ -8,8 +9,9 @@ import {
   type PendulumParams,
   type PendulumRegime,
 } from "./pendulum";
+import { wrapAngleRad } from "./pendulumArcScore";
 import { analyzePendulumHideTurning } from "./pendulumHideTurning";
-import { pendulumThetaAtSimEnd } from "./simEndState";
+import { pendulumStateAtSimEnd, pendulumThetaAtSimEnd } from "./simEndState";
 import {
   fadeMsForPeriod,
   fadeTForRegime,
@@ -330,6 +332,96 @@ function scanFitForTarget(
   );
 }
 
+/**
+ * 指定终态角后，以等概率选取终态角速度正负号，再沿动力学倒推初始状态。
+ * 用于实验二 V2：每个终点邻域内的位置是抽出来的，而不是正向扫描碰到的第一解。
+ */
+export function invertPendulumTimedEndState(opts: {
+  targetEnergyJ: number;
+  targetThetaEndRad: number;
+  show1T: number;
+  hide1T: number;
+  rodLengthM: number;
+  gravity: number;
+  rng: () => number;
+}): FittedPendulumTimedFields {
+  const { targetEnergyJ: E, targetThetaEndRad, show1T, hide1T, rodLengthM: l, gravity: g, rng } = opts;
+  const regime = pendulumRegime(E, l, g);
+  const T = pendulumPeriod(E, l, g);
+  const fadeT = fadeTForRegime(regime);
+  const timing = withSyncedTotalTimeT(
+    {
+      totalTimeT: 0,
+      show1T,
+      hide1T,
+      fadeMs: fadeMsForPeriod(T, fadeT),
+    },
+    T,
+  );
+  const totalSec = stimulusTotalSec(timing, T);
+  const sign: -1 | 1 = rng() < 0.5 ? -1 : 1;
+  const omegaEnd = omegaForEnergyAtTheta(E, targetThetaEndRad, sign, l, g);
+  if (omegaEnd === null) {
+    throw new Error(`终态角 ${targetThetaEndRad} rad 不在能量 ${E} J 的允许范围内`);
+  }
+  const endParams: PendulumParams = {
+    theta0Rad: targetThetaEndRad,
+    omega0RadPerSec: omegaEnd,
+    rodLengthM: l,
+    gravity: g,
+  };
+  let theta0Rad: number;
+  let omega0Rad: number;
+  if (regime === "rotation") {
+    const backward = new PendulumRotationIntegrator(endParams);
+    backward.stepBackward(totalSec, FIT_ROTATION_SUBSTEP_SEC);
+    theta0Rad = wrapAngleRad(backward.theta);
+    omega0Rad = backward.omega;
+  } else {
+    const start = pendulumThetaOmegaAt(-totalSec, endParams, analyzePendulum(endParams));
+    theta0Rad = start.theta;
+    omega0Rad = start.omega;
+  }
+  const theta0Deg = Math.round(((theta0Rad * 180) / Math.PI) * 1e10) / 1e10;
+  const theta0Rounded = (theta0Deg * Math.PI) / 180;
+  const omegaMatched = omegaForEnergyAtTheta(
+    E,
+    theta0Rounded,
+    omega0Rad < 0 ? -1 : 1,
+    l,
+    g,
+  );
+  if (omegaMatched === null) {
+    throw new Error(`倒推初态角无法保持能量 ${E} J`);
+  }
+  const omega0DegPerSec = Math.round(((omegaMatched * 180) / Math.PI) * 1e10) / 1e10;
+  const fitted: FittedPendulumTimedFields = {
+    theta0Deg,
+    omega0DegPerSec,
+    rodLengthM: l,
+    gravity: g,
+    totalTimeT: timing.totalTimeT,
+    show1T: timing.show1T,
+    hide1T: timing.hide1T,
+    fadeMs: timing.fadeMs ?? 0,
+    targetThetaEndRad,
+  };
+  assertUnitSimEndTheta(fitted, E, targetThetaEndRad);
+  const forward = pendulumStateAtSimEnd(
+    {
+      theta0Rad: (theta0Deg * Math.PI) / 180,
+      omega0RadPerSec: (omega0DegPerSec * Math.PI) / 180,
+      rodLengthM: l,
+      gravity: g,
+    },
+    timing,
+  );
+  if (Math.abs(omegaEnd) > 1e-6 && Math.sign(forward.omega) !== sign) {
+    throw new Error("倒推后的终态角速度符号与抽中的方向不一致");
+  }
+  return fitted;
+}
+
 /** 离散 show/hide 水平下的试次拟合：终点角均匀、初速符号随机；隐藏阶段允许转向 */
 export function fitPendulumDiscreteTrial(opts: {
   targetEnergyJ: number;
@@ -339,10 +431,15 @@ export function fitPendulumDiscreteTrial(opts: {
   gravity: number;
   rng: () => number;
   requiredHideTurning?: boolean;
+  /** 指定仿真终态角（rad）；省略时在允许范围内均匀抽样。 */
+  targetThetaEndRad?: number;
   maxAttempts?: number;
 }): FittedPendulumTimedFields {
   const { targetEnergyJ: E, show1T, hide1T, rodLengthM: l, gravity: g, rng } = opts;
-  const maxTargets = opts.maxAttempts ?? MAX_TARGET_ATTEMPTS;
+  const maxTargets =
+    opts.targetThetaEndRad === undefined
+      ? (opts.maxAttempts ?? MAX_TARGET_ATTEMPTS)
+      : 1;
   const regime = pendulumRegime(E, l, g);
   const thetaMax = pendulumThetaMaxRad(E, l, g);
   const T = pendulumPeriod(E, l, g);
@@ -356,7 +453,8 @@ export function fitPendulumDiscreteTrial(opts: {
   const timing = withSyncedTotalTimeT(draft, T);
 
   for (let attempt = 0; attempt < maxTargets; attempt++) {
-    const targetThetaEndRad = sampleTargetSimEndThetaRad(E, l, g, rng);
+    const targetThetaEndRad =
+      opts.targetThetaEndRad ?? sampleTargetSimEndThetaRad(E, l, g, rng);
     const fitted = scanFitForTarget(
       E,
       targetThetaEndRad,

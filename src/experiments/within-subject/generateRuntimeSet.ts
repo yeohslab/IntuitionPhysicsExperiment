@@ -60,6 +60,9 @@ export type WithinSubjectProtocolConfig = {
   schemaVersion: number;
   oscillationSegments: readonly KeptEnergySegment[];
   rotationSegments: readonly KeptEnergySegment[];
+  timingCombos?: (
+    group: MotionGroup,
+  ) => readonly WithinSubjectTimingCombo[];
   instructions: WithinSubjectInstructions;
 };
 
@@ -94,6 +97,21 @@ export function withinSubjectTimingCombos(group: MotionGroup): WithinSubjectTimi
     for (const show1T of showLevelsForGroup(group)) {
       combos.push({ show1T, hide1T });
     }
+  }
+  return combos;
+}
+
+function timingCombosForConfig(
+  config: WithinSubjectProtocolConfig,
+  group: MotionGroup,
+): WithinSubjectTimingCombo[] {
+  const combos = (config.timingCombos?.(group) ?? withinSubjectTimingCombos(group)).map(
+    (combo) => ({ ...combo }),
+  );
+  if (combos.length !== WITHIN_SUBJECT_TRIALS_PER_BLOCK) {
+    throw new Error(
+      `${config.label}组 ${group} 时序计划应有 ${WITHIN_SUBJECT_TRIALS_PER_BLOCK} 条，实际 ${combos.length}`,
+    );
   }
   return combos;
 }
@@ -170,12 +188,12 @@ function buildFormalHideTurningPlan(
 
 function makeFormalBlock(
   segment: KeptEnergySegment,
-  group: MotionGroup,
+  timingCombos: readonly WithinSubjectTimingCombo[],
   rng: () => number,
   turningPlan: readonly boolean[] | undefined,
   onTrialGenerated?: () => void,
 ): BlockSegment {
-  const planned = withinSubjectTimingCombos(group).map((combo, index) => ({
+  const planned = timingCombos.map((combo, index) => ({
     combo,
     requiredHideTurning: turningPlan?.[index],
   }));
@@ -201,24 +219,38 @@ function comboKey(combo: WithinSubjectTimingCombo): string {
   return `${combo.show1T}|${combo.hide1T}`;
 }
 
+function comboCounts(
+  combos: readonly WithinSubjectTimingCombo[],
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const combo of combos) {
+    const key = comboKey(combo);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return counts;
+}
+
 function countSpread(values: Iterable<number>): number {
   const numbers = [...values];
   return Math.max(...numbers) - Math.min(...numbers);
 }
 
 function balancedTimingSubsets(
-  group: MotionGroup,
+  combos: readonly WithinSubjectTimingCombo[],
   count: 4 | 5,
 ): WithinSubjectTimingCombo[][] {
-  const combos = withinSubjectTimingCombos(group);
   const results: WithinSubjectTimingCombo[][] = [];
   const visit = (start: number, chosen: WithinSubjectTimingCombo[]) => {
     if (chosen.length === count) {
       const showCounts = new Map<number, number>(
-        showLevelsForGroup(group).map((value) => [value, 0] as [number, number]),
+        [...new Set(combos.map((combo) => combo.show1T))].map(
+          (value) => [value, 0] as [number, number],
+        ),
       );
       const hideCounts = new Map<number, number>(
-        HIDE_LEVELS_SEC.map((value) => [value, 0] as [number, number]),
+        [...new Set(combos.map((combo) => combo.hide1T))].map(
+          (value) => [value, 0] as [number, number],
+        ),
       );
       for (const combo of chosen) {
         showCounts.set(combo.show1T, (showCounts.get(combo.show1T) ?? 0) + 1);
@@ -238,11 +270,12 @@ function balancedTimingSubsets(
 }
 
 function chooseBalancedTimingSubset(
+  combos: readonly WithinSubjectTimingCombo[],
   group: MotionGroup,
   count: 4 | 5,
   rng: () => number,
 ): WithinSubjectTimingCombo[] {
-  const candidates = balancedTimingSubsets(group, count);
+  const candidates = balancedTimingSubsets(combos, count);
   if (candidates.length === 0) {
     throw new Error(`被试内协议练习无法构造组 ${group} 的 ${count} 条平衡时序`);
   }
@@ -251,18 +284,31 @@ function chooseBalancedTimingSubset(
 }
 
 function makePracticeBlock(
+  config: WithinSubjectProtocolConfig,
   rng: () => number,
   onTrialGenerated?: () => void,
 ): PracticeSegment {
   const oscillationCount: 4 | 5 = rng() < 0.5 ? 4 : 5;
   const rotationCount: 4 | 5 = oscillationCount === 4 ? 5 : 4;
+  const oscillationTimingCombos = timingCombosForConfig(config, 1);
+  const rotationTimingCombos = timingCombosForConfig(config, 2);
   const planned = [
-    ...chooseBalancedTimingSubset(1, oscillationCount, rng).map((combo) => ({
+    ...chooseBalancedTimingSubset(
+      oscillationTimingCombos,
+      1,
+      oscillationCount,
+      rng,
+    ).map((combo) => ({
       combo,
       group: 1 as const,
       energyJ: practiceEnergyForGroup(1),
     })),
-    ...chooseBalancedTimingSubset(2, rotationCount, rng).map((combo) => ({
+    ...chooseBalancedTimingSubset(
+      rotationTimingCombos,
+      2,
+      rotationCount,
+      rng,
+    ).map((combo) => ({
       combo,
       group: 2 as const,
       energyJ: WITHIN_SUBJECT_ROTATION_PRACTICE_ENERGY_J,
@@ -298,6 +344,8 @@ export function generateWithinSubjectRuntimeStimulusSet(
   config: WithinSubjectProtocolConfig,
 ): RuntimeStimulusSet {
   const rng = options.rng ?? cryptoRandom();
+  const oscillationTimingCombos = timingCombosForConfig(config, 1);
+  const rotationTimingCombos = timingCombosForConfig(config, 2);
   const formalBlockCount =
     config.oscillationSegments.length + config.rotationSegments.length;
   const totalRuntimeTrials =
@@ -310,15 +358,27 @@ export function generateWithinSubjectRuntimeStimulusSet(
   };
   const turningPlan = buildFormalHideTurningPlan(
     config.oscillationSegments.length,
-    withinSubjectTimingCombos(1).length,
+    oscillationTimingCombos.length,
     rng,
   );
   const formalBlocks = [
     ...config.oscillationSegments.map((segment, energyIndex) =>
-      makeFormalBlock(segment, 1, rng, turningPlan[energyIndex], report),
+      makeFormalBlock(
+        segment,
+        oscillationTimingCombos,
+        rng,
+        turningPlan[energyIndex],
+        report,
+      ),
     ),
     ...config.rotationSegments.map((segment) =>
-      makeFormalBlock(segment, 2, rng, undefined, report),
+      makeFormalBlock(
+        segment,
+        rotationTimingCombos,
+        rng,
+        undefined,
+        report,
+      ),
     ),
   ];
   shuffleInPlace(formalBlocks, rng);
@@ -327,7 +387,7 @@ export function generateWithinSubjectRuntimeStimulusSet(
     makeRest(config.instructions.welcomeText()),
     makeRest(config.instructions.structureText()),
     makeRest(config.instructions.practiceText()),
-    makePracticeBlock(rng, report),
+    makePracticeBlock(config, rng, report),
   ];
   formalBlocks.forEach((block, index) => {
     sequence.push(
@@ -374,23 +434,31 @@ function assertTimingSet(
   trials: readonly Trial[],
   group: MotionGroup,
   label: string,
+  config: WithinSubjectProtocolConfig,
 ): void {
   if (trials.length !== WITHIN_SUBJECT_TRIALS_PER_BLOCK) {
     throw new Error(`${label} 应有 9 个 Trial，实际 ${trials.length}`);
   }
-  const expected = new Set(withinSubjectTimingCombos(group).map(comboKey));
-  const actual = new Set(
+  const expectedCombos = timingCombosForConfig(config, group);
+  const expected = comboCounts(expectedCombos);
+  const actual = comboCounts(
     trials.map((trial) => {
       const stimulus = stimulusFromTrial(trial);
-      return comboKey({ show1T: stimulus.show1T, hide1T: stimulus.hide1T });
+      return { show1T: stimulus.show1T, hide1T: stimulus.hide1T };
     }),
   );
-  if (actual.size !== expected.size || [...actual].some((key) => !expected.has(key))) {
-    throw new Error(`${label} 未完整覆盖组 ${group} 的 3×3 时序`);
+  if (
+    actual.size !== expected.size ||
+    [...expected].some(([key, count]) => actual.get(key) !== count)
+  ) {
+    throw new Error(`${label} 未完整覆盖组 ${group} 的预定时序计划`);
   }
 }
 
-function assertPractice(practice: PracticeSegment): void {
+function assertPractice(
+  practice: PracticeSegment,
+  config: WithinSubjectProtocolConfig,
+): void {
   if (practice.children.length !== WITHIN_SUBJECT_PRACTICE_TRIALS) {
     throw new Error(`被试内协议练习应有 9 个 Trial，实际 ${practice.children.length}`);
   }
@@ -408,17 +476,30 @@ function assertPractice(practice: PracticeSegment): void {
   }
   for (const group of [1, 2] as const) {
     const stimuli = byGroup.get(group)!;
-    const keys = new Set(
-      stimuli.map((stimulus) => comboKey({ show1T: stimulus.show1T, hide1T: stimulus.hide1T })),
+    const expectedCombos = timingCombosForConfig(config, group);
+    const allowedCounts = comboCounts(expectedCombos);
+    const actualCounts = comboCounts(
+      stimuli.map((stimulus) => ({
+        show1T: stimulus.show1T,
+        hide1T: stimulus.hide1T,
+      })),
     );
-    if (keys.size !== stimuli.length) {
-      throw new Error(`被试内协议练习组 ${group} 存在重复时序组合`);
+    if (
+      [...actualCounts].some(
+        ([key, count]) => count > (allowedCounts.get(key) ?? 0),
+      )
+    ) {
+      throw new Error(`被试内协议练习组 ${group} 使用了计划外时序`);
     }
     const showCounts = new Map<number, number>(
-      showLevelsForGroup(group).map((value) => [value, 0] as [number, number]),
+      [...new Set(expectedCombos.map((combo) => combo.show1T))].map(
+        (value) => [value, 0] as [number, number],
+      ),
     );
     const hideCounts = new Map<number, number>(
-      HIDE_LEVELS_SEC.map((value) => [value, 0] as [number, number]),
+      [...new Set(expectedCombos.map((combo) => combo.hide1T))].map(
+        (value) => [value, 0] as [number, number],
+      ),
     );
     for (const stimulus of stimuli) {
       showCounts.set(stimulus.show1T, (showCounts.get(stimulus.show1T) ?? 0) + 1);
@@ -453,7 +534,7 @@ export function assertWithinSubjectRuntimeStimulusSet(
   if (practices.length !== 1) {
     throw new Error(`${config.label}练习 Block 应为1，实际 ${practices.length}`);
   }
-  assertPractice(practices[0]!);
+  assertPractice(practices[0]!, config);
 
   const expectedOscEnergies = new Set(
     config.oscillationSegments.map((segment) => segment.Emid.toFixed(8)),
@@ -464,12 +545,13 @@ export function assertWithinSubjectRuntimeStimulusSet(
   const seenOscEnergies = new Set<string>();
   const seenRotEnergies = new Set<string>();
   const comboTurningCounts = new Map<string, number>();
+  const oscillationTimingCombos = timingCombosForConfig(config, 1);
   let totalOscillationTurning = 0;
 
   for (const block of formalBlocks) {
     const first = stimulusFromTrial(block.children[0]!);
     const group = sourceGroup(first);
-    assertTimingSet(block.children, group, `正式 Block ${block.id}`);
+    assertTimingSet(block.children, group, `正式 Block ${block.id}`, config);
     let blockTurning = 0;
     for (const trial of block.children) {
       const stimulus = stimulusFromTrial(trial);
@@ -519,18 +601,23 @@ export function assertWithinSubjectRuntimeStimulusSet(
   ) {
     throw new Error(`${config.label}旋转能量 Block 与协议配置不一致`);
   }
-  const minTurningPerCombo = Math.floor(config.oscillationSegments.length / 2);
-  const maxTurningPerCombo = Math.ceil(config.oscillationSegments.length / 2);
-  for (const combo of withinSubjectTimingCombos(1)) {
-    const count = comboTurningCounts.get(comboKey(combo)) ?? 0;
-    if (count < minTurningPerCombo || count > maxTurningPerCombo) {
+  const oscillationComboMultiplicities = comboCounts(oscillationTimingCombos);
+  for (const [key, multiplicity] of oscillationComboMultiplicities) {
+    const minTurningForKey = Math.floor(
+      (config.oscillationSegments.length * multiplicity) / 2,
+    );
+    const maxTurningForKey = Math.ceil(
+      (config.oscillationSegments.length * multiplicity) / 2,
+    );
+    const count = comboTurningCounts.get(key) ?? 0;
+    if (count < minTurningForKey || count > maxTurningForKey) {
       throw new Error(
-        `${config.label}摆动时序格 ${comboKey(combo)} 转向数应为${minTurningPerCombo}/${maxTurningPerCombo}，实际 ${count}`,
+        `${config.label}摆动时序格 ${key} 转向数应为${minTurningForKey}/${maxTurningForKey}，实际 ${count}`,
       );
     }
   }
   const turningCellCount =
-    config.oscillationSegments.length * withinSubjectTimingCombos(1).length;
+    config.oscillationSegments.length * oscillationTimingCombos.length;
   const minTotalTurning = Math.floor(turningCellCount / 2);
   const maxTotalTurning = Math.ceil(turningCellCount / 2);
   if (

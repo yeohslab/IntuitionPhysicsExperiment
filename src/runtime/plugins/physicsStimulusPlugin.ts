@@ -240,6 +240,7 @@ class PhysicsStimulusPlugin {
     );
     const recoveryExperimentId: ExperimentId =
       runtimeExperimentId === "experiment-2" ||
+      runtimeExperimentId === "experiment-2-v1" ||
       runtimeExperimentId === "experiment-3"
         ? runtimeExperimentId
         : "experiment-1";

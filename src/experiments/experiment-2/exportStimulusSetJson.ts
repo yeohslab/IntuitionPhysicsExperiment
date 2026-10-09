@@ -9,7 +9,7 @@ export const EXPERIMENT_2_STIMULUS_EXPORT_SCHEMA_VERSION = 1 as const;
 export function experiment2StimulusSetExportFilename(
   participant: Experiment2ParticipantInfo,
 ): string {
-  return `experiment-2_stimulus_set_subject${participant.subject_id}.json`;
+  return `experiment-2_v2.0_stimulus_set_subject${participant.subject_id}.json`;
 }
 
 export function buildExperiment2StimulusSetExportPayload(

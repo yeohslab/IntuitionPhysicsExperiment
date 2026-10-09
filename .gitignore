@@ -22,6 +22,31 @@ archive/legacy-protocol/analysis-pipeline/output/
 数据收集/**
 !数据收集/README.md
 
+# 实验二匿名汇总报告：仅保留可复现分析产物，不放行原始数据或被试信息
+!数据收集/主试准备/
+!数据收集/主试准备/实验二V1.0 数据/
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/.gitignore
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/scripts/
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/scripts/analyze_experiment2.py
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/Experiment2DataReport.tex
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/figures/
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/figures/phase-space-error.pdf
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/figures/phase-space-error.png
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/figures/subject-paired-errors.pdf
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/figures/subject-paired-errors.png
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/figures/error-distributions.pdf
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/figures/error-distributions.png
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/figures/timing-effects.pdf
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/figures/timing-effects.png
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/figures/energy-effects.pdf
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/figures/energy-effects.png
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/generated/
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/generated/*
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/out/
+!数据收集/主试准备/实验二V1.0 数据/数据分析报告/src/out/Experiment2DataReport.pdf
+
 # Office 临时锁文件
 ~$*
 **/~$*
