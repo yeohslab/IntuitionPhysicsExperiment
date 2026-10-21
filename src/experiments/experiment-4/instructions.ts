@@ -9,7 +9,7 @@ export function experiment4WelcomeText(): string {
 <p><strong>运动</strong>：每个试次开始前会提示摆球从左侧还是右侧水平位置释放。随后摆球在竖条光栅后运动，直到询问时刻。</p>
 <p>画面上只有<strong>摆球</strong>和静态圆弧参考，没有摆杆。灰色竖条遮挡摆球。</p>
 <p><strong>询问</strong>：短促提示音响起时运动停止。请回忆<strong>那一瞬间</strong>摆杆的角度与速度大小。</p>
-<p><strong>汇报</strong>：先在橙色圆弧上点击并确认角度，再在色带上点击速度大小（左端静止，右端最快，约 ${EXPERIMENT_4_OMEGA_MAX_RAD_PER_SEC.toFixed(2)} rad/s）。顺序固定，不交换。</p>
+<p><strong>汇报</strong>：每个试次要报告两项：在橙色圆弧上点击摆杆角度，在色带上点击速度大小（左端静止，右端最快，约 ${EXPERIMENT_4_OMEGA_MAX_RAD_PER_SEC.toFixed(2)} rad/s）。先报哪一项由屏幕提示决定，两种顺序各占一半，请按提示依次完成。</p>
 <p>练习试次会显示正确答案；正式试次无反馈。</p>
 </div>
 <p>按空格键继续</p>`;

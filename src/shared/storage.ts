@@ -76,6 +76,8 @@ function parseUnit(raw: unknown): StimulusUnit | null {
     const bobRadiusM = finiteNumber(raw, "bobRadiusM");
     const gapLevel = raw.gapLevel;
     const releaseSide = raw.releaseSide;
+    const responseOrder =
+      raw.responseOrder === undefined ? "angle_first" : raw.responseOrder;
     const occlusionSegmentIndex = finiteNumber(raw, "occlusionSegmentIndex");
     const firstVisibleSecRaw = raw.firstVisibleSec;
     if (
@@ -91,6 +93,7 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       occlusionSegmentIndex === null ||
       (gapLevel !== "small" && gapLevel !== "medium" && gapLevel !== "large") ||
       (releaseSide !== "left" && releaseSide !== "right") ||
+      (responseOrder !== "angle_first" && responseOrder !== "speed_first") ||
       rodLengthM <= 0 ||
       gravity <= 0 ||
       durationSec <= 0 ||
@@ -141,6 +144,7 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       barWidthM,
       bobRadiusM,
       releaseSide,
+      responseOrder,
       occlusionSegmentIndex,
       occlusionTimeline,
       firstVisibleSec,

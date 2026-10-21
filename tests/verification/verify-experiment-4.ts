@@ -29,6 +29,7 @@ import {
   buildExperiment4SubjectId,
   isExperiment4ParticipantInfo,
 } from "../../src/shared/participant.ts";
+import { parseExperiment4StimulusSet } from "../../src/shared/storage.ts";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -124,6 +125,60 @@ for (const level of Object.keys(EXPERIMENT_4_GAP_LEVELS)) {
 assert(
   EXPERIMENT_4_RELEASE_SIDE_SEQUENCE.length === 20,
   "固定释放序列长度",
+);
+
+for (const blockIndex of [1, 2, 3]) {
+  const rows = formal
+    .filter((d) => d.block_index === blockIndex)
+    .sort((a, b) => a.trial_index_in_block - b.trial_index_in_block);
+  assert(rows.length === 20, `区组 ${blockIndex} 应有 20 条`);
+  rows.forEach((d, i) => {
+    assert(
+      d.release_side === EXPERIMENT_4_RELEASE_SIDE_SEQUENCE[i],
+      `区组 ${blockIndex} 第 ${i + 1} 条应按固定左右序列呈现`,
+    );
+  });
+  for (const side of ["left", "right"] as const) {
+    const angleFirst = rows.filter(
+      (d) => d.release_side === side && d.response_order === "angle_first",
+    ).length;
+    assert(angleFirst === 5, `区组 ${blockIndex} ${side} 先报角度应为 5，实际 ${angleFirst}`);
+  }
+}
+
+const practiceOrders = new Set(
+  descriptors.filter((d) => d.segment_kind === "practice").map((d) => d.response_order),
+);
+assert(practiceOrders.size === 2, "练习中两种汇报顺序都应出现");
+
+const orderPattern = (seed: number) =>
+  collectExperiment4TrialDescriptors(
+    generateExperiment4RuntimeStimulusSet({ rng: mulberry32(seed) }),
+  )
+    .filter((d) => d.segment_kind === "block")
+    .map((d) => (d.response_order === "angle_first" ? "A" : "S"))
+    .join("");
+const patterns = new Set([1, 2, 3, 4, 5].map(orderPattern));
+assert(patterns.size > 1, "不同随机源应产生不同的汇报顺序分配");
+
+const legacyUnit = (() => {
+  const raw = JSON.parse(JSON.stringify(set)) as {
+    sequence: { units?: Record<string, unknown>[]; children?: { units: Record<string, unknown>[] }[] }[];
+  };
+  for (const item of raw.sequence) {
+    for (const trial of item.children ?? []) {
+      for (const unit of trial.units) delete unit.responseOrder;
+    }
+  }
+  const parsed = parseExperiment4StimulusSet(raw);
+  assert(parsed, "缺少 responseOrder 的旧刺激集应仍可解析");
+  const block = parsed.sequence.find((s) => s.kind === "block");
+  assert(block && block.kind === "block", "旧刺激集应含正式区组");
+  return block.children[0]!.units.find((u) => u.type === "gratingPendulumStimulus");
+})();
+assert(
+  legacyUnit?.type === "gratingPendulumStimulus" && legacyUnit.responseOrder === "angle_first",
+  "旧刺激集缺省汇报顺序应按 angle_first 读入",
 );
 
 for (const gapM of Object.values(EXPERIMENT_4_GAP_LEVELS)) {

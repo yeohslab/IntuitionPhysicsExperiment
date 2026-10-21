@@ -68,3 +68,9 @@ export const EXPERIMENT_4_OMEGA_MAX_RAD_PER_SEC = pendulumOmegaRadForEnergyAtBot
 );
 
 export const EXPERIMENT_4_FIXATION_MS = 1000;
+
+export type Experiment4ResponseOrder = "angle_first" | "speed_first";
+export const EXPERIMENT_4_RESPONSE_ORDERS: readonly Experiment4ResponseOrder[] = [
+  "angle_first",
+  "speed_first",
+];

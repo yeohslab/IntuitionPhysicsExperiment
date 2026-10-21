@@ -3,6 +3,7 @@ import {
   drawPendulumEstimateGuide,
   drawPendulumFeedbackTruth,
   pendulumAngleFromPointer,
+  PENDULUM_GUIDE_GREY,
   PENDULUM_GUIDE_ORANGE,
   type PendulumLayout,
   type PendulumMotionRange,
@@ -186,6 +187,18 @@ export function drawGratingReportFrame(
   } else {
     drawPendulumEstimateGuide(ctx, pendLayout, motionRange, PENDULUM_GUIDE_ORANGE);
   }
+  underlayGrating(ctx, layout, gapM);
+}
+
+/** 先报速度时的画布：光栅 + 灰色扇形（此时还不能点选角度）。 */
+export function drawGratingIdleFrame(
+  ctx: CanvasRenderingContext2D,
+  layout: GratingWorldLayout,
+  gapM: number,
+  pendLayout: PendulumLayout,
+  motionRange: PendulumMotionRange,
+): void {
+  drawPendulumEstimateGuide(ctx, pendLayout, motionRange, PENDULUM_GUIDE_GREY);
   underlayGrating(ctx, layout, gapM);
 }
 

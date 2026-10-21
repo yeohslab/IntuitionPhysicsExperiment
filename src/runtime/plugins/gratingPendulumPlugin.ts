@@ -10,6 +10,7 @@ import type { PendulumParams } from "../../experiment/physics/pendulum";
 import { classifyBobAtX } from "../../experiments/experiment-4/grating";
 import {
   drawGratingFeedbackFrame,
+  drawGratingIdleFrame,
   drawGratingReportFrame,
   drawGratingStimulusFrame,
   gratingAngleFromPointer,
@@ -53,6 +54,7 @@ const info = {
     durationSec: { type: ParameterType.FLOAT, default: 8 },
     queryTimeSec: { type: ParameterType.FLOAT, default: 2 },
     gapM: { type: ParameterType.FLOAT, default: 0.45 },
+    responseOrder: { type: ParameterType.STRING, default: "angle_first" },
     unitMeta: { type: ParameterType.COMPLEX, default: {} },
   },
   data: {},
@@ -66,6 +68,7 @@ type Trial = {
   durationSec: number;
   queryTimeSec: number;
   gapM: number;
+  responseOrder: "angle_first" | "speed_first";
   unitMeta: Record<string, unknown>;
 };
 
@@ -122,6 +125,7 @@ class GratingPendulumPlugin {
     const recoveryExperimentId = (trial.unitMeta.runtime_experiment_id ??
       "experiment-4") as ExperimentId;
     const tQuery = trial.queryTimeSec;
+    const angleFirst = trial.responseOrder !== "speed_first";
 
     let phase: TrialPhase = "sim";
     let raf = 0;
@@ -285,7 +289,7 @@ class GratingPendulumPlugin {
         delta_omega_rad_per_sec: deltaOmega,
         abs_delta_omega_rad_per_sec:
           deltaOmega === null ? null : Math.abs(deltaOmega),
-        response_order_first: "angle",
+        response_order_first: angleFirst ? "angle" : "speed",
         rt_angle_sec: rtAngleSec,
         rt_speed_sec: rtSpeedSec,
         rt_total_sec: (performance.now() - reportStartMs) / 1000,
@@ -334,8 +338,7 @@ class GratingPendulumPlugin {
       }, 300);
     };
 
-    const confirmSpeed = () => {
-      if (phase !== "speed" || speedPosition === null) return;
+    const finishReport = () => {
       clearKb();
       const payload = buildPayload();
       if (trial.unitMeta.segment_kind === "practice") {
@@ -345,11 +348,55 @@ class GratingPendulumPlugin {
       }
     };
 
-    const startSpeedReport = () => {
-      phase = "speed";
-      detachAnglePointer();
+    const showConfirm = (label: string, onConfirm: () => void, enabled: boolean) => {
+      confirmBtn.textContent = label;
+      confirmBtn.disabled = !enabled;
+      confirmBtn.onclick = onConfirm;
+      controls.appendChild(confirmBtn);
+      focusTrialRoot();
       clearKb();
-      hint.textContent = "请在色带上点击询问瞬间的速度大小，可拖动微调，然后确认速度。";
+      kbListener = listenSpace(onConfirm);
+    };
+
+    // 两个汇报阶段互相引用，先声明再赋值。
+    let startAnglePhase: (isFirst: boolean) => void = () => {};
+    let startSpeedPhase: (isFirst: boolean) => void = () => {};
+
+    const confirmAngle = () => {
+      if (phase !== "angle" || !angleInteracted) return;
+      detachAnglePointer();
+      if (angleFirst) startSpeedPhase(false);
+      else finishReport();
+    };
+
+    const confirmSpeed = () => {
+      if (phase !== "speed" || speedPosition === null) return;
+      speedStrip?.lock();
+      if (angleFirst) finishReport();
+      else startAnglePhase(false);
+    };
+
+    startAnglePhase = (isFirst) => {
+      phase = "angle";
+      hint.textContent = isFirst
+        ? "请先在橙色虚线上点击询问瞬间的摆杆位置，可拖动微调，然后确认角度。"
+        : "再在橙色虚线上点击询问瞬间的摆杆位置，可拖动微调，然后确认角度。";
+      drawGratingReportFrame(ctx, worldLayout, trial.gapM, pendLayout, motionRange, thetaEstRad, false);
+      showConfirm("确认角度", confirmAngle, false);
+      canvas.addEventListener("pointerdown", onAngleDown);
+      canvas.addEventListener("pointermove", onAngleMove);
+      canvas.addEventListener("pointerup", onAngleUp);
+      canvas.addEventListener("pointercancel", onAngleUp);
+    };
+
+    startSpeedPhase = (isFirst) => {
+      phase = "speed";
+      hint.textContent = isFirst
+        ? "请先在色带上点击询问瞬间的速度大小，可拖动微调，然后确认速度。"
+        : "再在色带上点击询问瞬间的速度大小，可拖动微调，然后确认速度。";
+      if (isFirst) {
+        drawGratingIdleFrame(ctx, worldLayout, trial.gapM, pendLayout, motionRange);
+      }
       speedStrip = mountSpeedReportStrip(controls);
       speedStrip.onChange((level) => {
         if (speedPosition === null) {
@@ -358,22 +405,11 @@ class GratingPendulumPlugin {
         speedPosition = level;
         confirmBtn.disabled = false;
       });
-      confirmBtn.textContent = "确认速度";
-      confirmBtn.disabled = true;
-      confirmBtn.onclick = confirmSpeed;
-      controls.appendChild(confirmBtn);
-      focusTrialRoot();
-      kbListener = listenSpace(confirmSpeed);
+      showConfirm("确认速度", confirmSpeed, false);
     };
 
-    const confirmAngle = () => {
-      if (phase !== "angle" || !angleInteracted) return;
-      startSpeedReport();
-    };
-
-    const startAngleReport = () => {
+    const startReport = () => {
       transitionMaskedAmbientToEstimateCue();
-      phase = "angle";
       checkpointPhase("estimate");
       trialRoot.classList.remove("physics-trial--sim");
       canvas.classList.add("physics-canvas--estimate");
@@ -381,18 +417,8 @@ class GratingPendulumPlugin {
       thetaTruthRad = state.theta;
       omegaTruthRad = state.omega;
       reportStartMs = performance.now();
-      hint.textContent = "请先在橙色虚线上点击询问瞬间的摆杆位置，可拖动微调，然后确认角度。";
-      drawGratingReportFrame(ctx, worldLayout, trial.gapM, pendLayout, motionRange, thetaEstRad, false);
-      confirmBtn.textContent = "确认角度";
-      confirmBtn.disabled = true;
-      confirmBtn.onclick = confirmAngle;
-      controls.appendChild(confirmBtn);
-      focusTrialRoot();
-      kbListener = listenSpace(confirmAngle);
-      canvas.addEventListener("pointerdown", onAngleDown);
-      canvas.addEventListener("pointermove", onAngleMove);
-      canvas.addEventListener("pointerup", onAngleUp);
-      canvas.addEventListener("pointercancel", onAngleUp);
+      if (angleFirst) startAnglePhase(true);
+      else startSpeedPhase(true);
     };
 
     const simTick = (now: number) => {
@@ -411,7 +437,7 @@ class GratingPendulumPlugin {
       drawGratingStimulusFrame(ctx, worldLayout, trial.gapM, p.rodLengthM, theta);
       if (elapsed >= tQuery) {
         simQueryOvershootMs = Math.max(0, (elapsed - tQuery) * 1000);
-        startAngleReport();
+        startReport();
         return;
       }
       raf = requestAnimationFrame(simTick);

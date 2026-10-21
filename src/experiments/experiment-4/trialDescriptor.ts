@@ -24,6 +24,7 @@ export type Experiment4TrialDescriptor = {
   bar_width_m: number;
   bob_radius_m: number;
   release_side: "left" | "right";
+  response_order: "angle_first" | "speed_first";
   theta_0_deg: number;
   theta_0_rad: number;
   duration_sec: number;
@@ -91,6 +92,7 @@ export function describeExperiment4Trial(
     bar_width_m: unit.barWidthM,
     bob_radius_m: unit.bobRadiusM,
     release_side: unit.releaseSide,
+    response_order: unit.responseOrder,
     theta_0_deg: unit.theta0Deg,
     theta_0_rad: params.theta0Rad,
     duration_sec: unit.durationSec,

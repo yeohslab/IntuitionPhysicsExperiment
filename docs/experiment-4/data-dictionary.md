@@ -13,7 +13,8 @@ CSV 列定义见 `src/experiments/experiment-4/exportStimulusCsv.ts` 中的 `EXP
 | `theta_reported_*` | 被试报告角度 |
 | `speed_strip_position` | 色带位置 $p\in[0,1]$ |
 | `omega_reported_rad_per_sec` | $p\cdot|\omega|_{\max}$ |
-| `response_order_first` | 固定为 `angle`（先角度后速度） |
+| `response_order_first` | `angle` 或 `speed`：该试次规定先报的一项（区组内按释放侧 5/5 平衡） |
+| `rt_angle_sec` / `rt_speed_sec` | 从询问时刻到首次点选该项的时间（s），两种顺序定义相同 |
 | `visible_frame_count` | 仿真阶段完全可见帧数 |
 
 刺激 JSON 含完整 `occlusion_timeline` 与试次描述符，供 agent 重建证据。

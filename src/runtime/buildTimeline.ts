@@ -58,6 +58,7 @@ function unitToTrial(
         durationSec: gUnit.durationSec,
         queryTimeSec: gUnit.queryTimeSec,
         gapM: gUnit.gapM,
+        responseOrder: gUnit.responseOrder,
         unitMeta: descriptor
           ? { ...descriptor, runtime_experiment_id: experimentId }
           : { ...data, runtime_experiment_id: experimentId },

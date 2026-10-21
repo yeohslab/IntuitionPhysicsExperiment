@@ -59,6 +59,8 @@ export interface GratingPendulumStimulusUnit {
   barWidthM: number;
   bobRadiusM: number;
   releaseSide: "left" | "right";
+  /** 先报角度还是先报速度；旧刺激集缺省时按 angle_first 读入。 */
+  responseOrder: "angle_first" | "speed_first";
   occlusionSegmentIndex: number;
   occlusionTimeline: GratingOcclusionSegmentRecord[];
   firstVisibleSec: number | null;
