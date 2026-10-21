@@ -2,7 +2,6 @@
 
 ```bash
 npm run verify-experiment-2
-npm run verify-experiment-2-v1   # 协议 1.0.0 回档
 npm run verify-all
 npm run build
 ```
@@ -14,5 +13,3 @@ npm run build
 - `show_T = 1.2`；终态角落在对应基准邻域（拟合容差 1°）；
 - 协议 `2.0.0`、颜色标尺与导出文件名 `experiment-2_v2.0_*`；
 - 150 条完成判定与 schema v3 JSON/CSV。
-
-`verify-experiment-2-v1` 保留原 15×9、1.0.0 协议断言。

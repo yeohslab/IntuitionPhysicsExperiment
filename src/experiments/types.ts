@@ -1,26 +1,18 @@
 import type { ExperimentStatus } from "../runtime/export/exportStimulusCsv";
 import type {
   Experiment2StimulusSet,
-  Experiment3StimulusSet,
-  ExperimentStimulusSet,
-  RuntimeStimulusSet,
+  Experiment4StimulusSet,
 } from "../shared/experimentTypes";
 import type {
   AnyParticipantInfo,
   Experiment2ParticipantInfo,
-  Experiment3ParticipantInfo,
-  ParticipantInfo,
+  Experiment4ParticipantInfo,
 } from "../shared/participant";
 
-export type ExperimentId =
-  | "experiment-1"
-  | "experiment-2"
-  | "experiment-2-v1"
-  | "experiment-3";
+export type ExperimentId = "experiment-2" | "experiment-4";
 export type AnyRuntimeStimulusSet =
-  | ExperimentStimulusSet
   | Experiment2StimulusSet
-  | Experiment3StimulusSet;
+  | Experiment4StimulusSet;
 
 export type SpeedCueConfig =
   | {
@@ -42,7 +34,7 @@ export type GenerateStimulusSetOptions = {
 
 export interface ExperimentDefinition<
   P extends AnyParticipantInfo = AnyParticipantInfo,
-  S extends RuntimeStimulusSet = AnyRuntimeStimulusSet,
+  S extends AnyRuntimeStimulusSet = AnyRuntimeStimulusSet,
 > {
   id: ExperimentId;
   title: string;
@@ -57,7 +49,7 @@ export interface ExperimentDefinition<
     participant: P,
     options?: GenerateStimulusSetOptions,
   ): Promise<S>;
-  speedCue(participant: P): SpeedCueConfig;
+  speedCue?(participant: P): SpeedCueConfig;
   parseParticipant(value: unknown): P | null;
   parseStimulusSet(value: unknown): S | null;
   validateStimulusSet(set: S): string | null;
@@ -75,15 +67,12 @@ export interface ExperimentDefinition<
   dataProperties(participant: P): Record<string, unknown>;
 }
 
-export type Experiment1Definition = ExperimentDefinition<
-  ParticipantInfo,
-  ExperimentStimulusSet
->;
 export type Experiment2Definition = ExperimentDefinition<
   Experiment2ParticipantInfo,
   Experiment2StimulusSet
 >;
-export type Experiment3Definition = ExperimentDefinition<
-  Experiment3ParticipantInfo,
-  Experiment3StimulusSet
+
+export type Experiment4Definition = ExperimentDefinition<
+  Experiment4ParticipantInfo,
+  Experiment4StimulusSet
 >;

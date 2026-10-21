@@ -235,15 +235,7 @@ class PhysicsStimulusPlugin {
       hide1T: trial.hide1T,
       fadeMs: trial.fadeMs,
     };
-    const runtimeExperimentId = String(
-      trial.unitMeta.runtime_experiment_id ?? "experiment-1",
-    );
-    const recoveryExperimentId: ExperimentId =
-      runtimeExperimentId === "experiment-2" ||
-      runtimeExperimentId === "experiment-2-v1" ||
-      runtimeExperimentId === "experiment-3"
-        ? runtimeExperimentId
-        : "experiment-1";
+    const recoveryExperimentId: ExperimentId = "experiment-2";
 
     const pointerLogical = (e: PointerEvent) =>
       pointerToLogical(e.clientX, e.clientY, canvas, logicalW, logicalH);

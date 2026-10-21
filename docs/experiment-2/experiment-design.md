@@ -32,7 +32,3 @@
 ## 完成规则
 
 时间线自然结束且正式响应序号完整、唯一覆盖 1–150 时标记 `f`。
-
-## 协议回档
-
-协议 **1.0.0** 仍可通过应用内「实验二 V1.0」入口运行；设计说明见 [docs/experiment-2-v1/experiment-design.md](../experiment-2-v1/experiment-design.md)。

@@ -1,19 +1,12 @@
 import { experiment2Definition } from "../experiments/experiment-2/definition";
 import { EXPERIMENT_2_TOTAL_RUNTIME_TRIALS } from "../experiments/experiment-2/protocol";
-import { experiment2V1Definition } from "../experiments/experiment-2-v1/definition";
-import { EXPERIMENT_2_TOTAL_RUNTIME_TRIALS as EXPERIMENT_2_V1_TOTAL_RUNTIME_TRIALS } from "../experiments/experiment-2-v1/protocol";
-import { experiment3Definition } from "../experiments/experiment-3/definition";
-import { EXPERIMENT_3_TOTAL_RUNTIME_TRIALS } from "../experiments/experiment-3/protocol";
 import {
   buildExperiment2SubjectId,
-  buildExperiment3SubjectId,
   isExperiment2ParticipantInfo,
-  isExperiment3ParticipantInfo,
   normalizeAgeYears,
   normalizeGenderCode,
   normalizeWithinGroupNumber,
   parseExperiment2WithinGroupNumber,
-  parseExperiment3WithinGroupNumber,
   SUBJECT_ID_NUM_MAX,
   SUBJECT_ID_NUM_MIN,
   type AnyParticipantInfo,
@@ -38,13 +31,10 @@ import {
 
 let activeGenerationAbort: AbortController | null = null;
 
-type WithinSubjectStartConfig = {
-  experimentId: Extract<
-    ExperimentId,
-    "experiment-2" | "experiment-2-v1" | "experiment-3"
-  >;
+export type WithinSubjectStartConfig = {
+  experimentId: ExperimentId;
   displayName: string;
-  subjectPrefix: "E2" | "E3";
+  subjectPrefix: "E2" | "E4";
   runnerHash: string;
   totalTrials: number;
   definition: ExperimentDefinition;
@@ -66,38 +56,10 @@ const experiment2StartConfig: WithinSubjectStartConfig = {
     isExperiment2ParticipantInfo(value) ? value : null,
 };
 
-const experiment2V1StartConfig: WithinSubjectStartConfig = {
-  experimentId: "experiment-2-v1",
-  displayName: "实验二 V1.0",
-  subjectPrefix: "E2",
-  runnerHash: "#/experiment-2-v1/runner",
-  totalTrials: EXPERIMENT_2_V1_TOTAL_RUNTIME_TRIALS,
-  definition: experiment2V1Definition as ExperimentDefinition,
-  buildSubjectId: buildExperiment2SubjectId,
-  parseWithinGroupNumber: parseExperiment2WithinGroupNumber,
-  parseParticipant: (value) =>
-    isExperiment2ParticipantInfo(value) ? value : null,
-};
-
-const experiment3StartConfig: WithinSubjectStartConfig = {
-  experimentId: "experiment-3",
-  displayName: "实验三",
-  subjectPrefix: "E3",
-  runnerHash: "#/experiment-3/runner",
-  totalTrials: EXPERIMENT_3_TOTAL_RUNTIME_TRIALS,
-  definition: experiment3Definition as ExperimentDefinition,
-  buildSubjectId: buildExperiment3SubjectId,
-  parseWithinGroupNumber: parseExperiment3WithinGroupNumber,
-  parseParticipant: (value) =>
-    isExperiment3ParticipantInfo(value) ? value : null,
-};
-
 export function disposeExperiment2Start(): void {
   activeGenerationAbort?.abort();
   activeGenerationAbort = null;
 }
-
-export const disposeExperiment3Start = disposeExperiment2Start;
 
 function escapeText(value: string): string {
   return value
@@ -111,17 +73,7 @@ export function mountExperiment2Start(container: HTMLElement): void {
   mountWithinSubjectStart(container, experiment2StartConfig);
 }
 
-export function mountExperiment2V1Start(container: HTMLElement): void {
-  mountWithinSubjectStart(container, experiment2V1StartConfig);
-}
-
-export const disposeExperiment2V1Start = disposeExperiment2Start;
-
-export function mountExperiment3Start(container: HTMLElement): void {
-  mountWithinSubjectStart(container, experiment3StartConfig);
-}
-
-function mountWithinSubjectStart(
+export function mountWithinSubjectStart(
   container: HTMLElement,
   config: WithinSubjectStartConfig,
 ): void {

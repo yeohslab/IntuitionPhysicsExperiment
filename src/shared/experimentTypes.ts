@@ -1,14 +1,13 @@
-/** 当前刺激集内存/会话格式版本（运行时 generateRuntimeStimulusSet 产出）。 */
-export const STIMULUS_SET_SCHEMA_VERSION = 7 as const;
-/** 实验二运行时刺激集版本；与实验一独立演进。 */
+/** 实验二运行时刺激集版本。 */
 export const EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
-/** 实验三运行时刺激集版本；与其他实验独立演进。 */
-export const EXPERIMENT_3_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
+/** 实验四运行时刺激集版本。 */
+export const EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
 
 export type StimulusUnitType =
   | "textDisplay"
   | "textControl"
-  | "pendulumStimulus";
+  | "pendulumStimulus"
+  | "gratingPendulumStimulus";
 
 export interface TextDisplayUnit {
   id: string;
@@ -40,10 +39,36 @@ export interface PendulumStimulusUnit {
   fadeMs: number;
 }
 
+export type GratingOcclusionSegmentRecord = {
+  kind: "fully_occluded" | "fully_visible" | "partial";
+  tStartSec: number;
+  tEndSec: number;
+};
+
+export interface GratingPendulumStimulusUnit {
+  id: string;
+  type: "gratingPendulumStimulus";
+  theta0Deg: number;
+  omega0DegPerSec: number;
+  rodLengthM: number;
+  gravity: number;
+  durationSec: number;
+  queryTimeSec: number;
+  gapLevel: "small" | "medium" | "large";
+  gapM: number;
+  barWidthM: number;
+  bobRadiusM: number;
+  releaseSide: "left" | "right";
+  occlusionSegmentIndex: number;
+  occlusionTimeline: GratingOcclusionSegmentRecord[];
+  firstVisibleSec: number | null;
+}
+
 export type StimulusUnit =
   | TextDisplayUnit
   | TextControlUnit
-  | PendulumStimulusUnit;
+  | PendulumStimulusUnit
+  | GratingPendulumStimulusUnit;
 
 export interface Trial {
   id: string;
@@ -78,17 +103,12 @@ export interface RuntimeStimulusSet {
   sequence: TopLevelSequenceItem[];
 }
 
-/** 实验一运行时刺激集。 */
-export interface ExperimentStimulusSet extends RuntimeStimulusSet {
-  schemaVersion: typeof STIMULUS_SET_SCHEMA_VERSION;
-}
-
 /** 实验二运行时刺激集。 */
 export interface Experiment2StimulusSet extends RuntimeStimulusSet {
   schemaVersion: typeof EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION;
 }
 
-/** 实验三运行时刺激集。 */
-export interface Experiment3StimulusSet extends RuntimeStimulusSet {
-  schemaVersion: typeof EXPERIMENT_3_STIMULUS_SET_SCHEMA_VERSION;
+/** 实验四运行时刺激集。 */
+export interface Experiment4StimulusSet extends RuntimeStimulusSet {
+  schemaVersion: typeof EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION;
 }

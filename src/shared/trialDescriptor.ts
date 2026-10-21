@@ -1,8 +1,5 @@
 import type { MotionGroup } from "./participant";
-import type {
-  ExperimentStimulusSet,
-  PendulumStimulusUnit,
-} from "./experimentTypes";
+import type { PendulumStimulusUnit } from "./experimentTypes";
 import {
   analyzePendulum,
   type PendulumParams,
@@ -129,43 +126,4 @@ export function describePendulumTrial(
     omega_x_t_rad_per_sec: endState.omega,
     linear_speed_x_t_m_per_sec: unit.rodLengthM * Math.abs(endState.omega),
   };
-}
-
-/** 按实际呈现顺序收集练习与正式物理 Trial，不包含指导语、休息或注视点。 */
-export function collectPendulumTrialDescriptors(
-  set: ExperimentStimulusSet,
-  motionGroup: MotionGroup,
-): PendulumTrialDescriptor[] {
-  const descriptors: PendulumTrialDescriptor[] = [];
-  let formalBlockIndex = 0;
-  let formalTrialIndex = 0;
-
-  for (const segment of set.sequence) {
-    if (segment.kind !== "practice" && segment.kind !== "block") continue;
-    const blockIndex = segment.kind === "practice" ? 0 : ++formalBlockIndex;
-    for (let trialOffset = 0; trialOffset < segment.children.length; trialOffset++) {
-      const trial = segment.children[trialOffset]!;
-      const unit = trial.units.find(
-        (candidate): candidate is PendulumStimulusUnit =>
-          candidate.type === "pendulumStimulus",
-      );
-      if (!unit) continue;
-      const nextFormalIndex =
-        segment.kind === "block" ? ++formalTrialIndex : null;
-      descriptors.push(
-        describePendulumTrial(
-          unit,
-          {
-            trialId: trial.id,
-            segmentKind: segment.kind,
-            blockIndex,
-            trialIndexInBlock: trialOffset + 1,
-            formalTrialIndex: nextFormalIndex,
-          },
-          motionGroup,
-        ),
-      );
-    }
-  }
-  return descriptors;
 }

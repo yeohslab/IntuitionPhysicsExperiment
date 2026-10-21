@@ -7,4 +7,10 @@ import { defineConfig } from "vite";
  */
 export default defineConfig({
   base: "./",
+  server: {
+    watch: {
+      // 数据收集目录含被其他程序占用的 PDF，Windows 监视会抛 EBUSY 并退出开发服务器。
+      ignored: ["**/数据收集/**"],
+    },
+  },
 });

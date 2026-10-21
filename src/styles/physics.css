@@ -185,6 +185,73 @@
   margin: 0.25rem 0;
 }
 
+.physics-speed-report-strip {
+  width: 100%;
+  max-width: 520px;
+  margin: 0.5rem auto 0;
+}
+
+.physics-speed-report-strip__track {
+  position: relative;
+  height: 28px;
+  border: 2px solid #000;
+  border-radius: 4px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.physics-speed-report-strip__gradient {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+}
+
+.physics-speed-report-strip__marker {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 3px solid #0f172a;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px #fff;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.physics-speed-report-strip__marker--response {
+  border-color: #f97316;
+}
+
+.physics-speed-report-strip__marker--truth {
+  border-color: #2563eb;
+}
+
+.physics-speed-report-strip--locked .physics-speed-report-strip__track {
+  cursor: default;
+}
+
+.physics-report-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.physics-report-controls .physics-btn {
+  align-self: center;
+}
+
+.physics-speed-report-strip__labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
 @media (max-width: 640px) {
   .physics-footer {
     padding-bottom: 0.5rem;

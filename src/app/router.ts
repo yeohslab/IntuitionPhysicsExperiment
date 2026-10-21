@@ -1,20 +1,15 @@
 import { disposeRunner, mountRunner } from "./RunnerView";
-import { disposeStart, mountStart } from "./StartView";
 import {
   disposeExperiment2Start,
-  disposeExperiment2V1Start,
-  disposeExperiment3Start,
   mountExperiment2Start,
-  mountExperiment2V1Start,
-  mountExperiment3Start,
 } from "./Experiment2StartView";
+import {
+  disposeExperiment4Start,
+  mountExperiment4Start,
+} from "./Experiment4StartView";
 import { mountExperimentPicker } from "./ExperimentPickerView";
 import type { ExperimentId } from "../experiments/types";
-import {
-  hasActiveExperimentRunSession,
-  migrateLegacyExperiment1Session,
-} from "../shared/storage";
-import { migrateLegacyExperiment1Recovery } from "../shared/recovery";
+import { hasActiveExperimentRunSession } from "../shared/storage";
 
 function pathFromHash(): string {
   const raw = location.hash.replace(/^#/, "").split("?")[0].replace(/^\//, "");
@@ -27,19 +22,15 @@ function replaceHash(hash: string): void {
 }
 
 function runnerExperiment(path: string): ExperimentId | null {
-  if (path === "/experiment-1/runner") return "experiment-1";
   if (path === "/experiment-2/runner") return "experiment-2";
-  if (path === "/experiment-2-v1/runner") return "experiment-2-v1";
-  if (path === "/experiment-3/runner") return "experiment-3";
+  if (path === "/experiment-4/runner") return "experiment-4";
   return null;
 }
 
 function route(): void {
   disposeRunner();
-  disposeStart();
   disposeExperiment2Start();
-  disposeExperiment2V1Start();
-  disposeExperiment3Start();
+  disposeExperiment4Start();
   const app = document.getElementById("app");
   if (!app) return;
   app.innerHTML = "";
@@ -47,8 +38,8 @@ function route(): void {
 
   if (path === "/runner") {
     replaceHash(
-      hasActiveExperimentRunSession("experiment-1")
-        ? "#/experiment-1/runner"
+      hasActiveExperimentRunSession("experiment-2")
+        ? "#/experiment-2/runner"
         : "#/",
     );
     return;
@@ -62,20 +53,12 @@ function route(): void {
     mountRunner(app, runnerId);
     return;
   }
-  if (path === "/experiment-1/start") {
-    mountStart(app);
-    return;
-  }
   if (path === "/experiment-2/start") {
     mountExperiment2Start(app);
     return;
   }
-  if (path === "/experiment-2-v1/start") {
-    mountExperiment2V1Start(app);
-    return;
-  }
-  if (path === "/experiment-3/start") {
-    mountExperiment3Start(app);
+  if (path === "/experiment-4/start") {
+    mountExperiment4Start(app);
     return;
   }
   if (path === "/" || path === "/start") {
@@ -86,8 +69,6 @@ function route(): void {
 }
 
 export function initRouter(): void {
-  migrateLegacyExperiment1Session();
-  migrateLegacyExperiment1Recovery();
   window.addEventListener("hashchange", route);
   window.addEventListener("pageshow", (event) => {
     if (!event.persisted) return;

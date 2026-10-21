@@ -2,21 +2,18 @@ import HtmlKeyboardResponsePlugin from "@jspsych/plugin-html-keyboard-response";
 import { analyzePendulum } from "../experiment/physics/pendulum";
 import { withSyncedTotalTimeT } from "../experiment/physics/timePhases";
 import type {
-  ExperimentStimulusSet,
   RuntimeStimulusSet,
   StimulusUnit,
   Trial,
 } from "../shared/experimentTypes";
 import type { ExperimentId } from "../experiments/types";
 import { wrapFixationStimulus, wrapInstructionHtml } from "../shared/html";
-import { FIXATION_TEXT } from "../experiments/experiment-1/instructions";
+import { WITHIN_SUBJECT_FIXATION_TEXT } from "../experiments/within-subject/protocol";
 import { normalizeKeyForJsPsych } from "../shared/keys";
 import { controlTrialPrompt } from "./stimulusControl";
 import PhysicsStimulusPlugin from "./plugins/physicsStimulusPlugin";
-import type { MotionGroup } from "../shared/participant";
-import {
-  collectPendulumTrialDescriptors,
-} from "../shared/trialDescriptor";
+import GratingPendulumPlugin from "./plugins/gratingPendulumPlugin";
+import type { GratingPendulumStimulusUnit } from "../shared/experimentTypes";
 
 export type UnitTrialContext = {
   segmentId: string;
@@ -27,8 +24,8 @@ export type UnitTrialContext = {
 
 function stimulusHtmlForUnit(unit: StimulusUnit): string {
   if (unit.type === "textDisplay" || unit.type === "textControl") {
-    if (unit.type === "textDisplay" && unit.text.trim() === FIXATION_TEXT) {
-      return wrapFixationStimulus(FIXATION_TEXT);
+    if (unit.type === "textDisplay" && unit.text.trim() === WITHIN_SUBJECT_FIXATION_TEXT) {
+      return wrapFixationStimulus(WITHIN_SUBJECT_FIXATION_TEXT);
     }
     return wrapInstructionHtml(unit.text);
   }
@@ -39,7 +36,7 @@ function unitToTrial(
   unit: StimulusUnit,
   ctx: UnitTrialContext,
   descriptor?: Record<string, unknown>,
-  experimentId: ExperimentId = "experiment-1",
+  experimentId: ExperimentId = "experiment-2",
 ): Record<string, unknown> {
   const data = {
     unitId: unit.id,
@@ -50,6 +47,25 @@ function unitToTrial(
     blockChildId: ctx.blockChildId ?? "",
   };
   switch (unit.type) {
+    case "gratingPendulumStimulus": {
+      const gUnit = unit as GratingPendulumStimulusUnit;
+      return {
+        type: GratingPendulumPlugin,
+        theta0Deg: gUnit.theta0Deg,
+        omega0DegPerSec: gUnit.omega0DegPerSec,
+        rodLengthM: gUnit.rodLengthM,
+        gravity: gUnit.gravity,
+        durationSec: gUnit.durationSec,
+        queryTimeSec: gUnit.queryTimeSec,
+        gapM: gUnit.gapM,
+        unitMeta: descriptor
+          ? { ...descriptor, runtime_experiment_id: experimentId }
+          : { ...data, runtime_experiment_id: experimentId },
+        data: descriptor
+          ? { ...descriptor, runtime_experiment_id: experimentId, unit_type: "gratingPendulumStimulus" }
+          : { ...data, runtime_experiment_id: experimentId, unit_type: "gratingPendulumStimulus" },
+      };
+    }
     case "pendulumStimulus": {
       const periodSec = analyzePendulum({
         theta0Rad: (unit.theta0Deg * Math.PI) / 180,
@@ -133,17 +149,6 @@ function buildSegmentWithTrialsTimeline(
       ),
     })),
   };
-}
-
-export function buildTimeline(
-  set: ExperimentStimulusSet,
-  motionGroup: MotionGroup,
-): Record<string, unknown>[] {
-  return buildTimelineFromDescriptors(
-    set,
-    collectPendulumTrialDescriptors(set, motionGroup),
-    "experiment-1",
-  );
 }
 
 export function buildTimelineFromDescriptors(
