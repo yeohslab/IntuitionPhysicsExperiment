@@ -1,13 +1,14 @@
-import { analyzePendulum, pendulumThetaOmegaAt } from "../../experiment/physics/pendulum";
+import {
+  analyzePendulum,
+  pendulumOmegaRadForEnergyAtBottom,
+  pendulumThetaOmegaAt,
+} from "../../experiment/physics/pendulum";
 import type {
   Experiment4StimulusSet,
   GratingPendulumStimulusUnit,
 } from "../../shared/experimentTypes";
 import { lastFullyVisibleEndBefore } from "./grating";
-import {
-  EXPERIMENT_4_OMEGA_MAX_RAD_PER_SEC,
-  EXPERIMENT_4_PROTOCOL_VERSION,
-} from "./protocol";
+import { EXPERIMENT_4_PROTOCOL_VERSION } from "./protocol";
 
 export type Experiment4TrialDescriptor = {
   experiment_id: "experiment-4";
@@ -107,7 +108,10 @@ export function describeExperiment4Trial(
     omega_q_deg_per_sec: (state.omega * 180) / Math.PI,
     abs_omega_q_rad_per_sec: Math.abs(state.omega),
     linear_speed_q_m_per_sec: unit.rodLengthM * Math.abs(state.omega),
-    omega_max_rad_per_sec: EXPERIMENT_4_OMEGA_MAX_RAD_PER_SEC,
+    omega_max_rad_per_sec: pendulumOmegaRadForEnergyAtBottom(
+      analysis.E,
+      unit.rodLengthM,
+    ),
     pendulum_T_sec: analysis.T,
     pendulum_E_J: analysis.E,
     rod_length_m: unit.rodLengthM,

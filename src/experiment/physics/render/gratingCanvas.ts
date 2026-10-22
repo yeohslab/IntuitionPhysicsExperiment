@@ -8,10 +8,6 @@ import {
   type PendulumLayout,
   type PendulumMotionRange,
 } from "./pendulumCanvas";
-import {
-  PHYSICS_CANVAS_LOGICAL_H,
-  PHYSICS_CANVAS_LOGICAL_W,
-} from "./canvasLayout";
 import { gratingBarCentersM } from "../../../experiments/experiment-4/grating";
 import {
   EXPERIMENT_4_BAR_WIDTH_M,
@@ -19,18 +15,19 @@ import {
   EXPERIMENT_4_ROD_LENGTH_M,
 } from "../../../experiments/experiment-4/protocol";
 
-export const GRATING_CANVAS_LOGICAL_W = PHYSICS_CANVAS_LOGICAL_W;
-export const GRATING_CANVAS_LOGICAL_H = PHYSICS_CANVAS_LOGICAL_H;
+/** 实验四使用独立的近 16:9 画布，不影响实验二。 */
+export const GRATING_CANVAS_LOGICAL_W = 1000;
+export const GRATING_CANVAS_LOGICAL_H = 560;
 
-/** 悬挂点到画布上下边缘的最小留白（逻辑像素）。 */
-const GRATING_EDGE_MARGIN_PX = 16;
+/** 完整下半圆到画布边缘的留白（逻辑像素）。 */
+export const GRATING_EDGE_MARGIN_PX = 24;
 
 /** 必须完全不透明，否则被遮挡的摆球会透出来。 */
 const GRATING_BAR_FILL = "#64748b";
 const GRATING_BG = "#f8fafc";
 const GRATING_GUIDE_STROKE = "#94a3b8";
 
-/** 世界坐标：x 向右、y 向上（m），悬挂点在原点并位于画布中心。 */
+/** 世界坐标：x 向右、y 向上（m），悬挂点为原点并位于下半圆顶部。 */
 export type GratingWorldLayout = {
   pxPerM: number;
   originX: number;
@@ -39,19 +36,22 @@ export type GratingWorldLayout = {
   canvasH: number;
 };
 
-/** 比例尺使整圈（摆长 + 摆球半径）在画布内，摆动与转动共用同一画面。 */
+/** 比例尺使完整下半圆（摆长 + 摆球半径）在画布内。 */
 export function gratingWorldLayout(
   canvasW = GRATING_CANVAS_LOGICAL_W,
   canvasH = GRATING_CANVAS_LOGICAL_H,
   rodLengthM = EXPERIMENT_4_ROD_LENGTH_M,
 ): GratingWorldLayout {
   const reachM = rodLengthM + EXPERIMENT_4_BOB_RADIUS_M;
-  const pxPerM =
-    (Math.min(canvasW, canvasH) - 2 * GRATING_EDGE_MARGIN_PX) / (2 * reachM);
+  const pxPerM = Math.min(
+    (canvasW - 2 * GRATING_EDGE_MARGIN_PX) / (2 * reachM),
+    (canvasH - 2 * GRATING_EDGE_MARGIN_PX) / reachM,
+  );
+  const reachPx = reachM * pxPerM;
   return {
     pxPerM,
     originX: canvasW / 2,
-    originY: canvasH / 2,
+    originY: (canvasH - reachPx) / 2,
     canvasW,
     canvasH,
   };
@@ -96,7 +96,7 @@ function drawGratingBars(
   }
 }
 
-function drawStaticReferences(
+function drawLowerSemicircleReference(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,
   rodLengthM: number,
@@ -106,9 +106,16 @@ function drawStaticReferences(
   ctx.lineWidth = 2;
   ctx.setLineDash([8, 6]);
   ctx.beginPath();
-  ctx.arc(pivot.x, pivot.y, rodLengthM * layout.pxPerM, 0, Math.PI * 2);
+  ctx.arc(pivot.x, pivot.y, rodLengthM * layout.pxPerM, 0, Math.PI);
   ctx.stroke();
   ctx.setLineDash([]);
+}
+
+function drawPivot(
+  ctx: CanvasRenderingContext2D,
+  layout: GratingWorldLayout,
+): void {
+  const pivot = worldToCanvas(layout, 0, 0);
   ctx.fillStyle = "#0f172a";
   ctx.beginPath();
   ctx.arc(pivot.x, pivot.y, 5, 0, Math.PI * 2);
@@ -148,7 +155,8 @@ export function drawGratingStimulusFrame(
   ctx.fillRect(0, 0, layout.canvasW, layout.canvasH);
   drawGratingBob(ctx, layout, rodLengthM, thetaRad);
   drawGratingBars(ctx, layout, gapM);
-  drawStaticReferences(ctx, layout, rodLengthM);
+  drawLowerSemicircleReference(ctx, layout, rodLengthM);
+  drawPivot(ctx, layout);
   ctx.restore();
 }
 
@@ -157,19 +165,17 @@ function underlayGrating(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,
   gapM: number,
+  rodLengthM: number,
 ): void {
   ctx.save();
   ctx.globalCompositeOperation = "destination-over";
+  drawLowerSemicircleReference(ctx, layout, rodLengthM);
   drawGratingBars(ctx, layout, gapM);
   ctx.fillStyle = GRATING_BG;
   ctx.fillRect(0, 0, layout.canvasW, layout.canvasH);
   ctx.restore();
-  const pivot = worldToCanvas(layout, 0, 0);
   ctx.save();
-  ctx.fillStyle = "#0f172a";
-  ctx.beginPath();
-  ctx.arc(pivot.x, pivot.y, 5, 0, Math.PI * 2);
-  ctx.fill();
+  drawPivot(ctx, layout);
   ctx.restore();
 }
 
@@ -187,7 +193,7 @@ export function drawGratingReportFrame(
   } else {
     drawPendulumEstimateGuide(ctx, pendLayout, motionRange, PENDULUM_GUIDE_ORANGE);
   }
-  underlayGrating(ctx, layout, gapM);
+  underlayGrating(ctx, layout, gapM, EXPERIMENT_4_ROD_LENGTH_M);
 }
 
 /** 先报速度时的画布：光栅 + 灰色扇形（此时还不能点选角度）。 */
@@ -199,7 +205,7 @@ export function drawGratingIdleFrame(
   motionRange: PendulumMotionRange,
 ): void {
   drawPendulumEstimateGuide(ctx, pendLayout, motionRange, PENDULUM_GUIDE_GREY);
-  underlayGrating(ctx, layout, gapM);
+  underlayGrating(ctx, layout, gapM, EXPERIMENT_4_ROD_LENGTH_M);
 }
 
 export function drawGratingFeedbackFrame(
@@ -212,7 +218,7 @@ export function drawGratingFeedbackFrame(
   thetaTruthRad: number,
 ): void {
   drawPendulumFeedbackTruth(ctx, pendLayout, thetaEstRad, thetaTruthRad, motionRange);
-  underlayGrating(ctx, layout, gapM);
+  underlayGrating(ctx, layout, gapM, EXPERIMENT_4_ROD_LENGTH_M);
 }
 
 export function gratingAngleFromPointer(

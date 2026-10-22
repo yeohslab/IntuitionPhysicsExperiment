@@ -1,5 +1,6 @@
 import {
   analyzePendulum,
+  PENDULUM_MASS_KG,
   pendulumThetaOmegaAt,
 } from "../../experiment/physics/pendulum";
 import type { PendulumParams } from "../../experiment/physics/pendulum";
@@ -7,6 +8,9 @@ import {
   EXPERIMENT_4_BAR_WIDTH_M,
   EXPERIMENT_4_BOB_RADIUS_M,
   EXPERIMENT_4_DURATION_SEC,
+  EXPERIMENT_4_ENERGY_CENTER_J,
+  EXPERIMENT_4_ENERGY_MAX_J,
+  EXPERIMENT_4_ENERGY_MIN_J,
   EXPERIMENT_4_GAP_LEVELS,
   EXPERIMENT_4_GRAVITY,
   EXPERIMENT_4_OCCLUSION_MARGIN_SEC,
@@ -69,7 +73,14 @@ export function buildOcclusionTimeline(
   gapM: number,
   durationSec = EXPERIMENT_4_DURATION_SEC,
 ): OcclusionSegment[] {
-  const cacheKey = `${gapM}:${durationSec}`;
+  const cacheKey = [
+    gapM,
+    durationSec,
+    params.theta0Rad,
+    params.omega0RadPerSec,
+    params.rodLengthM,
+    params.gravity,
+  ].join(":");
   const cached = occlusionTimelineCache.get(cacheKey);
   if (cached) return cached;
 
@@ -186,14 +197,26 @@ export function sampleQueryTimeSec(
 
 export function pendulumParamsForRelease(
   side: "left" | "right",
+  energyJ = EXPERIMENT_4_ENERGY_CENTER_J,
 ): PendulumParams {
+  const mgl = PENDULUM_MASS_KG * EXPERIMENT_4_GRAVITY * EXPERIMENT_4_ROD_LENGTH_M;
+  if (energyJ <= 0 || energyJ >= 2 * mgl) {
+    throw new Error(`实验四能量必须位于 (0, ${2 * mgl}) J，实际 ${energyJ} J`);
+  }
   const sign = side === "right" ? 1 : -1;
+  const thetaMaxRad = Math.acos(1 - energyJ / mgl);
   return {
-    theta0Rad: sign * (Math.PI / 2),
+    theta0Rad: sign * thetaMaxRad,
     omega0RadPerSec: 0,
     rodLengthM: EXPERIMENT_4_ROD_LENGTH_M,
     gravity: EXPERIMENT_4_GRAVITY,
   };
+}
+
+/** 在预注册能量区间内逐试次均匀抽样。 */
+export function sampleExperiment4EnergyJ(rng: () => number): number {
+  return EXPERIMENT_4_ENERGY_MIN_J +
+    rng() * (EXPERIMENT_4_ENERGY_MAX_J - EXPERIMENT_4_ENERGY_MIN_J);
 }
 
 export function gapMFromLevel(level: Experiment4GapLevel): number {
@@ -206,13 +229,15 @@ export function planTrialQuery(
   rng: () => number,
 ): {
   params: PendulumParams;
+  energyJ: number;
   gapM: number;
   tQuerySec: number;
   occlusionSegmentIndex: number;
   timeline: OcclusionSegment[];
   firstVisibleSec: number | null;
 } {
-  const params = pendulumParamsForRelease(side);
+  const energyJ = sampleExperiment4EnergyJ(rng);
+  const params = pendulumParamsForRelease(side, energyJ);
   const gapM = gapMFromLevel(gapLevel);
   const timeline = buildOcclusionTimeline(params, gapM);
   const firstVisibleSec = firstFullyVisibleTimeSec(timeline);
@@ -224,6 +249,7 @@ export function planTrialQuery(
   const { tQuerySec, segmentIndex } = sampleQueryTimeSec(windows, rng);
   return {
     params,
+    energyJ,
     gapM,
     tQuerySec,
     occlusionSegmentIndex: segmentIndex,

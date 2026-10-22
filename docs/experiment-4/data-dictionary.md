@@ -8,6 +8,9 @@ CSV 列定义见 `src/experiments/experiment-4/exportStimulusCsv.ts` 中的 `EXP
 | --- | --- |
 | `gap_level` / `gap_m` | 间隙档与宽度 (m) |
 | `release_side` | `left` / `right` |
+| `theta_0_deg` | 按本试次能量换算的左/右转折点角度 |
+| `pendulum_E_J` | 本试次机械能（在 $[8.48,14.48]\,\mathrm{J}$ 内均匀抽样） |
+| `omega_max_rad_per_sec` | 本试次最低点最大角速度，即速度色带右端 |
 | `query_time_sec` | 询问时刻 $t_q$ |
 | `theta_q_*` / `omega_q_*` | 询问瞬间真值 |
 | `theta_reported_*` | 被试报告角度 |

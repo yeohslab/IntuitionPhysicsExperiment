@@ -69,6 +69,7 @@ function parseUnit(raw: unknown): StimulusUnit | null {
     const omega0DegPerSec = finiteNumber(raw, "omega0DegPerSec");
     const rodLengthM = finiteNumber(raw, "rodLengthM");
     const gravity = finiteNumber(raw, "gravity");
+    const energyJ = finiteNumber(raw, "energyJ");
     const durationSec = finiteNumber(raw, "durationSec");
     const queryTimeSec = finiteNumber(raw, "queryTimeSec");
     const gapM = finiteNumber(raw, "gapM");
@@ -85,6 +86,7 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       omega0DegPerSec === null ||
       rodLengthM === null ||
       gravity === null ||
+      energyJ === null ||
       durationSec === null ||
       queryTimeSec === null ||
       gapM === null ||
@@ -96,6 +98,7 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       (responseOrder !== "angle_first" && responseOrder !== "speed_first") ||
       rodLengthM <= 0 ||
       gravity <= 0 ||
+      energyJ <= 0 ||
       durationSec <= 0 ||
       queryTimeSec < 0 ||
       queryTimeSec > durationSec
@@ -137,6 +140,7 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       omega0DegPerSec,
       rodLengthM,
       gravity,
+      energyJ,
       durationSec,
       queryTimeSec,
       gapLevel,

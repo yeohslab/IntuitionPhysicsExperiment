@@ -4,7 +4,6 @@ import {
   analyzePendulum,
   pendulumOmegaRadForEnergyAtBottom,
   pendulumThetaOmegaAt,
-  PendulumRotationIntegrator,
 } from "../../experiment/physics/pendulum";
 import type { PendulumParams } from "../../experiment/physics/pendulum";
 import { classifyBobAtX } from "../../experiments/experiment-4/grating";
@@ -45,13 +44,13 @@ const SPACE_KEY = normalizeKeyForJsPsych(" ");
 
 const info = {
   name: "grating-pendulum-stimulus",
-  version: "1.1.0",
+  version: "1.2.0",
   parameters: {
-    theta0Deg: { type: ParameterType.FLOAT, default: -90 },
+    theta0Deg: { type: ParameterType.FLOAT, default: -45 },
     omega0DegPerSec: { type: ParameterType.FLOAT, default: 0 },
     rodLengthM: { type: ParameterType.FLOAT, default: 4 },
     gravity: { type: ParameterType.FLOAT, default: 9.8 },
-    durationSec: { type: ParameterType.FLOAT, default: 8 },
+    durationSec: { type: ParameterType.FLOAT, default: 10 },
     queryTimeSec: { type: ParameterType.FLOAT, default: 2 },
     gapM: { type: ParameterType.FLOAT, default: 0.45 },
     responseOrder: { type: ParameterType.STRING, default: "angle_first" },
@@ -81,7 +80,7 @@ class GratingPendulumPlugin {
     display_element.innerHTML = `
       <div class="physics-trial physics-trial--stimulus physics-trial--sim">
         <div class="physics-canvas-frame">
-          <canvas class="physics-canvas" width="${GRATING_CANVAS_LOGICAL_W}" height="${GRATING_CANVAS_LOGICAL_H}"></canvas>
+          <canvas class="physics-canvas physics-canvas--grating" width="${GRATING_CANVAS_LOGICAL_W}" height="${GRATING_CANVAS_LOGICAL_H}"></canvas>
         </div>
         <div class="physics-footer">
           <p class="physics-hint muted physics-sim-hint">观看摆球在光栅后的运动。</p>
@@ -104,20 +103,17 @@ class GratingPendulumPlugin {
       gravity: trial.gravity,
     };
     const analysis = analyzePendulum(p);
-    const regime = analysis.regime === "rotation" ? "rotation" : "oscillation";
+    if (analysis.regime !== "oscillation") {
+      throw new Error(`实验四仅支持摆动，实际运动类型为 ${analysis.regime}`);
+    }
+    const regime = "oscillation" as const;
     const motionRange: PendulumMotionRange = {
       regime,
       wMaxDeg: pendulumWMaxDeg(analysis.E, regime, p.rodLengthM, p.gravity),
     };
     const omegaMax = pendulumOmegaRadForEnergyAtBottom(analysis.E, p.rodLengthM);
-    const rot = regime === "rotation" ? new PendulumRotationIntegrator(p) : null;
-    const thetaAt = (t: number): number => {
-      if (rot) {
-        rot.step(t - rot.tAccum);
-        return rot.theta;
-      }
-      return pendulumThetaOmegaAt(t, p, analysis).theta;
-    };
+    const thetaAt = (t: number): number =>
+      pendulumThetaOmegaAt(t, p, analysis).theta;
 
     const worldLayout = gratingWorldLayout(logicalW, logicalH, p.rodLengthM);
     const pendLayout = pendulumLayoutFromGratingLayout(worldLayout, p.rodLengthM);

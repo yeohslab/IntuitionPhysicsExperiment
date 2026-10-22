@@ -1,7 +1,7 @@
 /** 实验二运行时刺激集版本。 */
 export const EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
 /** 实验四运行时刺激集版本。 */
-export const EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
+export const EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION = 2 as const;
 
 export type StimulusUnitType =
   | "textDisplay"
@@ -52,6 +52,8 @@ export interface GratingPendulumStimulusUnit {
   omega0DegPerSec: number;
   rodLengthM: number;
   gravity: number;
+  /** 本试次的目标机械能（J）。 */
+  energyJ: number;
   durationSec: number;
   queryTimeSec: number;
   gapLevel: "small" | "medium" | "large";

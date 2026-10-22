@@ -12,6 +12,7 @@ import type {
   Trial,
 } from "../../shared/experimentTypes";
 import { newId } from "../../shared/ids";
+import { analyzePendulum } from "../../experiment/physics/pendulum";
 import { radToDeg } from "../../experiment/physics/pendulumArcScore";
 import {
   bobVisibilityAtTime,
@@ -29,6 +30,8 @@ import {
   EXPERIMENT_4_BAR_WIDTH_M,
   EXPERIMENT_4_BOB_RADIUS_M,
   EXPERIMENT_4_DURATION_SEC,
+  EXPERIMENT_4_ENERGY_MAX_J,
+  EXPERIMENT_4_ENERGY_MIN_J,
   EXPERIMENT_4_FIXATION_MS,
   EXPERIMENT_4_RELEASE_CUE_MS,
   EXPERIMENT_4_FORMAL_BLOCKS,
@@ -79,7 +82,7 @@ function buildGratingUnit(
   rng: () => number,
 ): GratingPendulumStimulusUnit {
   const planned = planTrialQuery(side, gapLevel, rng);
-  const { params, gapM, tQuerySec, occlusionSegmentIndex, timeline, firstVisibleSec } =
+  const { params, energyJ, gapM, tQuerySec, occlusionSegmentIndex, timeline, firstVisibleSec } =
     planned;
   return {
     id: newId(),
@@ -88,6 +91,7 @@ function buildGratingUnit(
     omega0DegPerSec: radToDeg(params.omega0RadPerSec),
     rodLengthM: params.rodLengthM,
     gravity: params.gravity,
+    energyJ,
     durationSec: EXPERIMENT_4_DURATION_SEC,
     queryTimeSec: tQuerySec,
     gapLevel,
@@ -232,6 +236,22 @@ export function assertExperiment4RuntimeStimulusSet(set: Experiment4StimulusSet)
         rodLengthM: unit.rodLengthM,
         gravity: unit.gravity,
       };
+      const analysis = analyzePendulum(params);
+      const actualEnergyJ = analysis.E;
+      if (analysis.regime !== "oscillation") {
+        throw new Error(`实验四仅允许摆动，实际运动类型为 ${analysis.regime}`);
+      }
+      if (
+        unit.energyJ < EXPERIMENT_4_ENERGY_MIN_J ||
+        unit.energyJ > EXPERIMENT_4_ENERGY_MAX_J
+      ) {
+        throw new Error(`试次能量 ${unit.energyJ} J 超出预注册区间`);
+      }
+      if (Math.abs(actualEnergyJ - unit.energyJ) > 1e-9) {
+        throw new Error(
+          `初始状态能量 ${actualEnergyJ} J 与目标 ${unit.energyJ} J 不一致`,
+        );
+      }
       const vis = bobVisibilityAtTime(unit.queryTimeSec, params, unit.gapM);
       if (vis !== "fully_occluded") {
         throw new Error(`t_q=${unit.queryTimeSec} 非完全遮挡`);

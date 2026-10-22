@@ -105,6 +105,10 @@
   transition: none;
 }
 
+.physics-canvas.physics-canvas--grating {
+  aspect-ratio: 1000 / 560;
+}
+
 .physics-canvas.physics-canvas--estimate {
   border-color: #f97316;
   border-width: 2px;
