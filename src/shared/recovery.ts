@@ -4,10 +4,14 @@ import type { AnyParticipantInfo } from "./participant";
 import {
   isExperiment2ParticipantInfo,
   isExperiment4ParticipantInfo,
+  isTraining1ParticipantInfo,
+  isExperiment5ParticipantInfo,
 } from "./participant";
 import {
   parseExperiment2StimulusSet,
   parseExperiment4StimulusSet,
+  parseExperiment5StimulusSet,
+  parseTraining1StimulusSet,
 } from "./storage";
 
 export type RecoveryExperimentStatus = "f" | "nf";
@@ -21,6 +25,7 @@ export type RecoveryPhase =
   | "fade"
   | "hide"
   | "estimate"
+  | "response"
   | "feedback"
   | "between_trials";
 
@@ -72,6 +77,12 @@ function parseParticipant(
   if (experimentId === "experiment-4") {
     return isExperiment4ParticipantInfo(value) ? value : null;
   }
+  if (experimentId === "experiment-5") {
+    return isExperiment5ParticipantInfo(value) ? value : null;
+  }
+  if (experimentId === "training-1") {
+    return isTraining1ParticipantInfo(value) ? value : null;
+  }
   return null;
 }
 
@@ -81,6 +92,8 @@ function parseStimulusSet(
 ): RuntimeStimulusSet | null {
   if (experimentId === "experiment-2") return parseExperiment2StimulusSet(value);
   if (experimentId === "experiment-4") return parseExperiment4StimulusSet(value);
+  if (experimentId === "experiment-5") return parseExperiment5StimulusSet(value);
+  if (experimentId === "training-1") return parseTraining1StimulusSet(value);
   return null;
 }
 

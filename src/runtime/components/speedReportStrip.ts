@@ -1,9 +1,16 @@
 import { speedColorForLevel } from "./speedColorStrips";
 
+export type MountSpeedReportStripOpts = {
+  /** 默认 true；演示阶段设为 false 以禁用点选。 */
+  interactive?: boolean;
+};
+
 export type SpeedReportStrip = {
   root: HTMLElement;
   getPosition: () => number | null;
   onChange: (handler: (level: number) => void) => void;
+  /** 演示：只读标记跟随瞬时速度。 */
+  setPreviewLevel: (level: number) => void;
   /** 反馈：在被试标记之外另画真值标记。 */
   showTruth: (level: number) => void;
   /** 停止响应点击和拖动。 */
@@ -15,7 +22,11 @@ function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
 }
 
-export function mountSpeedReportStrip(container: HTMLElement): SpeedReportStrip {
+export function mountSpeedReportStrip(
+  container: HTMLElement,
+  opts: MountSpeedReportStripOpts = {},
+): SpeedReportStrip {
+  const interactive = opts.interactive ?? true;
   const wrap = document.createElement("div");
   wrap.className = "physics-speed-report-strip";
   wrap.innerHTML = `
@@ -26,7 +37,7 @@ export function mountSpeedReportStrip(container: HTMLElement): SpeedReportStrip 
     </div>
     <div class="physics-speed-report-strip__labels">
       <span>静止</span>
-      <span>最快</span>
+      <span>最高速</span>
     </div>`;
   container.appendChild(wrap);
   const track = wrap.querySelector(".physics-speed-report-strip__track") as HTMLElement;
@@ -47,8 +58,11 @@ export function mountSpeedReportStrip(container: HTMLElement): SpeedReportStrip 
   gradient.style.background = `linear-gradient(to right, ${stops.join(", ")})`;
 
   let position: number | null = null;
-  let locked = false;
+  let locked = !interactive;
   let dragging = false;
+  if (!interactive) {
+    wrap.classList.add("physics-speed-report-strip--locked");
+  }
   const handlers: Array<(level: number) => void> = [];
 
   const placeMarker = (marker: HTMLElement, level: number) => {
@@ -85,6 +99,7 @@ export function mountSpeedReportStrip(container: HTMLElement): SpeedReportStrip 
     root: wrap,
     getPosition: () => position,
     onChange: (handler) => handlers.push(handler),
+    setPreviewLevel: (level) => placeMarker(responseMarker, level),
     showTruth: (level) => placeMarker(truthMarker, level),
     lock: () => {
       locked = true;

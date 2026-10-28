@@ -7,7 +7,7 @@ import {
   EXPERIMENT_4_PROTOCOL_VERSION,
 } from "./protocol";
 
-export const EXPERIMENT_4_DATA_SCHEMA_VERSION = 2 as const;
+export const EXPERIMENT_4_DATA_SCHEMA_VERSION = 4 as const;
 const GRATING_TRIAL_TYPE = "grating-pendulum-stimulus";
 
 export const EXPERIMENT_4_STIMULUS_CSV_COLUMNS = [
@@ -27,12 +27,16 @@ export const EXPERIMENT_4_STIMULUS_CSV_COLUMNS = [
   "gap_level",
   "gap_m",
   "bar_width_m",
-  "release_side",
+  "initial_side",
+  "initial_direction",
   "theta_0_deg",
+  "omega_0_deg_per_sec",
   "pendulum_E_J",
   "omega_max_rad_per_sec",
+  "speed_scale_omega_max_rad_per_sec",
   "query_time_sec",
   "occlusion_segment_index",
+  "query_grating_index",
   "first_visible_sec",
   "last_visible_end_before_query_sec",
   "time_since_last_visible_sec",

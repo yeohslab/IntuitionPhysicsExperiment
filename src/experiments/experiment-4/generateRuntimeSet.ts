@@ -12,16 +12,17 @@ import type {
   Trial,
 } from "../../shared/experimentTypes";
 import { newId } from "../../shared/ids";
-import { analyzePendulum } from "../../experiment/physics/pendulum";
+import { analyzePendulum, pendulumThetaOmegaAt } from "../../experiment/physics/pendulum";
 import { radToDeg } from "../../experiment/physics/pendulumArcScore";
 import {
   bobVisibilityAtTime,
+  gratingPeriodM,
   planTrialQuery,
 } from "./grating";
 import {
   experiment4BlockRestText,
   experiment4PracticeText,
-  experiment4ReleaseCueText,
+  experiment4InitialCueText,
   experiment4StructureText,
   experiment4WelcomeText,
   EXPERIMENT_4_FIXATION_TEXT,
@@ -33,14 +34,15 @@ import {
   EXPERIMENT_4_ENERGY_MAX_J,
   EXPERIMENT_4_ENERGY_MIN_J,
   EXPERIMENT_4_FIXATION_MS,
-  EXPERIMENT_4_RELEASE_CUE_MS,
+  EXPERIMENT_4_INITIAL_CUE_MS,
   EXPERIMENT_4_FORMAL_BLOCKS,
   EXPERIMENT_4_FORMAL_TRIALS_PER_BLOCK,
   EXPERIMENT_4_GAP_LEVEL_ORDER,
   EXPERIMENT_4_PRACTICE_TRIALS,
-  EXPERIMENT_4_RELEASE_SIDE_SEQUENCE,
+  EXPERIMENT_4_INITIAL_SIDE_SEQUENCE,
   EXPERIMENT_4_TOTAL_RUNTIME_TRIALS,
   type Experiment4GapLevel,
+  type Experiment4InitialDirection,
   type Experiment4ResponseOrder,
 } from "./protocol";
 
@@ -62,12 +64,15 @@ function makeFixation(): TextDisplayUnit {
   };
 }
 
-function makeReleaseCue(side: "left" | "right"): TextDisplayUnit {
+function makeInitialCue(
+  side: "left" | "right",
+  direction: Experiment4InitialDirection,
+): TextDisplayUnit {
   return {
     id: newId(),
     type: "textDisplay",
-    text: experiment4ReleaseCueText(side),
-    durationMs: EXPERIMENT_4_RELEASE_CUE_MS,
+    text: experiment4InitialCueText(side, direction),
+    durationMs: EXPERIMENT_4_INITIAL_CUE_MS,
   };
 }
 
@@ -77,13 +82,16 @@ function makeRest(text: string): RestSegment {
 
 function buildGratingUnit(
   side: "left" | "right",
+  direction: Experiment4InitialDirection,
   gapLevel: Experiment4GapLevel,
   responseOrder: Experiment4ResponseOrder,
   rng: () => number,
 ): GratingPendulumStimulusUnit {
-  const planned = planTrialQuery(side, gapLevel, rng);
-  const { params, energyJ, gapM, tQuerySec, occlusionSegmentIndex, timeline, firstVisibleSec } =
-    planned;
+  const planned = planTrialQuery(side, direction, gapLevel, rng);
+  const {
+    params, energyJ, gapM, tQuerySec, occlusionSegmentIndex,
+    timeline, firstVisibleSec, queryBarIndex,
+  } = planned;
   return {
     id: newId(),
     type: "gratingPendulumStimulus",
@@ -98,9 +106,11 @@ function buildGratingUnit(
     gapM,
     barWidthM: EXPERIMENT_4_BAR_WIDTH_M,
     bobRadiusM: EXPERIMENT_4_BOB_RADIUS_M,
-    releaseSide: side,
+    initialSide: side,
+    initialDirection: direction,
     responseOrder,
     occlusionSegmentIndex,
+    queryBarIndex,
     occlusionTimeline: timeline.map((s) => ({
       kind: s.kind,
       tStartSec: s.tStartSec,
@@ -112,6 +122,7 @@ function buildGratingUnit(
 
 function makeTrial(
   side: "left" | "right",
+  direction: Experiment4InitialDirection,
   gapLevel: Experiment4GapLevel,
   responseOrder: Experiment4ResponseOrder,
   rng: () => number,
@@ -119,14 +130,33 @@ function makeTrial(
   return {
     id: newId(),
     units: [
-      makeReleaseCue(side),
+      makeInitialCue(side, direction),
       makeFixation(),
-      buildGratingUnit(side, gapLevel, responseOrder, rng),
+      buildGratingUnit(side, direction, gapLevel, responseOrder, rng),
     ],
   };
 }
 
-/** 与释放侧交叉平衡：每侧 10 条中两种汇报顺序各 5 条，随机分配到具体试次。 */
+/** 每个初始位置侧内，向左/向右各占一半，并随机落到具体试次。 */
+function balancedInitialDirectionsBySide(
+  sides: readonly ("left" | "right")[],
+  rng: () => number,
+): Experiment4InitialDirection[] {
+  const directions: Experiment4InitialDirection[] = new Array(sides.length);
+  for (const side of ["left", "right"] as const) {
+    const indices = sides.flatMap((s, i) => (s === side ? [i] : []));
+    const pool = indices.map((_, k): Experiment4InitialDirection =>
+      k < indices.length / 2 ? "leftward" : "rightward",
+    );
+    shuffleInPlace(pool, rng);
+    indices.forEach((trialIndex, k) => {
+      directions[trialIndex] = pool[k]!;
+    });
+  }
+  return directions;
+}
+
+/** 与初始位置侧交叉平衡：每侧 10 条中两种汇报顺序各 5 条，随机分配到具体试次。 */
 function balancedResponseOrdersBySide(
   sides: readonly ("left" | "right")[],
   rng: () => number,
@@ -135,7 +165,7 @@ function balancedResponseOrdersBySide(
   for (const side of ["left", "right"] as const) {
     const indices = sides.flatMap((s, i) => (s === side ? [i] : []));
     if (indices.length % 2 !== 0) {
-      throw new Error(`${side} 释放试次数 ${indices.length} 不能平分两种汇报顺序`);
+      throw new Error(`${side} 初始位置试次数 ${indices.length} 不能平分两种汇报顺序`);
     }
     const pool: Experiment4ResponseOrder[] = indices.map((_, k) =>
       k < indices.length / 2 ? "angle_first" : "speed_first",
@@ -153,9 +183,10 @@ function makeFormalBlock(
   rng: () => number,
   onTrial?: () => void,
 ): BlockSegment {
-  const orders = balancedResponseOrdersBySide(EXPERIMENT_4_RELEASE_SIDE_SEQUENCE, rng);
-  const children = EXPERIMENT_4_RELEASE_SIDE_SEQUENCE.map((side, index) => {
-    const trial = makeTrial(side, gapLevel, orders[index]!, rng);
+  const orders = balancedResponseOrdersBySide(EXPERIMENT_4_INITIAL_SIDE_SEQUENCE, rng);
+  const directions = balancedInitialDirectionsBySide(EXPERIMENT_4_INITIAL_SIDE_SEQUENCE, rng);
+  const children = EXPERIMENT_4_INITIAL_SIDE_SEQUENCE.map((side, index) => {
+    const trial = makeTrial(side, directions[index]!, gapLevel, orders[index]!, rng);
     onTrial?.();
     return trial;
   });
@@ -173,7 +204,8 @@ function makePracticeBlock(rng: () => number, onTrial?: () => void): PracticeSeg
   shuffleInPlace(orders, rng);
   const children = levels.map((gapLevel, index) => {
     const side: "left" | "right" = rng() < 0.5 ? "left" : "right";
-    const trial = makeTrial(side, gapLevel, orders[index]!, rng);
+    const direction: Experiment4InitialDirection = rng() < 0.5 ? "leftward" : "rightward";
+    const trial = makeTrial(side, direction, gapLevel, orders[index]!, rng);
     onTrial?.();
     return trial;
   });
@@ -218,6 +250,7 @@ export function assertExperiment4RuntimeStimulusSet(set: Experiment4StimulusSet)
     }
     const sides = { left: 0, right: 0 };
     const angleFirstBySide = { left: 0, right: 0 };
+    const leftwardBySide = { left: 0, right: 0 };
     let gapLevel: Experiment4GapLevel | null = null;
     for (const [index, trial] of block.children.entries()) {
       const unit = stimulusFromTrial(trial);
@@ -225,11 +258,12 @@ export function assertExperiment4RuntimeStimulusSet(set: Experiment4StimulusSet)
       if (unit.gapLevel !== gapLevel) {
         throw new Error("同一 Block 内间隙档应一致");
       }
-      if (unit.releaseSide !== EXPERIMENT_4_RELEASE_SIDE_SEQUENCE[index]) {
-        throw new Error(`Block 内第 ${index + 1} 条释放侧不符合固定序列`);
+      if (unit.initialSide !== EXPERIMENT_4_INITIAL_SIDE_SEQUENCE[index]) {
+        throw new Error(`Block 内第 ${index + 1} 条初始位置侧不符合固定序列`);
       }
-      sides[unit.releaseSide] += 1;
-      if (unit.responseOrder === "angle_first") angleFirstBySide[unit.releaseSide] += 1;
+      sides[unit.initialSide] += 1;
+      if (unit.responseOrder === "angle_first") angleFirstBySide[unit.initialSide] += 1;
+      if (unit.initialDirection === "leftward") leftwardBySide[unit.initialSide] += 1;
       const params = {
         theta0Rad: (unit.theta0Deg * Math.PI) / 180,
         omega0RadPerSec: (unit.omega0DegPerSec * Math.PI) / 180,
@@ -252,17 +286,38 @@ export function assertExperiment4RuntimeStimulusSet(set: Experiment4StimulusSet)
           `初始状态能量 ${actualEnergyJ} J 与目标 ${unit.energyJ} J 不一致`,
         );
       }
+      if (Math.abs(params.omega0RadPerSec) <= 1e-9) {
+        throw new Error("实验四初始角速度必须非零");
+      }
+      if (
+        (unit.initialDirection === "leftward" && params.omega0RadPerSec >= 0) ||
+        (unit.initialDirection === "rightward" && params.omega0RadPerSec <= 0)
+      ) {
+        throw new Error("初始运动方向与角速度符号不一致");
+      }
       const vis = bobVisibilityAtTime(unit.queryTimeSec, params, unit.gapM);
       if (vis !== "fully_occluded") {
         throw new Error(`t_q=${unit.queryTimeSec} 非完全遮挡`);
       }
+      const queryState = pendulumThetaOmegaAt(unit.queryTimeSec, params, analysis);
+      const expectedBarIndex = Math.round(
+        (unit.rodLengthM * Math.sin(queryState.theta)) / gratingPeriodM(unit.gapM),
+      );
+      if (unit.queryBarIndex !== expectedBarIndex) {
+        throw new Error(`询问光栅条编号不一致：${unit.queryBarIndex} / ${expectedBarIndex}`);
+      }
     }
     if (sides.left !== 10 || sides.right !== 10) {
-      throw new Error(`左右释放应为 10/10，实际 ${sides.left}/${sides.right}`);
+      throw new Error(`左右初始位置应为 10/10，实际 ${sides.left}/${sides.right}`);
     }
     if (angleFirstBySide.left !== 5 || angleFirstBySide.right !== 5) {
       throw new Error(
         `每侧先报角度应为 5 条，实际 左 ${angleFirstBySide.left} / 右 ${angleFirstBySide.right}`,
+      );
+    }
+    if (leftwardBySide.left !== 5 || leftwardBySide.right !== 5) {
+      throw new Error(
+        `每侧向左初速度应为 5 条，实际 左 ${leftwardBySide.left} / 右 ${leftwardBySide.right}`,
       );
     }
     gapLevelsSeen.add(gapLevel!);

@@ -3,17 +3,25 @@ import { withSyncedTotalTimeT } from "../experiment/physics/timePhases";
 import {
   isExperiment2ParticipantInfo,
   isExperiment4ParticipantInfo,
+  isExperiment5ParticipantInfo,
+  isTraining1ParticipantInfo,
   type AnyParticipantInfo,
   type Experiment2ParticipantInfo,
 } from "./participant";
 import {
   EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION,
   EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION,
+  EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION,
+  EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION,
   type BlockSegment,
   type Experiment2StimulusSet,
   type Experiment4StimulusSet,
+  type Experiment5StimulusSet,
+  type ExperimentTraining1StimulusSet,
+  type SpeedColorTrainingStimulusUnit,
   type GratingOcclusionSegmentRecord,
   type PendulumStimulusUnit,
+  type ReachabilityPendulumStimulusUnit,
   type PracticeSegment,
   type RestSegment,
   type StimulusUnit,
@@ -76,10 +84,12 @@ function parseUnit(raw: unknown): StimulusUnit | null {
     const barWidthM = finiteNumber(raw, "barWidthM");
     const bobRadiusM = finiteNumber(raw, "bobRadiusM");
     const gapLevel = raw.gapLevel;
-    const releaseSide = raw.releaseSide;
+    const initialSide = raw.initialSide;
+    const initialDirection = raw.initialDirection;
     const responseOrder =
       raw.responseOrder === undefined ? "angle_first" : raw.responseOrder;
     const occlusionSegmentIndex = finiteNumber(raw, "occlusionSegmentIndex");
+    const queryBarIndex = finiteNumber(raw, "queryBarIndex");
     const firstVisibleSecRaw = raw.firstVisibleSec;
     if (
       theta0Deg === null ||
@@ -93,8 +103,11 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       barWidthM === null ||
       bobRadiusM === null ||
       occlusionSegmentIndex === null ||
+      queryBarIndex === null ||
+      !Number.isInteger(queryBarIndex) ||
       (gapLevel !== "small" && gapLevel !== "medium" && gapLevel !== "large") ||
-      (releaseSide !== "left" && releaseSide !== "right") ||
+      (initialSide !== "left" && initialSide !== "right") ||
+      (initialDirection !== "leftward" && initialDirection !== "rightward") ||
       (responseOrder !== "angle_first" && responseOrder !== "speed_first") ||
       rodLengthM <= 0 ||
       gravity <= 0 ||
@@ -147,12 +160,123 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       gapM,
       barWidthM,
       bobRadiusM,
-      releaseSide,
+      initialSide,
+      initialDirection,
       responseOrder,
       occlusionSegmentIndex,
+      queryBarIndex,
       occlusionTimeline,
       firstVisibleSec,
     };
+  }
+
+  if (raw.type === "speedColorTrainingStimulus") {
+    const theta0Deg = finiteNumber(raw, "theta0Deg");
+    const omega0DegPerSec = finiteNumber(raw, "omega0DegPerSec");
+    const rodLengthM = finiteNumber(raw, "rodLengthM");
+    const gravity = finiteNumber(raw, "gravity");
+    const energyJ = finiteNumber(raw, "energyJ");
+    const queryTimeSec = finiteNumber(raw, "queryTimeSec");
+    const targetStripPosition = finiteNumber(raw, "targetStripPosition");
+    const blockIndex = finiteNumber(raw, "blockIndex");
+    const targetBinIndexRaw = raw.targetBinIndex;
+    const mode = raw.mode;
+    const trainingSegment = raw.trainingSegment;
+    const startSide = raw.startSide;
+    if (
+      theta0Deg === null ||
+      omega0DegPerSec === null ||
+      rodLengthM === null ||
+      gravity === null ||
+      energyJ === null ||
+      queryTimeSec === null ||
+      targetStripPosition === null ||
+      blockIndex === null ||
+      !Number.isInteger(blockIndex) ||
+      (mode !== "demonstration" && mode !== "report") ||
+      (trainingSegment !== "anchor_demo" &&
+        trainingSegment !== "mastery_1" &&
+        trainingSegment !== "mastery_2" &&
+        trainingSegment !== "mastery_3" &&
+        trainingSegment !== "mastery_4" &&
+        trainingSegment !== "mastery_5") ||
+      (startSide !== "left" && startSide !== "right") ||
+      rodLengthM <= 0 ||
+      gravity <= 0 ||
+      energyJ <= 0 ||
+      queryTimeSec <= 0 ||
+      targetStripPosition < 0 ||
+      targetStripPosition > 1 ||
+      blockIndex < 0 ||
+      blockIndex > 5
+    ) {
+      return null;
+    }
+    const targetBinIndex = targetBinIndexRaw === null
+      ? null
+      : typeof targetBinIndexRaw === "number" &&
+          Number.isInteger(targetBinIndexRaw) &&
+          targetBinIndexRaw >= 0 && targetBinIndexRaw < 8
+        ? targetBinIndexRaw
+        : null;
+    if ((mode === "demonstration") !== (targetBinIndex === null)) return null;
+    if (mode === "demonstration" && (blockIndex !== 0 || trainingSegment !== "anchor_demo")) return null;
+    if (mode === "report" &&
+        (blockIndex < 1 || trainingSegment !== `mastery_${blockIndex}`)) return null;
+    return {
+      id,
+      type: "speedColorTrainingStimulus",
+      mode,
+      trainingSegment,
+      blockIndex,
+      targetBinIndex,
+      startSide,
+      targetStripPosition,
+      theta0Deg,
+      omega0DegPerSec,
+      rodLengthM,
+      gravity,
+      energyJ,
+      queryTimeSec,
+    } satisfies SpeedColorTrainingStimulusUnit;
+  }
+
+  if (raw.type === "training1Summary") {
+    if (typeof raw.text !== "string") return null;
+    return { id, type: "training1Summary", text: raw.text };
+  }
+
+  if (raw.type === "reachabilityPendulumStimulus") {
+    const numericKeys = [
+      "theta0Deg", "omega0DegPerSec", "disappearanceThetaDeg",
+      "disappearanceOmegaDegPerSec", "rodLengthM", "gravity", "bobRadiusM",
+      "energyJ", "amplitudeDeg", "targetAngleDeg", "boundaryGapDeg",
+      "judgmentDistanceM", "judgmentTimeSec", "visibleDurationSec", "responseDeadlineSec",
+    ] as const;
+    const n = Object.fromEntries(numericKeys.map((key) => [key, finiteNumber(raw, key)])) as Record<typeof numericKeys[number], number | null>;
+    if (
+      numericKeys.some((key) => n[key] === null) ||
+      (raw.side !== "left" && raw.side !== "right") ||
+      (raw.relation !== "reachable" && raw.relation !== "unreachable") ||
+      (raw.correctResponse !== "reachable" && raw.correctResponse !== "unreachable") ||
+      (raw.yesKey !== "f" && raw.yesKey !== "j") ||
+      (raw.noKey !== "f" && raw.noKey !== "j") ||
+      raw.yesKey === raw.noKey ||
+      n.rodLengthM! <= 0 || n.gravity! <= 0 || n.bobRadiusM! <= 0 ||
+      n.energyJ! <= 0 || n.judgmentDistanceM! <= 0 || n.judgmentTimeSec! <= 0 ||
+      n.visibleDurationSec! <= 0 || n.responseDeadlineSec! <= 0
+    ) return null;
+    return {
+      id, type: "reachabilityPendulumStimulus",
+      theta0Deg: n.theta0Deg!, omega0DegPerSec: n.omega0DegPerSec!,
+      disappearanceThetaDeg: n.disappearanceThetaDeg!, disappearanceOmegaDegPerSec: n.disappearanceOmegaDegPerSec!,
+      rodLengthM: n.rodLengthM!, gravity: n.gravity!, bobRadiusM: n.bobRadiusM!, energyJ: n.energyJ!,
+      amplitudeDeg: n.amplitudeDeg!, targetAngleDeg: n.targetAngleDeg!, boundaryGapDeg: n.boundaryGapDeg!,
+      judgmentDistanceM: n.judgmentDistanceM!, judgmentTimeSec: n.judgmentTimeSec!,
+      visibleDurationSec: n.visibleDurationSec!, responseDeadlineSec: n.responseDeadlineSec!,
+      side: raw.side, relation: raw.relation, correctResponse: raw.correctResponse,
+      yesKey: raw.yesKey, noKey: raw.noKey,
+    } satisfies ReachabilityPendulumStimulusUnit;
   }
 
   if (raw.type !== "pendulumStimulus") return null;
@@ -281,12 +405,29 @@ export function parseExperiment4StimulusSet(
   ) as Experiment4StimulusSet | null;
 }
 
+export function parseExperiment5StimulusSet(
+  raw: unknown,
+): Experiment5StimulusSet | null {
+  return parseRuntimeStimulusSet(raw, EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION) as Experiment5StimulusSet | null;
+}
+
+export function parseTraining1StimulusSet(
+  raw: unknown,
+): ExperimentTraining1StimulusSet | null {
+  return parseRuntimeStimulusSet(
+    raw,
+    EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION,
+  ) as ExperimentTraining1StimulusSet | null;
+}
+
 function parseSetForExperiment(
   experimentId: ExperimentId,
   raw: unknown,
 ): RuntimeStimulusSet | null {
   if (experimentId === "experiment-2") return parseExperiment2StimulusSet(raw);
   if (experimentId === "experiment-4") return parseExperiment4StimulusSet(raw);
+  if (experimentId === "experiment-5") return parseExperiment5StimulusSet(raw);
+  if (experimentId === "training-1") return parseTraining1StimulusSet(raw);
   return null;
 }
 
@@ -299,6 +440,12 @@ function parseParticipantForExperiment(
   }
   if (experimentId === "experiment-4") {
     return isExperiment4ParticipantInfo(raw) ? raw : null;
+  }
+  if (experimentId === "experiment-5") {
+    return isExperiment5ParticipantInfo(raw) ? raw : null;
+  }
+  if (experimentId === "training-1") {
+    return isTraining1ParticipantInfo(raw) ? raw : null;
   }
   return null;
 }

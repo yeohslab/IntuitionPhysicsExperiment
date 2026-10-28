@@ -10,7 +10,7 @@ export const EXPERIMENT_4_BOB_RADIUS_M = 0.08;
 export const EXPERIMENT_4_BAR_WIDTH_M = 2.2;
 /** 预注册试次地平线（秒）。最后一段完全遮挡若延续到此时刻，右端点截断于此。 */
 export const EXPERIMENT_4_DURATION_SEC = 10.0;
-export const EXPERIMENT_4_RELEASE_CUE_MS = 2000;
+export const EXPERIMENT_4_INITIAL_CUE_MS = 2000;
 /** 逐试次机械能在 11.48 ± 3 J 内均匀抽样。 */
 export const EXPERIMENT_4_ENERGY_CENTER_J = 11.48;
 export const EXPERIMENT_4_ENERGY_HALF_RANGE_J = 3;
@@ -20,6 +20,8 @@ export const EXPERIMENT_4_ENERGY_MAX_J =
   EXPERIMENT_4_ENERGY_CENTER_J + EXPERIMENT_4_ENERGY_HALF_RANGE_J;
 export const EXPERIMENT_4_QUERY_MIN_SEC = 1.0;
 export const EXPERIMENT_4_OCCLUSION_MARGIN_SEC = 0.15;
+/** 初始相位距转折点至少一个周期的 0.5%，确保初速度严格非零。 */
+export const EXPERIMENT_4_INITIAL_TURN_MARGIN_FRACTION = 0.005;
 
 export const EXPERIMENT_4_GAP_LEVELS = {
   small: 0.45,
@@ -44,8 +46,8 @@ export const EXPERIMENT_4_PRACTICE_TRIALS = 3;
 export const EXPERIMENT_4_TOTAL_RUNTIME_TRIALS =
   EXPERIMENT_4_PRACTICE_TRIALS + EXPERIMENT_4_FORMAL_TRIALS;
 
-/** 固定左右释放序列（每档间隙 Block 相同） */
-export const EXPERIMENT_4_RELEASE_SIDE_SEQUENCE: readonly ("left" | "right")[] = [
+/** 固定左右初始位置序列（每档间隙 Block 相同）。 */
+export const EXPERIMENT_4_INITIAL_SIDE_SEQUENCE: readonly ("left" | "right")[] = [
   "left",
   "left",
   "left",
@@ -67,6 +69,8 @@ export const EXPERIMENT_4_RELEASE_SIDE_SEQUENCE: readonly ("left" | "right")[] =
   "left",
   "left",
 ];
+
+export type Experiment4InitialDirection = "leftward" | "rightward";
 
 /** 能量区间两端对应的逐试次最低点最大角速度。 */
 export const EXPERIMENT_4_OMEGA_MIN_RAD_PER_SEC = pendulumOmegaRadForEnergyAtBottom(

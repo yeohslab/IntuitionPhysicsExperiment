@@ -7,16 +7,19 @@ CSV 列定义见 `src/experiments/experiment-4/exportStimulusCsv.ts` 中的 `EXP
 | 列 | 说明 |
 | --- | --- |
 | `gap_level` / `gap_m` | 间隙档与宽度 (m) |
-| `release_side` | `left` / `right` |
-| `theta_0_deg` | 按本试次能量换算的左/右转折点角度 |
+| `initial_side` | 初始位置位于 `left` / `right` 半边 |
+| `initial_direction` | 初始运动方向 `leftward` / `rightward` |
+| `theta_0_deg` / `omega_0_deg_per_sec` | 同一能量轨道上按运动时间随机抽取的初始角度与非零角速度 |
 | `pendulum_E_J` | 本试次机械能（在 $[8.48,14.48]\,\mathrm{J}$ 内均匀抽样） |
-| `omega_max_rad_per_sec` | 本试次最低点最大角速度，即速度色带右端 |
+| `omega_max_rad_per_sec` | 本试次最低点最大角速度 |
+| `speed_scale_omega_max_rad_per_sec` | 速度色带右端（固定为实验四最高能量在最低点的角速度） |
 | `query_time_sec` | 询问时刻 $t_q$ |
+| `query_grating_index` | 询问时小球所在的物理光栅条编号（中央为 0） |
 | `theta_q_*` / `omega_q_*` | 询问瞬间真值 |
 | `theta_reported_*` | 被试报告角度 |
 | `speed_strip_position` | 色带位置 $p\in[0,1]$ |
 | `omega_reported_rad_per_sec` | $p\cdot|\omega|_{\max}$ |
-| `response_order_first` | `angle` 或 `speed`：该试次规定先报的一项（区组内按释放侧 5/5 平衡） |
+| `response_order_first` | `angle` 或 `speed`：该试次规定先报的一项（区组内按初始位置侧 5/5 平衡） |
 | `rt_angle_sec` / `rt_speed_sec` | 从询问时刻到首次点选该项的时间（s），两种顺序定义相同 |
 | `visible_frame_count` | 仿真阶段完全可见帧数 |
 

@@ -1,8 +1,12 @@
 import type { JsPsych } from "jspsych";
 import { ParameterType } from "jspsych";
 import {
+  absOmegaRadPerSecFromSpeedStripPosition,
+  SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC,
+  speedStripPositionFromAbsOmegaRadPerSec,
+} from "../../experiment/physics/speedStripScale";
+import {
   analyzePendulum,
-  pendulumOmegaRadForEnergyAtBottom,
   pendulumThetaOmegaAt,
 } from "../../experiment/physics/pendulum";
 import type { PendulumParams } from "../../experiment/physics/pendulum";
@@ -111,7 +115,6 @@ class GratingPendulumPlugin {
       regime,
       wMaxDeg: pendulumWMaxDeg(analysis.E, regime, p.rodLengthM, p.gravity),
     };
-    const omegaMax = pendulumOmegaRadForEnergyAtBottom(analysis.E, p.rodLengthM);
     const thetaAt = (t: number): number =>
       pendulumThetaOmegaAt(t, p, analysis).theta;
 
@@ -258,7 +261,9 @@ class GratingPendulumPlugin {
 
     const buildPayload = (): Record<string, unknown> => {
       const omegaReported =
-        speedPosition === null ? null : speedPosition * omegaMax;
+        speedPosition === null
+          ? null
+          : absOmegaRadPerSecFromSpeedStripPosition(speedPosition);
       const thetaReportedDeg = angleInteracted
         ? pendulumAngleDegFromRad(thetaEstRad)
         : null;
@@ -278,6 +283,7 @@ class GratingPendulumPlugin {
         theta_reported_rad:
           thetaReportedDeg === null ? null : degToRad(thetaReportedDeg),
         speed_strip_position: speedPosition,
+        speed_scale_omega_max_rad_per_sec: SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC,
         omega_reported_rad_per_sec: omegaReported,
         delta_theta_deg: deltaThetaDeg,
         abs_delta_theta_deg:
@@ -327,7 +333,9 @@ class GratingPendulumPlugin {
         "<strong>橙色</strong>为您的选择，<strong>蓝色</strong>为询问时刻的真实值（摆杆与色带相同）。按空格键继续。";
       confirmBtn.remove();
       speedStrip?.lock();
-      speedStrip?.showTruth(Math.abs(omegaTruthRad) / omegaMax);
+      speedStrip?.showTruth(
+        speedStripPositionFromAbsOmegaRadPerSec(omegaTruthRad),
+      );
       focusTrialRoot();
       window.setTimeout(() => {
         if (!cleaned) kbListener = listenSpace(() => finish(payload));

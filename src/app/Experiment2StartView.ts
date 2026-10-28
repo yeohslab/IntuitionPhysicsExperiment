@@ -34,7 +34,7 @@ let activeGenerationAbort: AbortController | null = null;
 export type WithinSubjectStartConfig = {
   experimentId: ExperimentId;
   displayName: string;
-  subjectPrefix: "E2" | "E4";
+  subjectPrefix: "E2" | "E4" | "E5" | "T1";
   runnerHash: string;
   totalTrials: number;
   definition: ExperimentDefinition;

@@ -327,6 +327,15 @@ export function transitionMaskedAmbientToEstimateCue(): void {
   scheduleSynchronizedEstimateBoundary(ctx, stopMaskedWebAudioAt);
 }
 
+/** 实验五边界提示音：不启动掩蔽音，在调用时刻直接播放 880 Hz / 80 ms。 */
+export function playBoundaryCueNow(): number | null {
+  const ctx = getAudioContext();
+  if (!ctx || ctx.state !== "running") return null;
+  const boundaryTimeSec = ctx.currentTime;
+  playEstimateCueAt(ctx, boundaryTimeSec);
+  return boundaryTimeSec;
+}
+
 export function syncMaskedAmbientFromVisibility(
   vis: { kind: "show" | "fadeOut" | "hide"; alpha: number },
 ): boolean {

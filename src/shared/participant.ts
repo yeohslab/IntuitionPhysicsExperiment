@@ -21,9 +21,25 @@ export interface Experiment4ParticipantInfo {
   age_years: number;
 }
 
+export interface Experiment5ParticipantInfo {
+  /** 实验五单组编号：E5- + 四位组内序号，如 E5-0001。 */
+  subject_id: string;
+  gender_code: GenderCode;
+  age_years: number;
+}
+
+export interface Training1ParticipantInfo {
+  /** 训练一编号：T1- + 四位组内序号，如 T1-0001。 */
+  subject_id: string;
+  gender_code: GenderCode;
+  age_years: number;
+}
+
 export type AnyParticipantInfo =
   | Experiment2ParticipantInfo
-  | Experiment4ParticipantInfo;
+  | Experiment4ParticipantInfo
+  | Experiment5ParticipantInfo
+  | Training1ParticipantInfo;
 
 /**
  * 校验并规范组内序号为四位前导零字符串（如 1 → "0001"）。
@@ -46,7 +62,18 @@ export function buildExperiment4SubjectId(withinGroupNumber: string): string {
   return `E4-${withinGroupNumber}`;
 }
 
-function isValidPrefixedSubjectId(prefix: "E2" | "E4", subjectId: string): boolean {
+export function buildExperiment5SubjectId(withinGroupNumber: string): string {
+  return `E5-${withinGroupNumber}`;
+}
+
+export function buildTraining1SubjectId(withinGroupNumber: string): string {
+  return `T1-${withinGroupNumber}`;
+}
+
+function isValidPrefixedSubjectId(
+  prefix: "E2" | "E4" | "E5" | "T1",
+  subjectId: string,
+): boolean {
   const match = new RegExp(`^${prefix}-(\\d{4})$`).exec(subjectId);
   if (!match) return false;
   const within = Number(match[1]);
@@ -59,6 +86,14 @@ export function isValidExperiment2SubjectId(subjectId: string): boolean {
 
 export function isValidExperiment4SubjectId(subjectId: string): boolean {
   return isValidPrefixedSubjectId("E4", subjectId);
+}
+
+export function isValidExperiment5SubjectId(subjectId: string): boolean {
+  return isValidPrefixedSubjectId("E5", subjectId);
+}
+
+export function isValidTraining1SubjectId(subjectId: string): boolean {
+  return isValidPrefixedSubjectId("T1", subjectId);
 }
 
 export function parseExperiment2WithinGroupNumber(subjectId: string): string | null {
@@ -84,7 +119,7 @@ export function normalizeAgeYears(raw: unknown): number | null {
 
 function isParticipantInfoWithPrefix(
   value: unknown,
-  _prefix: "E2" | "E4",
+  _prefix: "E2" | "E4" | "E5" | "T1",
   validateId: (id: string) => boolean,
 ): boolean {
   if (typeof value !== "object" || value === null) return false;
@@ -112,6 +147,26 @@ export function isExperiment4ParticipantInfo(
   return isParticipantInfoWithPrefix(value, "E4", isValidExperiment4SubjectId);
 }
 
+export function isExperiment5ParticipantInfo(
+  value: unknown,
+): value is Experiment5ParticipantInfo {
+  return isParticipantInfoWithPrefix(value, "E5", isValidExperiment5SubjectId);
+}
+
+export function isTraining1ParticipantInfo(
+  value: unknown,
+): value is Training1ParticipantInfo {
+  return isParticipantInfoWithPrefix(value, "T1", isValidTraining1SubjectId);
+}
+
 export function parseExperiment4WithinGroupNumber(subjectId: string): string | null {
   return isValidExperiment4SubjectId(subjectId) ? subjectId.slice(3) : null;
+}
+
+export function parseExperiment5WithinGroupNumber(subjectId: string): string | null {
+  return isValidExperiment5SubjectId(subjectId) ? subjectId.slice(3) : null;
+}
+
+export function parseTraining1WithinGroupNumber(subjectId: string): string | null {
+  return isValidTraining1SubjectId(subjectId) ? subjectId.slice(3) : null;
 }

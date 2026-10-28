@@ -24,13 +24,17 @@ export type Experiment4TrialDescriptor = {
   gap_m: number;
   bar_width_m: number;
   bob_radius_m: number;
-  release_side: "left" | "right";
+  initial_side: "left" | "right";
+  initial_direction: "leftward" | "rightward";
   response_order: "angle_first" | "speed_first";
   theta_0_deg: number;
   theta_0_rad: number;
+  omega_0_deg_per_sec: number;
+  omega_0_rad_per_sec: number;
   duration_sec: number;
   query_time_sec: number;
   occlusion_segment_index: number;
+  query_grating_index: number;
   first_visible_sec: number | null;
   last_visible_end_before_query_sec: number | null;
   time_since_last_visible_sec: number | null;
@@ -92,13 +96,17 @@ export function describeExperiment4Trial(
     gap_m: unit.gapM,
     bar_width_m: unit.barWidthM,
     bob_radius_m: unit.bobRadiusM,
-    release_side: unit.releaseSide,
+    initial_side: unit.initialSide,
+    initial_direction: unit.initialDirection,
     response_order: unit.responseOrder,
     theta_0_deg: unit.theta0Deg,
     theta_0_rad: params.theta0Rad,
+    omega_0_deg_per_sec: unit.omega0DegPerSec,
+    omega_0_rad_per_sec: params.omega0RadPerSec,
     duration_sec: unit.durationSec,
     query_time_sec: unit.queryTimeSec,
     occlusion_segment_index: unit.occlusionSegmentIndex,
+    query_grating_index: unit.queryBarIndex,
     first_visible_sec: unit.firstVisibleSec,
     last_visible_end_before_query_sec: lastVisibleEnd,
     time_since_last_visible_sec: timeSince,

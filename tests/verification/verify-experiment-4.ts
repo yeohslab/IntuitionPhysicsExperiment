@@ -6,7 +6,9 @@ import {
   bobVisibilityAtTime,
   gratingPeriodM,
   queryableWindows,
+  sampleQueryTimeSec,
   buildOcclusionTimeline,
+  pendulumParamsForInitialState,
   pendulumParamsForRelease,
   firstFullyVisibleTimeSec,
 } from "../../src/experiments/experiment-4/grating.ts";
@@ -20,7 +22,7 @@ import {
   EXPERIMENT_4_FORMAL_TRIALS,
   EXPERIMENT_4_GAP_LEVELS,
   EXPERIMENT_4_GRAVITY,
-  EXPERIMENT_4_RELEASE_SIDE_SEQUENCE,
+  EXPERIMENT_4_INITIAL_SIDE_SEQUENCE,
   EXPERIMENT_4_ROD_LENGTH_M,
 } from "../../src/experiments/experiment-4/protocol.ts";
 import {
@@ -34,7 +36,7 @@ import {
   isExperiment4ParticipantInfo,
 } from "../../src/shared/participant.ts";
 import { parseExperiment4StimulusSet } from "../../src/shared/storage.ts";
-import { pendulumRegime } from "../../src/experiment/physics/pendulum.ts";
+import { analyzePendulum, pendulumRegime } from "../../src/experiment/physics/pendulum.ts";
 import {
   GRATING_CANVAS_LOGICAL_H,
   GRATING_CANVAS_LOGICAL_W,
@@ -102,6 +104,7 @@ const set = generateExperiment4RuntimeStimulusSet({ rng: mulberry32(42) });
 assertExperiment4RuntimeStimulusSet(set);
 
 const descriptors = collectExperiment4TrialDescriptors(set);
+assert(!JSON.stringify(set).includes("energy_level"), "实验四不得重新引入能量档位字段");
 const formal = descriptors.filter((d) => d.segment_kind === "block");
 assert(formal.length === EXPERIMENT_4_FORMAL_TRIALS, "正式描述符数量");
 assert(EXPERIMENT_4_DURATION_SEC === 10, "实验四规划地平线应为 10 s");
@@ -170,22 +173,19 @@ for (const d of formal) {
     ) === "oscillation",
     "实验四不得包含转动试次",
   );
-  const expectedThetaAbsDeg =
-    (Math.acos(
-      1 -
-        d.pendulum_E_J /
-          (EXPERIMENT_4_GRAVITY * EXPERIMENT_4_ROD_LENGTH_M),
-    ) *
-      180) /
-    Math.PI;
   assert(
-    Math.abs(Math.abs(d.theta_0_deg) - expectedThetaAbsDeg) < 1e-9,
-    `初始角应为能量对应的转折点: ${d.trial_id}`,
+    Math.abs(d.omega_0_rad_per_sec) > 1e-9,
+    `初始角速度必须非零: ${d.trial_id}`,
   );
   assert(
-    (d.release_side === "left" && d.theta_0_deg < 0) ||
-      (d.release_side === "right" && d.theta_0_deg > 0),
-    `初始角符号应与释放侧一致: ${d.trial_id}`,
+    (d.initial_side === "left" && d.theta_0_deg < 0) ||
+      (d.initial_side === "right" && d.theta_0_deg > 0),
+    `初始角符号应与初始位置侧一致: ${d.trial_id}`,
+  );
+  assert(
+    (d.initial_direction === "leftward" && d.omega_0_rad_per_sec < 0) ||
+      (d.initial_direction === "rightward" && d.omega_0_rad_per_sec > 0),
+    `初始角速度符号应与运动方向一致: ${d.trial_id}`,
   );
   const expectedOmegaMax = Math.sqrt(
     (2 * d.pendulum_E_J) /
@@ -195,16 +195,36 @@ for (const d of formal) {
     Math.abs(d.omega_max_rad_per_sec - expectedOmegaMax) < 1e-9,
     `速度色带上限应逐试次匹配能量: ${d.trial_id}`,
   );
-  const params = pendulumParamsForRelease(d.release_side, d.pendulum_E_J);
+  const params = {
+    theta0Rad: d.theta_0_rad,
+    omega0RadPerSec: d.omega_0_rad_per_sec,
+    rodLengthM: d.rod_length_m,
+    gravity: d.gravity_m_per_sec2,
+  };
+  assert(
+    Math.abs(analyzePendulum(params).E - d.pendulum_E_J) < 1e-9,
+    `随机初始状态必须保持目标机械能: ${d.trial_id}`,
+  );
   assert(
     bobVisibilityAtTime(d.query_time_sec, params, d.gap_m) === "fully_occluded",
     `t_q 应遮挡 ${d.trial_id}`,
+  );
+  assert(
+    d.query_grating_index ===
+      Math.round(
+        (d.rod_length_m * Math.sin(d.theta_q_rad)) / gratingPeriodM(d.gap_m),
+      ),
+    `询问光栅条编号应与真值位置一致: ${d.trial_id}`,
   );
 }
 
 assert(
   new Set(formal.map((d) => d.pendulum_E_J.toFixed(8))).size > 50,
   "正式试次能量应逐试次连续变化",
+);
+assert(
+  new Set(formal.map((d) => d.theta_0_deg.toFixed(6))).size > 50,
+  "正式试次初始位置应随随机相位连续变化",
 );
 
 assertGapGeometry(EXPERIMENT_4_GAP_LEVELS.small);
@@ -213,7 +233,7 @@ assertGapGeometry(EXPERIMENT_4_GAP_LEVELS.large);
 
 assert(Math.abs(angleDegFromX(1.1) - 16.0) < 0.3, "中央遮挡外缘角度");
 assert(Math.abs(angleDegFromX(1.55) - 22.8) < 0.3, "小档间隙内缘角度");
-assert(Math.abs(angleDegFromX(3.75) - 69.6) < 0.3, "小档释放附近角度");
+assert(Math.abs(angleDegFromX(3.75) - 69.6) < 0.3, "小档外侧角度");
 assert(Math.abs(angleDegFromX(2.0) - 30.0) < 0.3, "中档间隙内缘角度");
 assert(Math.abs(angleDegFromX(2.45) - 37.8) < 0.3, "大档间隙内缘角度");
 
@@ -221,7 +241,7 @@ const blockSides = new Map<string, { left: number; right: number }>();
 for (const d of formal) {
   const key = d.gap_level;
   const entry = blockSides.get(key) ?? { left: 0, right: 0 };
-  entry[d.release_side] += 1;
+  entry[d.initial_side] += 1;
   blockSides.set(key, entry);
 }
 for (const level of Object.keys(EXPERIMENT_4_GAP_LEVELS)) {
@@ -230,8 +250,8 @@ for (const level of Object.keys(EXPERIMENT_4_GAP_LEVELS)) {
 }
 
 assert(
-  EXPERIMENT_4_RELEASE_SIDE_SEQUENCE.length === 20,
-  "固定释放序列长度",
+  EXPERIMENT_4_INITIAL_SIDE_SEQUENCE.length === 20,
+  "固定初始位置侧序列长度",
 );
 
 for (const blockIndex of [1, 2, 3]) {
@@ -241,17 +261,29 @@ for (const blockIndex of [1, 2, 3]) {
   assert(rows.length === 20, `区组 ${blockIndex} 应有 20 条`);
   rows.forEach((d, i) => {
     assert(
-      d.release_side === EXPERIMENT_4_RELEASE_SIDE_SEQUENCE[i],
+      d.initial_side === EXPERIMENT_4_INITIAL_SIDE_SEQUENCE[i],
       `区组 ${blockIndex} 第 ${i + 1} 条应按固定左右序列呈现`,
     );
   });
   for (const side of ["left", "right"] as const) {
     const angleFirst = rows.filter(
-      (d) => d.release_side === side && d.response_order === "angle_first",
+      (d) => d.initial_side === side && d.response_order === "angle_first",
     ).length;
     assert(angleFirst === 5, `区组 ${blockIndex} ${side} 先报角度应为 5，实际 ${angleFirst}`);
+    const leftward = rows.filter(
+      (d) => d.initial_side === side && d.initial_direction === "leftward",
+    ).length;
+    assert(leftward === 5, `区组 ${blockIndex} ${side} 向左初速度应为 5，实际 ${leftward}`);
   }
 }
+
+// 按窗口时长抽样：3 倍长的遮挡窗口应占据 3 倍随机数测度。
+const weightedWindows = [
+  { tMinSec: 0, tMaxSec: 0.7, segmentIndex: 0, samplingWeightSec: 1 },
+  { tMinSec: 2, tMaxSec: 4.7, segmentIndex: 1, samplingWeightSec: 3 },
+];
+assert(sampleQueryTimeSec(weightedWindows, () => 0.2).segmentIndex === 0, "短窗口权重");
+assert(sampleQueryTimeSec(weightedWindows, () => 0.3).segmentIndex === 1, "长窗口权重");
 
 const practiceOrders = new Set(
   descriptors.filter((d) => d.segment_kind === "practice").map((d) => d.response_order),
@@ -315,6 +347,19 @@ for (const gapM of Object.values(EXPERIMENT_4_GAP_LEVELS)) {
   }
 }
 
+for (const side of ["left", "right"] as const) {
+  for (const direction of ["leftward", "rightward"] as const) {
+    const params = pendulumParamsForInitialState(
+      side,
+      direction,
+      EXPERIMENT_4_ENERGY_CENTER_J,
+      () => 0.5,
+    );
+    assert(Math.abs(params.omega0RadPerSec) > 1e-9, "四种初始分支均应有非零速度");
+    assert(Math.abs(analyzePendulum(params).E - EXPERIMENT_4_ENERGY_CENTER_J) < 1e-9, "初相位不得改变能量");
+  }
+}
+
 const fakeRow = {
   trial_type: "grating-pendulum-stimulus",
   segment_kind: "block",
@@ -336,5 +381,7 @@ const csv = buildExperiment4StimulusTrialsCsv(completeRows, participant, "f");
 assert(csv.includes("experiment-4"), "CSV 含 experiment_id");
 assert(csv.includes("gap_level") || csv.includes("query_time_sec"), "CSV 列头");
 assert(csv.includes("pendulum_E_J"), "CSV 应导出逐试次机械能");
+assert(csv.includes("initial_direction"), "CSV 应导出初始运动方向");
+assert(csv.includes("query_grating_index"), "CSV 应导出询问光栅条编号");
 
 console.log("verify-experiment-4: OK");

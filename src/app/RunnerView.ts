@@ -52,7 +52,9 @@ export function mountRunner(container: HTMLElement, experimentId: ExperimentId):
     ? "未找到有效的被试信息。请从首页重新开始。"
     : set
       ? definition.validateStimulusSet(set)
-      : "未找到要运行的刺激集。请从首页输入被试信息并开始。";
+      : experimentId === "training-1"
+        ? "未找到新版训练一刺激集，旧版缓存不能继续。请返回训练一首页重新生成。"
+        : "未找到要运行的刺激集。请从首页输入被试信息并开始。";
 
   if (!set || !participant || err) {
     container.innerHTML = `
@@ -126,17 +128,19 @@ function runExperiment(
     status: ExperimentStatus,
     rows: readonly Record<string, unknown>[],
   ) => {
+    const trainingFailed =
+      definition.id === "training-1" && status === "nf" && !requestedInterrupt;
     toolbar.hidden = true;
     target.hidden = true;
     done.hidden = false;
     done.innerHTML = `
-      <h2>${status === "f" ? "实验已完成" : "实验已中断"}</h2>
+      <h2>${status === "f" ? "实验已完成" : trainingFailed ? "训练一尚未达标" : "实验已中断"}</h2>
       <p>已尝试下载被试 CSV 与刺激集 JSON。若浏览器拦截了下载，请使用下方按钮重新下载。</p>
       <p class="hint muted">请在确认两个文件已成功保存到本地后，再点击「我已确认文件已保存」。在此之前，刷新或返回首页仍可重复导出。</p>
       <div class="runner-done__actions">
         <button type="button" class="btn btn-secondary" id="btn-redownload-data">重新下载 CSV</button>
         <button type="button" class="btn btn-secondary" id="btn-redownload-stimulus">重新下载刺激集</button>
-        <button type="button" class="btn btn-primary" id="btn-confirm-saved">我已确认文件已保存</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-saved">${trainingFailed ? "已保存，重新进行训练一" : "我已确认文件已保存"}</button>
       </div>
     `;
     done.querySelector("#btn-redownload-data")?.addEventListener("click", () => {
@@ -148,7 +152,7 @@ function runExperiment(
     done.querySelector("#btn-confirm-saved")?.addEventListener("click", () => {
       clearRecoverySnapshot(definition.id);
       clearExperimentSession(definition.id);
-      location.hash = "#/";
+      location.hash = trainingFailed ? definition.startHash : "#/";
     });
   };
 
@@ -246,6 +250,6 @@ function runExperiment(
   window.addEventListener("beforeunload", checkpointBeforeLeaving);
   activeRun = { interrupt };
 
-  const timeline = definition.buildTimeline(set, participant);
+  const timeline = definition.buildTimeline(set, participant, jsPsych);
   void jsPsych.run(timeline as Parameters<JsPsych["run"]>[0]);
 }

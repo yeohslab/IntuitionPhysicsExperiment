@@ -1,18 +1,29 @@
 import type { ExperimentStatus } from "../runtime/export/exportStimulusCsv";
+import type { JsPsych } from "jspsych";
 import type {
   Experiment2StimulusSet,
   Experiment4StimulusSet,
+  Experiment5StimulusSet,
+  ExperimentTraining1StimulusSet,
 } from "../shared/experimentTypes";
 import type {
   AnyParticipantInfo,
   Experiment2ParticipantInfo,
   Experiment4ParticipantInfo,
+  Experiment5ParticipantInfo,
+  Training1ParticipantInfo,
 } from "../shared/participant";
 
-export type ExperimentId = "experiment-2" | "experiment-4";
+export type ExperimentId =
+  | "experiment-2"
+  | "experiment-4"
+  | "experiment-5"
+  | "training-1";
 export type AnyRuntimeStimulusSet =
   | Experiment2StimulusSet
-  | Experiment4StimulusSet;
+  | Experiment4StimulusSet
+  | Experiment5StimulusSet
+  | ExperimentTraining1StimulusSet;
 
 export type SpeedCueConfig =
   | {
@@ -53,7 +64,11 @@ export interface ExperimentDefinition<
   parseParticipant(value: unknown): P | null;
   parseStimulusSet(value: unknown): S | null;
   validateStimulusSet(set: S): string | null;
-  buildTimeline(set: S, participant: P): Record<string, unknown>[];
+  buildTimeline(
+    set: S,
+    participant: P,
+    jsPsych?: JsPsych,
+  ): Record<string, unknown>[];
   classifyStatus(
     rows: readonly Record<string, unknown>[],
     timelineEndedNaturally: boolean,
@@ -75,4 +90,14 @@ export type Experiment2Definition = ExperimentDefinition<
 export type Experiment4Definition = ExperimentDefinition<
   Experiment4ParticipantInfo,
   Experiment4StimulusSet
+>;
+
+export type Experiment5Definition = ExperimentDefinition<
+  Experiment5ParticipantInfo,
+  Experiment5StimulusSet
+>;
+
+export type Training1Definition = ExperimentDefinition<
+  Training1ParticipantInfo,
+  ExperimentTraining1StimulusSet
 >;

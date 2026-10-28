@@ -142,6 +142,22 @@ function drawGratingBob(
   ctx.stroke();
 }
 
+/** 训练一：无光栅，仅摆球与下半圆参考。 */
+export function drawTrainingPendulumFrame(
+  ctx: CanvasRenderingContext2D,
+  layout: GratingWorldLayout,
+  rodLengthM: number,
+  thetaRad: number,
+): void {
+  ctx.save();
+  ctx.fillStyle = GRATING_BG;
+  ctx.fillRect(0, 0, layout.canvasW, layout.canvasH);
+  drawGratingBob(ctx, layout, rodLengthM, thetaRad);
+  drawLowerSemicircleReference(ctx, layout, rodLengthM);
+  drawPivot(ctx, layout);
+  ctx.restore();
+}
+
 /** 绘制顺序：背景 → 摆球 → 遮挡条 → 静态圆周与悬挂点（遮挡条盖住摆球）。 */
 export function drawGratingStimulusFrame(
   ctx: CanvasRenderingContext2D,

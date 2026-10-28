@@ -13,7 +13,21 @@ import { normalizeKeyForJsPsych } from "../shared/keys";
 import { controlTrialPrompt } from "./stimulusControl";
 import PhysicsStimulusPlugin from "./plugins/physicsStimulusPlugin";
 import GratingPendulumPlugin from "./plugins/gratingPendulumPlugin";
-import type { GratingPendulumStimulusUnit } from "../shared/experimentTypes";
+import ReachabilityPendulumPlugin from "./plugins/reachabilityPendulumPlugin";
+import type {
+  GratingPendulumStimulusUnit,
+  ReachabilityPendulumStimulusUnit,
+  SpeedColorTrainingStimulusUnit,
+} from "../shared/experimentTypes";
+import SpeedColorTrainingPlugin from "./plugins/speedColorTrainingPlugin";
+import Training1SummaryPlugin from "./plugins/training1SummaryPlugin";
+
+export type BuildTimelineOptions = {
+  wrapPracticeSegment?: (
+    segmentId: string,
+    node: Record<string, unknown>,
+  ) => Record<string, unknown>;
+};
 
 export type UnitTrialContext = {
   segmentId: string;
@@ -47,6 +61,71 @@ function unitToTrial(
     blockChildId: ctx.blockChildId ?? "",
   };
   switch (unit.type) {
+    case "reachabilityPendulumStimulus": {
+      const rUnit = unit as ReachabilityPendulumStimulusUnit;
+      return {
+        type: ReachabilityPendulumPlugin,
+        theta0Deg: rUnit.theta0Deg,
+        omega0DegPerSec: rUnit.omega0DegPerSec,
+        rodLengthM: rUnit.rodLengthM,
+        gravity: rUnit.gravity,
+        bobRadiusM: rUnit.bobRadiusM,
+        targetAngleDeg: rUnit.targetAngleDeg,
+        amplitudeDeg: rUnit.amplitudeDeg,
+        visibleDurationSec: rUnit.visibleDurationSec,
+        responseDeadlineSec: rUnit.responseDeadlineSec,
+        yesKey: rUnit.yesKey,
+        noKey: rUnit.noKey,
+        correctResponse: rUnit.correctResponse,
+        practice: ctx.segmentKind === "practice",
+        unitMeta: descriptor
+          ? { ...descriptor, runtime_experiment_id: experimentId }
+          : { ...data, runtime_experiment_id: experimentId },
+        data: descriptor
+          ? { ...descriptor, runtime_experiment_id: experimentId, unit_type: "reachabilityPendulumStimulus" }
+          : { ...data, runtime_experiment_id: experimentId, unit_type: "reachabilityPendulumStimulus" },
+      };
+    }
+    case "speedColorTrainingStimulus": {
+      const sUnit = unit as SpeedColorTrainingStimulusUnit;
+      return {
+        type: SpeedColorTrainingPlugin,
+        mode: sUnit.mode,
+        trainingSegment: sUnit.trainingSegment,
+        theta0Deg: sUnit.theta0Deg,
+        omega0DegPerSec: sUnit.omega0DegPerSec,
+        rodLengthM: sUnit.rodLengthM,
+        gravity: sUnit.gravity,
+        queryTimeSec: sUnit.queryTimeSec,
+        unitMeta: descriptor
+          ? { ...descriptor, runtime_experiment_id: experimentId }
+          : { ...data, runtime_experiment_id: experimentId },
+        data: descriptor
+          ? {
+              ...descriptor,
+              runtime_experiment_id: experimentId,
+              unit_type: "speedColorTrainingStimulus",
+              training_segment: sUnit.trainingSegment,
+            }
+          : {
+              ...data,
+              runtime_experiment_id: experimentId,
+              unit_type: "speedColorTrainingStimulus",
+              training_segment: sUnit.trainingSegment,
+            },
+      };
+    }
+    case "training1Summary": {
+      return {
+        type: Training1SummaryPlugin,
+        unitMeta: descriptor
+          ? { ...descriptor, runtime_experiment_id: experimentId }
+          : { ...data, runtime_experiment_id: experimentId },
+        data: descriptor
+          ? { ...descriptor, runtime_experiment_id: experimentId, unit_type: "training1Summary" }
+          : { ...data, runtime_experiment_id: experimentId, unit_type: "training1Summary" },
+      };
+    }
     case "gratingPendulumStimulus": {
       const gUnit = unit as GratingPendulumStimulusUnit;
       return {
@@ -156,6 +235,7 @@ export function buildTimelineFromDescriptors(
   set: RuntimeStimulusSet,
   descriptors: readonly { unit_id: string }[],
   experimentId: ExperimentId,
+  options?: BuildTimelineOptions,
 ): Record<string, unknown>[] {
   const sequence = set.sequence;
   const descriptorByUnitId = new Map<string, Record<string, unknown>>(
@@ -177,15 +257,17 @@ export function buildTimelineFromDescriptors(
         ),
       );
     } else if (item.kind === "practice") {
-      timeline.push(
-        buildSegmentWithTrialsTimeline(
-          item.id,
-          "practice",
-          item.children,
-          descriptorByUnitId,
-          experimentId,
-        ),
+      let practiceNode = buildSegmentWithTrialsTimeline(
+        item.id,
+        "practice",
+        item.children,
+        descriptorByUnitId,
+        experimentId,
       );
+      if (options?.wrapPracticeSegment) {
+        practiceNode = options.wrapPracticeSegment(item.id, practiceNode);
+      }
+      timeline.push(practiceNode);
     } else {
       const ctx: UnitTrialContext = {
         segmentKind: "rest",
