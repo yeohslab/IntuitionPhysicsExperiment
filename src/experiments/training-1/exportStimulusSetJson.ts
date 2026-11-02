@@ -13,7 +13,7 @@ export function buildTraining1StimulusSetPayload(
   participant: Training1ParticipantInfo,
 ) {
   return {
-    schema_version: 2,
+    schema_version: 6,
     experiment_id: "training-1" as const,
     protocol_version: TRAINING_1_PROTOCOL_VERSION,
     participant: { ...participant },

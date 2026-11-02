@@ -1,37 +1,51 @@
 import {
-  EXPERIMENT_4_ENERGY_MAX_J,
-  EXPERIMENT_4_ENERGY_MIN_J,
-  EXPERIMENT_4_GRAVITY,
-  EXPERIMENT_4_OMEGA_MAX_RAD_PER_SEC,
-  EXPERIMENT_4_ROD_LENGTH_M,
-} from "../experiment-4/protocol";
+  SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC,
+  SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC,
+  SPEED_STRIP_SCALE_ENERGY_J,
+} from "../../experiment/physics/speedStripScale";
+import { EXPERIMENT_4_ROD_LENGTH_M } from "../experiment-4/protocol";
 
 export const TRAINING_1_ID = "training-1" as const;
 export const TRAINING_1_PROTOCOL_VERSION = "1.0.0" as const;
 
-export const TRAINING_1_ROD_LENGTH_M = EXPERIMENT_4_ROD_LENGTH_M;
-export const TRAINING_1_GRAVITY = EXPERIMENT_4_GRAVITY;
-export const TRAINING_1_ENERGY_MIN_J = EXPERIMENT_4_ENERGY_MIN_J;
-export const TRAINING_1_ENERGY_MAX_J = EXPERIMENT_4_ENERGY_MAX_J;
-export const TRAINING_1_OMEGA_SCALE_RAD_PER_SEC = EXPERIMENT_4_OMEGA_MAX_RAD_PER_SEC;
+export const TRAINING_1_SPEED_SCALE_ENERGY_J = SPEED_STRIP_SCALE_ENERGY_J;
+export const TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC =
+  SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC;
+export const TRAINING_1_OMEGA_SCALE_RAD_PER_SEC =
+  SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC;
 
 export const TRAINING_1_FIXATION_MS = 1000;
 export const TRAINING_1_FIXATION_TEXT = "+";
-export const TRAINING_1_MIN_VISIBLE_BEFORE_QUERY_SEC = 0.8;
-export const TRAINING_1_FEEDBACK_CLOSE_DELTA = 0.08;
-export const TRAINING_1_MASTERY_MEAN_THRESHOLD = 0.1;
-export const TRAINING_1_MASTERY_SINGLE_THRESHOLD = 0.15;
-export const TRAINING_1_MASTERY_REQUIRED_WITHIN = 6;
-export const TRAINING_1_ANCHOR_POSITIONS = [0, 0.25, 0.5, 0.75, 1] as const;
-export const TRAINING_1_DEMO_TRIALS = TRAINING_1_ANCHOR_POSITIONS.length;
-export const TRAINING_1_BLOCK_SIZE = 8;
-export const TRAINING_1_MIN_REPORT_TRIALS = 16;
-export const TRAINING_1_MAX_REPORT_TRIALS = 40;
-export const TRAINING_1_MAX_BLOCKS =
-  TRAINING_1_MAX_REPORT_TRIALS / TRAINING_1_BLOCK_SIZE;
-export const TRAINING_1_TOTAL_RUNTIME_TRIALS =
-  TRAINING_1_DEMO_TRIALS + TRAINING_1_MAX_REPORT_TRIALS;
+export const TRAINING_1_REPORT_DELAY_SEC = 4;
+export const TRAINING_1_TRACK_HALF_SPAN_M = EXPERIMENT_4_ROD_LENGTH_M;
+export const TRAINING_1_FEEDBACK_HOLD_MS = 2000;
 
-export function training1MasterySegmentId(blockIndex: number): string {
-  return `training-1-mastery-${blockIndex}`;
-}
+export const TRAINING_1_MASTERY_MEAN_THRESHOLD = 0.15;
+export const TRAINING_1_MASTERY_SINGLE_THRESHOLD = 0.25;
+export const TRAINING_1_MASTERY_REQUIRED_WITHIN = 5;
+export const TRAINING_1_ASSESSMENT_TRIALS = 6;
+
+export const TRAINING_1_SPEED_BIN_COUNT = 8;
+export const TRAINING_1_GUIDED_ROUNDS = 3;
+export const TRAINING_1_GUIDED_TRIALS =
+  TRAINING_1_GUIDED_ROUNDS * TRAINING_1_SPEED_BIN_COUNT;
+export const TRAINING_1_REMEDIATION_TRIALS = TRAINING_1_SPEED_BIN_COUNT;
+export const TRAINING_1_TOTAL_RUNTIME_TRIALS =
+  TRAINING_1_GUIDED_TRIALS +
+  TRAINING_1_ASSESSMENT_TRIALS +
+  TRAINING_1_REMEDIATION_TRIALS +
+  TRAINING_1_ASSESSMENT_TRIALS;
+
+/** 有反馈练习三轮包在这条时间线里，便于一次跳过整个阶段。 */
+export const TRAINING_1_FEEDBACK_PHASE_TIMELINE = "training-1-feedback-phase";
+
+export const TRAINING_1_SEGMENT_IDS = {
+  guided1: "training-1-guided-1",
+  guided2: "training-1-guided-2",
+  guided3: "training-1-guided-3",
+  assessment1: "training-1-assessment-1",
+  remediationIntro: "training-1-remediation-intro",
+  remediation: "training-1-remediation",
+  assessment2Intro: "training-1-assessment-2-intro",
+  assessment2: "training-1-assessment-2",
+} as const;

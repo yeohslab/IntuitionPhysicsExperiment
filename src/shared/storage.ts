@@ -171,44 +171,56 @@ function parseUnit(raw: unknown): StimulusUnit | null {
   }
 
   if (raw.type === "speedColorTrainingStimulus") {
-    const theta0Deg = finiteNumber(raw, "theta0Deg");
-    const omega0DegPerSec = finiteNumber(raw, "omega0DegPerSec");
-    const rodLengthM = finiteNumber(raw, "rodLengthM");
-    const gravity = finiteNumber(raw, "gravity");
-    const energyJ = finiteNumber(raw, "energyJ");
-    const queryTimeSec = finiteNumber(raw, "queryTimeSec");
+    const linearSpeedMPerSec = finiteNumber(raw, "linearSpeedMPerSec");
+    const trackLeftXM = finiteNumber(raw, "trackLeftXM");
+    const trackRightXM = finiteNumber(raw, "trackRightXM");
+    const initialXM = finiteNumber(raw, "initialXM");
+    const reportDelayRaw = raw.reportDelaySec;
+    const reportDelaySec = reportDelayRaw === null
+      ? null
+      : finiteNumber(raw, "reportDelaySec");
+    const firstTraversalRaw = raw.firstTraversalDurationSec;
+    const firstTraversalDurationSec = firstTraversalRaw === null
+      ? null
+      : finiteNumber(raw, "firstTraversalDurationSec");
     const targetStripPosition = finiteNumber(raw, "targetStripPosition");
-    const blockIndex = finiteNumber(raw, "blockIndex");
+    const stageRoundIndex = finiteNumber(raw, "stageRoundIndex");
     const targetBinIndexRaw = raw.targetBinIndex;
+    const assessmentAttemptRaw = raw.assessmentAttempt;
     const mode = raw.mode;
     const trainingSegment = raw.trainingSegment;
-    const startSide = raw.startSide;
+    const initialDirection = raw.initialDirection;
+    const loopMode = raw.loopMode;
+    const feedbackShown = raw.feedbackShown;
     if (
-      theta0Deg === null ||
-      omega0DegPerSec === null ||
-      rodLengthM === null ||
-      gravity === null ||
-      energyJ === null ||
-      queryTimeSec === null ||
+      linearSpeedMPerSec === null ||
+      trackLeftXM === null ||
+      trackRightXM === null ||
+      initialXM === null ||
+      (reportDelayRaw !== null && reportDelaySec === null) ||
+      (firstTraversalRaw !== null && firstTraversalDurationSec === null) ||
       targetStripPosition === null ||
-      blockIndex === null ||
-      !Number.isInteger(blockIndex) ||
-      (mode !== "demonstration" && mode !== "report") ||
-      (trainingSegment !== "anchor_demo" &&
-        trainingSegment !== "mastery_1" &&
-        trainingSegment !== "mastery_2" &&
-        trainingSegment !== "mastery_3" &&
-        trainingSegment !== "mastery_4" &&
-        trainingSegment !== "mastery_5") ||
-      (startSide !== "left" && startSide !== "right") ||
-      rodLengthM <= 0 ||
-      gravity <= 0 ||
-      energyJ <= 0 ||
-      queryTimeSec <= 0 ||
+      stageRoundIndex === null ||
+      !Number.isInteger(stageRoundIndex) ||
+      (mode !== "guided" && mode !== "assessment") ||
+      (trainingSegment !== "guided_1" &&
+        trainingSegment !== "guided_2" &&
+        trainingSegment !== "guided_3" &&
+        trainingSegment !== "assessment_1" &&
+        trainingSegment !== "remediation" &&
+        trainingSegment !== "assessment_2") ||
+      (initialDirection !== "rightward" && initialDirection !== "stationary") ||
+      (loopMode !== "ping_pong" && loopMode !== "stationary") ||
+      typeof feedbackShown !== "boolean" ||
+      linearSpeedMPerSec < 0 ||
       targetStripPosition < 0 ||
       targetStripPosition > 1 ||
-      blockIndex < 0 ||
-      blockIndex > 5
+      Math.abs(trackLeftXM + 4) > 1e-9 ||
+      Math.abs(trackRightXM - 4) > 1e-9 ||
+      initialXM < trackLeftXM - 1e-9 ||
+      initialXM > trackRightXM + 1e-9 ||
+      stageRoundIndex < 0 ||
+      stageRoundIndex > 3
     ) {
       return null;
     }
@@ -219,25 +231,59 @@ function parseUnit(raw: unknown): StimulusUnit | null {
           targetBinIndexRaw >= 0 && targetBinIndexRaw < 8
         ? targetBinIndexRaw
         : null;
-    if ((mode === "demonstration") !== (targetBinIndex === null)) return null;
-    if (mode === "demonstration" && (blockIndex !== 0 || trainingSegment !== "anchor_demo")) return null;
-    if (mode === "report" &&
-        (blockIndex < 1 || trainingSegment !== `mastery_${blockIndex}`)) return null;
+    const assessmentAttempt = assessmentAttemptRaw === null
+      ? null
+      : assessmentAttemptRaw === 1 || assessmentAttemptRaw === 2
+        ? assessmentAttemptRaw
+        : null;
+    if (targetBinIndexRaw !== null && targetBinIndex === null) return null;
+    if (assessmentAttemptRaw !== null && assessmentAttempt === null) return null;
+    if (mode === "guided") {
+      if (targetBinIndex === null || assessmentAttempt !== null ||
+          !feedbackShown ||
+          reportDelaySec !== 4 ||
+          (trainingSegment !== "remediation" &&
+            trainingSegment !== `guided_${stageRoundIndex}`)) return null;
+    } else if (
+      targetBinIndex === null ||
+      targetBinIndex >= 6 ||
+      assessmentAttempt === null ||
+      feedbackShown ||
+      reportDelaySec !== 4 ||
+      trainingSegment !== `assessment_${assessmentAttempt}` ||
+      stageRoundIndex !== 1
+    ) {
+      return null;
+    }
+    const stationary = linearSpeedMPerSec <= 1e-12;
+    if (stationary) {
+      if (initialDirection !== "stationary" || loopMode !== "stationary" ||
+          initialXM !== 0 || firstTraversalDurationSec !== null) return null;
+    } else {
+      const expectedTraversalSec = (trackRightXM - trackLeftXM) / linearSpeedMPerSec;
+      if (initialDirection !== "rightward" || loopMode !== "ping_pong" ||
+          Math.abs(initialXM - trackLeftXM) > 1e-9 ||
+          firstTraversalDurationSec === null || firstTraversalDurationSec <= 0 ||
+          Math.abs(firstTraversalDurationSec - expectedTraversalSec) > 1e-9) return null;
+    }
     return {
       id,
       type: "speedColorTrainingStimulus",
       mode,
       trainingSegment,
-      blockIndex,
+      stageRoundIndex,
       targetBinIndex,
-      startSide,
+      assessmentAttempt,
+      feedbackShown,
+      initialDirection,
+      loopMode,
       targetStripPosition,
-      theta0Deg,
-      omega0DegPerSec,
-      rodLengthM,
-      gravity,
-      energyJ,
-      queryTimeSec,
+      linearSpeedMPerSec,
+      trackLeftXM,
+      trackRightXM,
+      initialXM,
+      reportDelaySec,
+      firstTraversalDurationSec,
     } satisfies SpeedColorTrainingStimulusUnit;
   }
 

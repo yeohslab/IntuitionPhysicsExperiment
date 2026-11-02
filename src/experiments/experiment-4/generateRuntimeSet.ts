@@ -31,8 +31,7 @@ import {
   EXPERIMENT_4_BAR_WIDTH_M,
   EXPERIMENT_4_BOB_RADIUS_M,
   EXPERIMENT_4_DURATION_SEC,
-  EXPERIMENT_4_ENERGY_MAX_J,
-  EXPERIMENT_4_ENERGY_MIN_J,
+  EXPERIMENT_4_ENERGY_CENTER_J,
   EXPERIMENT_4_FIXATION_MS,
   EXPERIMENT_4_INITIAL_CUE_MS,
   EXPERIMENT_4_FORMAL_BLOCKS,
@@ -275,11 +274,10 @@ export function assertExperiment4RuntimeStimulusSet(set: Experiment4StimulusSet)
       if (analysis.regime !== "oscillation") {
         throw new Error(`实验四仅允许摆动，实际运动类型为 ${analysis.regime}`);
       }
-      if (
-        unit.energyJ < EXPERIMENT_4_ENERGY_MIN_J ||
-        unit.energyJ > EXPERIMENT_4_ENERGY_MAX_J
-      ) {
-        throw new Error(`试次能量 ${unit.energyJ} J 超出预注册区间`);
+      if (Math.abs(unit.energyJ - EXPERIMENT_4_ENERGY_CENTER_J) > 1e-9) {
+        throw new Error(
+          `试次能量 ${unit.energyJ} J 应为固定值 ${EXPERIMENT_4_ENERGY_CENTER_J} J`,
+        );
       }
       if (Math.abs(actualEnergyJ - unit.energyJ) > 1e-9) {
         throw new Error(

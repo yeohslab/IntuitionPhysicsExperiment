@@ -11,8 +11,11 @@ export const EXPERIMENT_4_BAR_WIDTH_M = 2.2;
 /** 预注册试次地平线（秒）。最后一段完全遮挡若延续到此时刻，右端点截断于此。 */
 export const EXPERIMENT_4_DURATION_SEC = 10.0;
 export const EXPERIMENT_4_INITIAL_CUE_MS = 2000;
-/** 逐试次机械能在 11.48 ± 3 J 内均匀抽样。 */
+/** 每个试次的机械能固定为原抽样区间 [8.48, 14.48] J 的中点。 */
 export const EXPERIMENT_4_ENERGY_CENTER_J = 11.48;
+/** 训练一和实验四速度色带右端使用的标定能量。 */
+export const EXPERIMENT_4_SPEED_SCALE_ENERGY_J = EXPERIMENT_4_ENERGY_CENTER_J;
+/** 实验五仍使用的原区间半宽。 */
 export const EXPERIMENT_4_ENERGY_HALF_RANGE_J = 3;
 export const EXPERIMENT_4_ENERGY_MIN_J =
   EXPERIMENT_4_ENERGY_CENTER_J - EXPERIMENT_4_ENERGY_HALF_RANGE_J;
@@ -72,13 +75,14 @@ export const EXPERIMENT_4_INITIAL_SIDE_SEQUENCE: readonly ("left" | "right")[] =
 
 export type Experiment4InitialDirection = "leftward" | "rightward";
 
-/** 能量区间两端对应的逐试次最低点最大角速度。 */
+/** 原能量区间下端在最低点的角速度，供实验五兼容使用。 */
 export const EXPERIMENT_4_OMEGA_MIN_RAD_PER_SEC = pendulumOmegaRadForEnergyAtBottom(
   EXPERIMENT_4_ENERGY_MIN_J,
   EXPERIMENT_4_ROD_LENGTH_M,
 );
+/** 实验四固定能量在最低点的最大角速度，也是速度色带右端。 */
 export const EXPERIMENT_4_OMEGA_MAX_RAD_PER_SEC = pendulumOmegaRadForEnergyAtBottom(
-  EXPERIMENT_4_ENERGY_MAX_J,
+  EXPERIMENT_4_SPEED_SCALE_ENERGY_J,
   EXPERIMENT_4_ROD_LENGTH_M,
 );
 

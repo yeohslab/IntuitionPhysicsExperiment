@@ -26,6 +26,64 @@
   line-height: 0;
 }
 
+/* 训练一需要让画布和速度色带同时保持在首屏。只缩放 CSS 显示尺寸，
+   Canvas 逻辑分辨率和与实验四共用的米制比例保持不变。 */
+.physics-trial--linear-training .physics-canvas-frame {
+  width: min(1000px, 100%, calc((100dvh - 16.5rem) * 1000 / 560));
+}
+
+/* 页脚从第一帧就占满作答区。色带后出现时不得把画布顶上去。 */
+.physics-trial--linear-training .physics-footer {
+  height: 13rem;
+  min-height: 0;
+  max-height: 13rem;
+  overflow: hidden;
+}
+
+.physics-trial--linear-training .physics-sim-hint {
+  height: 2.8rem;
+  margin: 0;
+  overflow: hidden;
+}
+
+.physics-trial--linear-training .physics-report-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 520px) minmax(0, 1fr);
+  grid-template-rows: 4.75rem 2.75rem;
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.5rem;
+  width: 100%;
+}
+
+.physics-trial--linear-training .physics-speed-strip-host {
+  grid-column: 2;
+  grid-row: 1;
+  height: 4.75rem;
+  overflow: hidden;
+}
+
+.physics-trial--linear-training .physics-speed-strip-host .physics-speed-report-strip {
+  margin-top: 0.35rem;
+}
+
+.physics-trial--linear-training .physics-phase-skip-host {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+}
+
+.physics-trial--linear-training .physics-report-actions {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-height: 0;
+}
+
+.physics-skip-phase {
+  cursor: pointer;
+}
+
 .physics-speed-bar-pair {
   position: absolute;
   inset: 0;
@@ -246,6 +304,18 @@
 
 .physics-report-controls .physics-btn {
   align-self: center;
+}
+
+.physics-speed-strip-host {
+  width: 100%;
+}
+
+.physics-report-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.75rem;
 }
 
 .physics-speed-report-strip__labels {

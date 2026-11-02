@@ -28,9 +28,12 @@ class Training1SummaryPlugin {
         this.jsPsych.finishTrial({
           ...trial.unitMeta,
           mastery_passed: result.passed,
-          completed_report_trials: result.completedReportTrials,
-          mastery_recent_mean_abs_error: result.recentMeanAbsError,
-          mastery_recent_within_015_count: result.recentWithinThresholdCount,
+          mastery_passed_attempt: result.passedAttempt,
+          completed_guided_trials: result.completedGuidedTrials,
+          completed_assessment_trials: result.completedAssessmentTrials,
+          mastery_final_attempt: result.finalAttempt,
+          mastery_final_mean_abs_error: result.finalMeanAbsError,
+          mastery_final_within_threshold_count: result.finalWithinThresholdCount,
         });
       },
       valid_responses: [SPACE_KEY],

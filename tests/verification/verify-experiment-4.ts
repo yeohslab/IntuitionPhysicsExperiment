@@ -23,6 +23,7 @@ import {
   EXPERIMENT_4_GAP_LEVELS,
   EXPERIMENT_4_GRAVITY,
   EXPERIMENT_4_INITIAL_SIDE_SEQUENCE,
+  EXPERIMENT_4_OMEGA_MAX_RAD_PER_SEC,
   EXPERIMENT_4_ROD_LENGTH_M,
 } from "../../src/experiments/experiment-4/protocol.ts";
 import {
@@ -37,6 +38,12 @@ import {
 } from "../../src/shared/participant.ts";
 import { parseExperiment4StimulusSet } from "../../src/shared/storage.ts";
 import { analyzePendulum, pendulumRegime } from "../../src/experiment/physics/pendulum.ts";
+import {
+  SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC,
+  SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC,
+  SPEED_STRIP_SCALE_ENERGY_J,
+  speedStripPositionFromAbsOmegaRadPerSec,
+} from "../../src/experiment/physics/speedStripScale.ts";
 import {
   GRATING_CANVAS_LOGICAL_H,
   GRATING_CANVAS_LOGICAL_W,
@@ -102,6 +109,17 @@ assert(isExperiment4ParticipantInfo(participant));
 
 const set = generateExperiment4RuntimeStimulusSet({ rng: mulberry32(42) });
 assertExperiment4RuntimeStimulusSet(set);
+assert(set.schemaVersion === 4, "实验四刺激 schema 应为 4");
+assert(parseExperiment4StimulusSet({ ...set, schemaVersion: 3 }) === null, "旧 schema 3 缓存应失效");
+assert(SPEED_STRIP_SCALE_ENERGY_J === 11.48, "实验四色带应按 11.48 J 标定");
+assert(
+  Math.abs(SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC - Math.sqrt(2 * 11.48)) < 1e-12,
+  "实验四色带最高线速度应为 11.48 J 在最低点的速度",
+);
+assert(
+  SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC === EXPERIMENT_4_OMEGA_MAX_RAD_PER_SEC,
+  "实验四最高角速度应与色带右端一致",
+);
 
 const descriptors = collectExperiment4TrialDescriptors(set);
 assert(!JSON.stringify(set).includes("energy_level"), "实验四不得重新引入能量档位字段");
@@ -158,12 +176,14 @@ for (const gapM of Object.values(EXPERIMENT_4_GAP_LEVELS)) {
   );
 }
 
-for (const d of formal) {
+for (const d of descriptors) {
   assert(
-    d.pendulum_E_J >= EXPERIMENT_4_ENERGY_MIN_J - 1e-9 &&
-      d.pendulum_E_J <= EXPERIMENT_4_ENERGY_MAX_J + 1e-9,
-    `能量应在预注册区间内: ${d.pendulum_E_J}`,
+    Math.abs(d.pendulum_E_J - EXPERIMENT_4_ENERGY_CENTER_J) < 1e-9,
+    `能量应固定为区间中点 ${EXPERIMENT_4_ENERGY_CENTER_J} J: ${d.pendulum_E_J}`,
   );
+}
+
+for (const d of formal) {
   assert(d.duration_sec === 10 && d.query_time_sec <= 10, "询问时刻应不超过 10 s");
   assert(
     pendulumRegime(
@@ -193,7 +213,12 @@ for (const d of formal) {
   );
   assert(
     Math.abs(d.omega_max_rad_per_sec - expectedOmegaMax) < 1e-9,
-    `速度色带上限应逐试次匹配能量: ${d.trial_id}`,
+    `固定能量轨道的最低点最大角速度应正确: ${d.trial_id}`,
+  );
+  assert(
+    d.linear_speed_q_m_per_sec <= SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC + 1e-9 &&
+      speedStripPositionFromAbsOmegaRadPerSec(d.abs_omega_q_rad_per_sec) <= 1,
+    `实验四真实速度不得超过色带右端: ${d.trial_id}`,
   );
   const params = {
     theta0Rad: d.theta_0_rad,
@@ -219,8 +244,8 @@ for (const d of formal) {
 }
 
 assert(
-  new Set(formal.map((d) => d.pendulum_E_J.toFixed(8))).size > 50,
-  "正式试次能量应逐试次连续变化",
+  new Set(formal.map((d) => d.pendulum_E_J.toFixed(8))).size === 1,
+  "正式试次能量应固定为同一值",
 );
 assert(
   new Set(formal.map((d) => d.theta_0_deg.toFixed(6))).size > 50,
@@ -383,5 +408,9 @@ assert(csv.includes("gap_level") || csv.includes("query_time_sec"), "CSV 列头"
 assert(csv.includes("pendulum_E_J"), "CSV 应导出逐试次机械能");
 assert(csv.includes("initial_direction"), "CSV 应导出初始运动方向");
 assert(csv.includes("query_grating_index"), "CSV 应导出询问光栅条编号");
+assert(csv.includes("speed_scale_energy_j"), "CSV 应导出色带标定能量");
+assert(csv.includes("speed_scale_linear_v_max_m_per_sec"), "CSV 应导出最高线速度");
+assert(csv.includes("linear_speed_reported_m_per_sec"), "CSV 应导出报告线速度");
+assert(csv.includes("delta_linear_speed_m_per_sec"), "CSV 应导出线速度误差");
 
 console.log("verify-experiment-4: OK");

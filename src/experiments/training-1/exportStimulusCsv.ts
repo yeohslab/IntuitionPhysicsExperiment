@@ -5,7 +5,7 @@ import type { ExperimentStatus } from "../../runtime/export/exportStimulusCsv";
 import { TRAINING_1_PROTOCOL_VERSION } from "./protocol";
 import { evaluateTraining1Mastery } from "./mastery";
 
-export const TRAINING_1_DATA_SCHEMA_VERSION = 2 as const;
+export const TRAINING_1_DATA_SCHEMA_VERSION = 7 as const;
 const TRIAL_TYPE = "speed-color-training";
 
 export const TRAINING_1_CSV_COLUMNS = [
@@ -18,30 +18,42 @@ export const TRAINING_1_CSV_COLUMNS = [
   "experiment_status",
   "trial_id",
   "unit_id",
+  "sequence_stage_index",
+  "trial_index_in_stage",
   "training_segment",
   "mode",
-  "mastery_block_index",
+  "stage_round_index",
   "target_bin_index",
+  "assessment_attempt",
+  "feedback_shown",
+  "initial_direction",
+  "motion_loop_mode",
+  "track_left_x_m",
+  "track_right_x_m",
+  "initial_x_m",
+  "report_available_at_sec",
+  "first_traversal_duration_sec",
+  "motion_elapsed_at_confirmation_sec",
+  "feedback_phase_skipped",
   "target_strip_position",
-  "theta_0_deg",
-  "omega_0_deg_per_sec",
-  "theta_q_deg",
-  "omega_q_deg_per_sec",
-  "energy_j",
-  "query_time_sec",
+  "linear_speed_m_per_sec",
   "speed_strip_position",
   "speed_strip_truth_position",
   "delta_strip_position",
   "abs_delta_strip_position",
+  "speed_scale_energy_j",
+  "speed_scale_linear_v_max_m_per_sec",
   "speed_scale_omega_max_rad_per_sec",
-  "omega_reported_rad_per_sec",
-  "omega_q_rad_per_sec",
+  "speed_reported_m_per_sec",
   "rt_speed_sec",
   "rt_total_sec",
   "mastery_passed",
-  "completed_report_trials",
-  "mastery_recent_mean_abs_error",
-  "mastery_recent_within_015_count",
+  "mastery_passed_attempt",
+  "completed_guided_trials",
+  "completed_assessment_trials",
+  "mastery_final_attempt",
+  "mastery_final_mean_abs_error",
+  "mastery_final_within_threshold_count",
 ] as const;
 
 function valuesFromData(
@@ -72,6 +84,12 @@ export function training1DataFilename(
   return `training-1_v1.0_data_subject${subjectId}_${status}.csv`;
 }
 
+function escapeCsvCell(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  const text = String(value);
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
 export function buildTraining1Csv(
   data: DataCollection | readonly Record<string, unknown>[],
   participant: Training1ParticipantInfo,
@@ -89,17 +107,18 @@ export function buildTraining1Csv(
     age_years: participant.age_years,
     experiment_status: status,
     mastery_passed: mastery.passed,
-    completed_report_trials: mastery.completedReportTrials,
-    mastery_recent_mean_abs_error: mastery.recentMeanAbsError,
-    mastery_recent_within_015_count: mastery.recentWithinThresholdCount,
+    mastery_passed_attempt: mastery.passedAttempt,
+    completed_guided_trials: mastery.completedGuidedTrials,
+    completed_assessment_trials: mastery.completedAssessmentTrials,
+    mastery_final_attempt: mastery.finalAttempt,
+    mastery_final_mean_abs_error: mastery.finalMeanAbsError,
+    mastery_final_within_threshold_count: mastery.finalWithinThresholdCount,
   }));
-  const header = TRAINING_1_CSV_COLUMNS.join(",");
-  const body = rows
-    .map((row) =>
-      TRAINING_1_CSV_COLUMNS.map((col) => JSON.stringify(row[col] ?? "")).join(","),
-    )
-    .join("\n");
-  return `${header}\n${body}`;
+  return `${[
+    TRAINING_1_CSV_COLUMNS.join(","),
+    ...rows.map((row) =>
+      TRAINING_1_CSV_COLUMNS.map((column) => escapeCsvCell(row[column])).join(",")),
+  ].join("\r\n")}\r\n`;
 }
 
 export function exportTraining1Csv(

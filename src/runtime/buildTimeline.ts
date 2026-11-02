@@ -27,6 +27,10 @@ export type BuildTimelineOptions = {
     segmentId: string,
     node: Record<string, unknown>,
   ) => Record<string, unknown>;
+  wrapRestSegment?: (
+    segmentId: string,
+    node: Record<string, unknown>,
+  ) => Record<string, unknown>;
 };
 
 export type UnitTrialContext = {
@@ -92,11 +96,15 @@ function unitToTrial(
         type: SpeedColorTrainingPlugin,
         mode: sUnit.mode,
         trainingSegment: sUnit.trainingSegment,
-        theta0Deg: sUnit.theta0Deg,
-        omega0DegPerSec: sUnit.omega0DegPerSec,
-        rodLengthM: sUnit.rodLengthM,
-        gravity: sUnit.gravity,
-        queryTimeSec: sUnit.queryTimeSec,
+        initialDirection: sUnit.initialDirection,
+        loopMode: sUnit.loopMode,
+        linearSpeedMPerSec: sUnit.linearSpeedMPerSec,
+        trackLeftXM: sUnit.trackLeftXM,
+        trackRightXM: sUnit.trackRightXM,
+        initialXM: sUnit.initialXM,
+        reportDelaySec: sUnit.reportDelaySec,
+        firstTraversalDurationSec: sUnit.firstTraversalDurationSec,
+        feedbackShown: sUnit.feedbackShown,
         unitMeta: descriptor
           ? { ...descriptor, runtime_experiment_id: experimentId }
           : { ...data, runtime_experiment_id: experimentId },
@@ -275,8 +283,12 @@ export function buildTimelineFromDescriptors(
         blockChildKind: null,
         blockChildId: null,
       };
-      for (const unit of item.units) {
-        timeline.push(unitToTrial(unit, ctx, undefined, experimentId));
+      const restTrials = item.units.map((unit) =>
+        unitToTrial(unit, ctx, undefined, experimentId));
+      if (options?.wrapRestSegment) {
+        timeline.push(options.wrapRestSegment(item.id, { timeline: restTrials }));
+      } else {
+        timeline.push(...restTrials);
       }
     }
   }

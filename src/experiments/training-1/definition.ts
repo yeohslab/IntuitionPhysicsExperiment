@@ -15,7 +15,7 @@ import { TRAINING_1_PROTOCOL_VERSION } from "./protocol";
 export const training1Definition: Training1Definition = {
   id: "training-1",
   title: "训练一",
-  summary: "协议 1.0.0：通过锚点示范与自适应反馈学习瞬时速度—颜色映射。",
+  summary: "协议 1.0.0：通过水平匀速小球学习速度—颜色映射。",
   protocolVersion: TRAINING_1_PROTOCOL_VERSION,
   internalStimulusSchemaVersion: EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION,
   dataSchemaVersion: TRAINING_1_DATA_SCHEMA_VERSION,

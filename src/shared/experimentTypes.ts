@@ -1,11 +1,11 @@
 /** 实验二运行时刺激集版本。 */
 export const EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
 /** 实验四运行时刺激集版本。 */
-export const EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
+export const EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION = 4 as const;
 /** 实验五运行时刺激集版本。 */
 export const EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
 /** 训练一运行时刺激集版本。 */
-export const EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION = 2 as const;
+export const EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION = 6 as const;
 
 export type StimulusUnitType =
   | "textDisplay"
@@ -79,30 +79,39 @@ export interface GratingPendulumStimulusUnit {
 
 export type ReachabilityRelation = "reachable" | "unreachable";
 
-export type SpeedColorTrainingMode = "demonstration" | "report";
+export type SpeedColorTrainingMode = "guided" | "assessment";
 export type SpeedColorTrainingSegment =
-  | "anchor_demo"
-  | "mastery_1"
-  | "mastery_2"
-  | "mastery_3"
-  | "mastery_4"
-  | "mastery_5";
+  | "guided_1"
+  | "guided_2"
+  | "guided_3"
+  | "assessment_1"
+  | "remediation"
+  | "assessment_2";
+
+export type SpeedColorTrainingDirection =
+  | "rightward"
+  | "stationary";
+
+export type SpeedColorTrainingLoopMode = "ping_pong" | "stationary";
 
 export interface SpeedColorTrainingStimulusUnit {
   id: string;
   type: "speedColorTrainingStimulus";
   mode: SpeedColorTrainingMode;
   trainingSegment: SpeedColorTrainingSegment;
-  blockIndex: number;
+  stageRoundIndex: number;
   targetBinIndex: number | null;
-  startSide: "left" | "right";
+  assessmentAttempt: number | null;
+  feedbackShown: boolean;
+  initialDirection: SpeedColorTrainingDirection;
+  loopMode: SpeedColorTrainingLoopMode;
   targetStripPosition: number;
-  theta0Deg: number;
-  omega0DegPerSec: number;
-  rodLengthM: number;
-  gravity: number;
-  energyJ: number;
-  queryTimeSec: number;
+  linearSpeedMPerSec: number;
+  trackLeftXM: number;
+  trackRightXM: number;
+  initialXM: number;
+  reportDelaySec: number | null;
+  firstTraversalDurationSec: number | null;
 }
 
 export interface Training1SummaryUnit {

@@ -37,6 +37,14 @@
   align-items: center;
 }
 
+/* 色带出现后不要用垂直居中把小球画面顶上去。 */
+.runner-view .jspsych-content:has(.physics-trial--linear-training) {
+  margin-top: 0;
+  margin-bottom: auto;
+  align-self: flex-start;
+  width: 100%;
+}
+
 .runner-view .jspsych-target,
 .runner-view .jspsych-content,
 .runner-view .jspsych-display {

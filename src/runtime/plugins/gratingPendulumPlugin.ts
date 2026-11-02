@@ -2,7 +2,10 @@ import type { JsPsych } from "jspsych";
 import { ParameterType } from "jspsych";
 import {
   absOmegaRadPerSecFromSpeedStripPosition,
+  linearSpeedMPerSecFromSpeedStripPosition,
+  SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC,
   SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC,
+  SPEED_STRIP_SCALE_ENERGY_J,
   speedStripPositionFromAbsOmegaRadPerSec,
 } from "../../experiment/physics/speedStripScale";
 import {
@@ -264,6 +267,10 @@ class GratingPendulumPlugin {
         speedPosition === null
           ? null
           : absOmegaRadPerSecFromSpeedStripPosition(speedPosition);
+      const linearSpeedReported = speedPosition === null
+        ? null
+        : linearSpeedMPerSecFromSpeedStripPosition(speedPosition);
+      const linearSpeedTruth = p.rodLengthM * Math.abs(omegaTruthRad);
       const thetaReportedDeg = angleInteracted
         ? pendulumAngleDegFromRad(thetaEstRad)
         : null;
@@ -274,6 +281,9 @@ class GratingPendulumPlugin {
           : wrapDeltaThetaDeg(thetaReportedDeg, thetaTruthDeg, regime, motionRange.wMaxDeg);
       const deltaOmega =
         omegaReported === null ? null : omegaReported - Math.abs(omegaTruthRad);
+      const deltaLinearSpeed = linearSpeedReported === null
+        ? null
+        : linearSpeedReported - linearSpeedTruth;
       const currentHiddenMs =
         hiddenStartedMs === null ? 0 : Math.max(0, performance.now() - hiddenStartedMs);
       return {
@@ -283,14 +293,21 @@ class GratingPendulumPlugin {
         theta_reported_rad:
           thetaReportedDeg === null ? null : degToRad(thetaReportedDeg),
         speed_strip_position: speedPosition,
+        speed_scale_energy_j: SPEED_STRIP_SCALE_ENERGY_J,
+        speed_scale_linear_v_max_m_per_sec:
+          SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC,
         speed_scale_omega_max_rad_per_sec: SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC,
         omega_reported_rad_per_sec: omegaReported,
+        linear_speed_reported_m_per_sec: linearSpeedReported,
         delta_theta_deg: deltaThetaDeg,
         abs_delta_theta_deg:
           deltaThetaDeg === null ? null : Math.abs(deltaThetaDeg),
         delta_omega_rad_per_sec: deltaOmega,
         abs_delta_omega_rad_per_sec:
           deltaOmega === null ? null : Math.abs(deltaOmega),
+        delta_linear_speed_m_per_sec: deltaLinearSpeed,
+        abs_delta_linear_speed_m_per_sec:
+          deltaLinearSpeed === null ? null : Math.abs(deltaLinearSpeed),
         response_order_first: angleFirst ? "angle" : "speed",
         rt_angle_sec: rtAngleSec,
         rt_speed_sec: rtSpeedSec,
@@ -306,6 +323,7 @@ class GratingPendulumPlugin {
         theta_q_deg: thetaTruthDeg,
         omega_q_rad_per_sec: omegaTruthRad,
         abs_omega_q_rad_per_sec: Math.abs(omegaTruthRad),
+        linear_speed_q_m_per_sec: linearSpeedTruth,
       };
     };
 

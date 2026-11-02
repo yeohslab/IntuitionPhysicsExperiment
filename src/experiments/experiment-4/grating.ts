@@ -9,8 +9,6 @@ import {
   EXPERIMENT_4_BOB_RADIUS_M,
   EXPERIMENT_4_DURATION_SEC,
   EXPERIMENT_4_ENERGY_CENTER_J,
-  EXPERIMENT_4_ENERGY_MAX_J,
-  EXPERIMENT_4_ENERGY_MIN_J,
   EXPERIMENT_4_GAP_LEVELS,
   EXPERIMENT_4_GRAVITY,
   EXPERIMENT_4_INITIAL_TURN_MARGIN_FRACTION,
@@ -266,10 +264,9 @@ export function pendulumParamsForInitialState(
   };
 }
 
-/** 在预注册能量区间内逐试次均匀抽样。 */
-export function sampleExperiment4EnergyJ(rng: () => number): number {
-  return EXPERIMENT_4_ENERGY_MIN_J +
-    rng() * (EXPERIMENT_4_ENERGY_MAX_J - EXPERIMENT_4_ENERGY_MIN_J);
+/** 每个试次使用预注册能量区间的中点。 */
+export function sampleExperiment4EnergyJ(): number {
+  return EXPERIMENT_4_ENERGY_CENTER_J;
 }
 
 export function gapMFromLevel(level: Experiment4GapLevel): number {
@@ -291,7 +288,7 @@ export function planTrialQuery(
   firstVisibleSec: number | null;
   queryBarIndex: number;
 } {
-  const energyJ = sampleExperiment4EnergyJ(rng);
+  const energyJ = sampleExperiment4EnergyJ();
   const params = pendulumParamsForInitialState(side, direction, energyJ, rng);
   const gapM = gapMFromLevel(gapLevel);
   const timeline = buildOcclusionTimeline(params, gapM);
