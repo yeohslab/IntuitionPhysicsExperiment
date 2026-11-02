@@ -144,7 +144,11 @@ function unitToTrial(
         gravity: gUnit.gravity,
         durationSec: gUnit.durationSec,
         queryTimeSec: gUnit.queryTimeSec,
+        visibleWindowCount: gUnit.visibleWindowCount,
         gapM: gUnit.gapM,
+        barWidthM: gUnit.barWidthM,
+        gratingPeriodM: gUnit.gratingPeriodM,
+        gratingOffsetM: gUnit.gratingOffsetM,
         responseOrder: gUnit.responseOrder,
         unitMeta: descriptor
           ? { ...descriptor, runtime_experiment_id: experimentId }

@@ -7,7 +7,6 @@ export const EXPERIMENT_4_PROTOCOL_VERSION = "1.0.0" as const;
 export const EXPERIMENT_4_ROD_LENGTH_M = ROD_LENGTH_M;
 export const EXPERIMENT_4_GRAVITY = GRAVITY;
 export const EXPERIMENT_4_BOB_RADIUS_M = 0.08;
-export const EXPERIMENT_4_BAR_WIDTH_M = 2.2;
 /** 预注册试次地平线（秒）。最后一段完全遮挡若延续到此时刻，右端点截断于此。 */
 export const EXPERIMENT_4_DURATION_SEC = 10.0;
 export const EXPERIMENT_4_INITIAL_CUE_MS = 2000;
@@ -26,22 +25,50 @@ export const EXPERIMENT_4_OCCLUSION_MARGIN_SEC = 0.15;
 /** 初始相位距转折点至少一个周期的 0.5%，确保初速度严格非零。 */
 export const EXPERIMENT_4_INITIAL_TURN_MARGIN_FRACTION = 0.005;
 
-export const EXPERIMENT_4_GAP_LEVELS = {
-  small: 0.45,
-  medium: 0.9,
-  large: 1.35,
-} as const;
+export type Experiment4VisibleWindowCount = 2 | 3 | 4;
 
-export type Experiment4GapLevel = keyof typeof EXPERIMENT_4_GAP_LEVELS;
+export type Experiment4GratingGeometry = {
+  visibleWindowCount: Experiment4VisibleWindowCount;
+  gapM: number;
+  barWidthM: number;
+  periodM: number;
+  offsetM: number;
+};
 
-export const EXPERIMENT_4_GAP_LEVEL_ORDER: Experiment4GapLevel[] = [
-  "small",
-  "medium",
-  "large",
+/** 固定透明观察宽度，以遮挡条宽度和周期操纵完整横穿中的可见窗口数。 */
+export const EXPERIMENT_4_GRATING_CONDITIONS = {
+  2: {
+    visibleWindowCount: 2,
+    gapM: 0.45,
+    barWidthM: 2.378427,
+    periodM: 2.828427,
+    offsetM: 1.639214,
+  },
+  3: {
+    visibleWindowCount: 3,
+    gapM: 0.45,
+    barWidthM: 1.435618,
+    periodM: 1.885618,
+    offsetM: 0.225,
+  },
+  4: {
+    visibleWindowCount: 4,
+    gapM: 0.45,
+    barWidthM: 0.964214,
+    periodM: 1.414214,
+    offsetM: 0.932107,
+  },
+} as const satisfies Record<Experiment4VisibleWindowCount, Experiment4GratingGeometry>;
+
+export const EXPERIMENT_4_VISIBLE_WINDOW_COUNT_ORDER: Experiment4VisibleWindowCount[] = [
+  2,
+  3,
+  4,
 ];
 
 export const EXPERIMENT_4_FORMAL_TRIALS_PER_BLOCK = 20;
-export const EXPERIMENT_4_FORMAL_BLOCKS = EXPERIMENT_4_GAP_LEVEL_ORDER.length;
+export const EXPERIMENT_4_FORMAL_BLOCKS =
+  EXPERIMENT_4_VISIBLE_WINDOW_COUNT_ORDER.length;
 export const EXPERIMENT_4_FORMAL_TRIALS =
   EXPERIMENT_4_FORMAL_BLOCKS * EXPERIMENT_4_FORMAL_TRIALS_PER_BLOCK;
 export const EXPERIMENT_4_PRACTICE_TRIALS = 3;

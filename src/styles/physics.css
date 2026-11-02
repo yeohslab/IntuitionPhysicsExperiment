@@ -19,6 +19,38 @@
   box-sizing: border-box;
 }
 
+/* 实验四：色带和确认按钮的位置从运动阶段就留好，出现时不把画布顶上去。 */
+.physics-trial--grating .physics-footer {
+  height: 12.75rem;
+  min-height: 0;
+  max-height: 12.75rem;
+  overflow: hidden;
+}
+
+.physics-trial--grating .physics-sim-hint {
+  height: 3.2rem;
+  margin: 0;
+  overflow: hidden;
+}
+
+.physics-trial--grating .physics-speed-strip-host {
+  height: 4.75rem;
+  overflow: hidden;
+}
+
+.physics-trial--grating .physics-speed-strip-host .physics-speed-report-strip {
+  margin-top: 0.35rem;
+}
+
+.physics-trial--grating .physics-report-actions {
+  height: 2.75rem;
+  min-height: 2.75rem;
+}
+
+.physics-trial--grating .physics-canvas.physics-canvas--estimate {
+  border-width: 1px;
+}
+
 .physics-canvas-frame {
   position: relative;
   display: block;

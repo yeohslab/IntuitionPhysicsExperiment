@@ -176,7 +176,7 @@ function drawPendulumSimBackground(
 }
 
 /** 仿真底层：虚线角度范围（往复扇形 / 转圈整圆） */
-function drawPendulumMotionRangeGuide(
+export function drawPendulumMotionRangeGuide(
   ctx: CanvasRenderingContext2D,
   layout: PendulumLayout,
   range: PendulumMotionRange,

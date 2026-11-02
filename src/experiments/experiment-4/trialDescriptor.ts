@@ -20,9 +20,11 @@ export type Experiment4TrialDescriptor = {
   trial_index_in_block: number;
   formal_trial_index: number | null;
   unit_type: "gratingPendulumStimulus";
-  gap_level: "small" | "medium" | "large";
+  visible_window_count: 2 | 3 | 4;
   gap_m: number;
   bar_width_m: number;
+  grating_period_m: number;
+  grating_offset_m: number;
   bob_radius_m: number;
   initial_side: "left" | "right";
   initial_direction: "leftward" | "rightward";
@@ -92,9 +94,11 @@ export function describeExperiment4Trial(
     trial_index_in_block: context.trialIndexInBlock,
     formal_trial_index: context.formalTrialIndex,
     unit_type: "gratingPendulumStimulus",
-    gap_level: unit.gapLevel,
+    visible_window_count: unit.visibleWindowCount,
     gap_m: unit.gapM,
     bar_width_m: unit.barWidthM,
+    grating_period_m: unit.gratingPeriodM,
+    grating_offset_m: unit.gratingOffsetM,
     bob_radius_m: unit.bobRadiusM,
     initial_side: unit.initialSide,
     initial_direction: unit.initialDirection,

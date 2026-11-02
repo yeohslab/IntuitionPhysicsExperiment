@@ -9,7 +9,7 @@ import {
   SPEED_STRIP_SCALE_ENERGY_J,
 } from "../../experiment/physics/speedStripScale";
 
-export const EXPERIMENT_4_STIMULUS_EXPORT_SCHEMA_VERSION = 2 as const;
+export const EXPERIMENT_4_STIMULUS_EXPORT_SCHEMA_VERSION = 3 as const;
 
 export function experiment4StimulusSetExportFilename(
   participant: Experiment4ParticipantInfo,

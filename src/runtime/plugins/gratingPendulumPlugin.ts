@@ -43,6 +43,7 @@ import {
 } from "../../shared/recovery";
 import type { ExperimentId } from "../../experiments/types";
 import { PHYSICS_ABORT_EVENT } from "./physicsStimulusPlugin";
+import type { Experiment4GratingGeometry } from "../../experiments/experiment-4/protocol";
 
 type KeyboardHandler = (e: KeyboardEvent) => void;
 type TrialPhase = "sim" | "angle" | "speed" | "feedback";
@@ -59,7 +60,11 @@ const info = {
     gravity: { type: ParameterType.FLOAT, default: 9.8 },
     durationSec: { type: ParameterType.FLOAT, default: 10 },
     queryTimeSec: { type: ParameterType.FLOAT, default: 2 },
+    visibleWindowCount: { type: ParameterType.INT, default: 2 },
     gapM: { type: ParameterType.FLOAT, default: 0.45 },
+    barWidthM: { type: ParameterType.FLOAT, default: 2.378427 },
+    gratingPeriodM: { type: ParameterType.FLOAT, default: 2.828427 },
+    gratingOffsetM: { type: ParameterType.FLOAT, default: 1.639214 },
     responseOrder: { type: ParameterType.STRING, default: "angle_first" },
     unitMeta: { type: ParameterType.COMPLEX, default: {} },
   },
@@ -73,7 +78,11 @@ type Trial = {
   gravity: number;
   durationSec: number;
   queryTimeSec: number;
+  visibleWindowCount: 2 | 3 | 4;
   gapM: number;
+  barWidthM: number;
+  gratingPeriodM: number;
+  gratingOffsetM: number;
   responseOrder: "angle_first" | "speed_first";
   unitMeta: Record<string, unknown>;
 };
@@ -85,13 +94,16 @@ class GratingPendulumPlugin {
   trial(display_element: HTMLElement, trial: Trial): void {
     cancelStaleKeyboardListeners(this.jsPsych);
     display_element.innerHTML = `
-      <div class="physics-trial physics-trial--stimulus physics-trial--sim">
+      <div class="physics-trial physics-trial--stimulus physics-trial--grating physics-trial--sim">
         <div class="physics-canvas-frame">
           <canvas class="physics-canvas physics-canvas--grating" width="${GRATING_CANVAS_LOGICAL_W}" height="${GRATING_CANVAS_LOGICAL_H}"></canvas>
         </div>
         <div class="physics-footer">
           <p class="physics-hint muted physics-sim-hint">观看摆球在光栅后的运动。</p>
-          <div class="physics-report-controls"></div>
+          <div class="physics-report-controls">
+            <div class="physics-speed-strip-host"></div>
+            <div class="physics-report-actions"></div>
+          </div>
         </div>
       </div>`;
 
@@ -102,12 +114,21 @@ class GratingPendulumPlugin {
     const trialRoot = display_element.querySelector(".physics-trial") as HTMLElement;
     const hint = display_element.querySelector(".physics-sim-hint") as HTMLElement;
     const controls = display_element.querySelector(".physics-report-controls") as HTMLElement;
+    const stripHost = controls.querySelector(".physics-speed-strip-host") as HTMLElement;
+    const actions = controls.querySelector(".physics-report-actions") as HTMLElement;
 
     const p: PendulumParams = {
       theta0Rad: degToRad(trial.theta0Deg),
       omega0RadPerSec: degToRad(trial.omega0DegPerSec),
       rodLengthM: trial.rodLengthM,
       gravity: trial.gravity,
+    };
+    const gratingGeometry: Experiment4GratingGeometry = {
+      visibleWindowCount: trial.visibleWindowCount,
+      gapM: trial.gapM,
+      barWidthM: trial.barWidthM,
+      periodM: trial.gratingPeriodM,
+      offsetM: trial.gratingOffsetM,
     };
     const analysis = analyzePendulum(p);
     if (analysis.regime !== "oscillation") {
@@ -185,14 +206,14 @@ class GratingPendulumPlugin {
         angleInteracted = true;
         rtAngleSec = (performance.now() - reportStartMs) / 1000;
       }
-      drawGratingReportFrame(ctx, worldLayout, trial.gapM, pendLayout, motionRange, thetaEstRad, true);
+      drawGratingReportFrame(ctx, worldLayout, gratingGeometry, pendLayout, motionRange, thetaEstRad, true);
       confirmBtn.disabled = false;
     };
     const onAngleMove = (e: PointerEvent) => {
       if (!angleDragging || phase !== "angle") return;
       const { x, y } = pointerLogical(e);
       thetaEstRad = gratingAngleFromPointer(pendLayout, motionRange, x, y);
-      drawGratingReportFrame(ctx, worldLayout, trial.gapM, pendLayout, motionRange, thetaEstRad, true);
+      drawGratingReportFrame(ctx, worldLayout, gratingGeometry, pendLayout, motionRange, thetaEstRad, true);
     };
     const onAngleUp = () => {
       angleDragging = false;
@@ -319,6 +340,10 @@ class GratingPendulumPlugin {
         visibility_pause_count: visibilityPauseCount,
         visibility_pause_sec: (visibilityPauseMs + currentHiddenMs) / 1000,
         gap_m: trial.gapM,
+        bar_width_m: trial.barWidthM,
+        grating_period_m: trial.gratingPeriodM,
+        grating_offset_m: trial.gratingOffsetM,
+        visible_window_count: trial.visibleWindowCount,
         query_time_sec: tQuery,
         theta_q_deg: thetaTruthDeg,
         omega_q_rad_per_sec: omegaTruthRad,
@@ -346,7 +371,7 @@ class GratingPendulumPlugin {
       phase = "feedback";
       checkpointPhase("feedback");
       canvas.classList.remove("physics-canvas--estimate");
-      drawGratingFeedbackFrame(ctx, worldLayout, trial.gapM, pendLayout, motionRange, thetaEstRad, thetaTruthRad);
+      drawGratingFeedbackFrame(ctx, worldLayout, gratingGeometry, pendLayout, motionRange, thetaEstRad, thetaTruthRad);
       hint.innerHTML =
         "<strong>橙色</strong>为您的选择，<strong>蓝色</strong>为询问时刻的真实值（摆杆与色带相同）。按空格键继续。";
       confirmBtn.remove();
@@ -374,7 +399,7 @@ class GratingPendulumPlugin {
       confirmBtn.textContent = label;
       confirmBtn.disabled = !enabled;
       confirmBtn.onclick = onConfirm;
-      controls.appendChild(confirmBtn);
+      actions.appendChild(confirmBtn);
       focusTrialRoot();
       clearKb();
       kbListener = listenSpace(onConfirm);
@@ -403,7 +428,7 @@ class GratingPendulumPlugin {
       hint.textContent = isFirst
         ? "请先在橙色虚线上点击询问瞬间的摆杆位置，可拖动微调，然后确认角度。"
         : "再在橙色虚线上点击询问瞬间的摆杆位置，可拖动微调，然后确认角度。";
-      drawGratingReportFrame(ctx, worldLayout, trial.gapM, pendLayout, motionRange, thetaEstRad, false);
+      drawGratingReportFrame(ctx, worldLayout, gratingGeometry, pendLayout, motionRange, thetaEstRad, false);
       showConfirm("确认角度", confirmAngle, false);
       canvas.addEventListener("pointerdown", onAngleDown);
       canvas.addEventListener("pointermove", onAngleMove);
@@ -417,9 +442,9 @@ class GratingPendulumPlugin {
         ? "请先在色带上点击询问瞬间的速度大小，可拖动微调，然后确认速度。"
         : "再在色带上点击询问瞬间的速度大小，可拖动微调，然后确认速度。";
       if (isFirst) {
-        drawGratingIdleFrame(ctx, worldLayout, trial.gapM, pendLayout, motionRange);
+        drawGratingIdleFrame(ctx, worldLayout, gratingGeometry, pendLayout, motionRange);
       }
-      speedStrip = mountSpeedReportStrip(controls);
+      speedStrip = mountSpeedReportStrip(stripHost);
       speedStrip.onChange((level) => {
         if (speedPosition === null) {
           rtSpeedSec = (performance.now() - reportStartMs) / 1000;
@@ -453,10 +478,10 @@ class GratingPendulumPlugin {
       previousFrameMs = now;
       const elapsed = Math.max(0, (now - simStartMs - pausedTotalMs) / 1000);
       const theta = thetaAt(Math.min(elapsed, tQuery));
-      if (classifyBobAtX(p.rodLengthM * Math.sin(theta), trial.gapM) === "fully_visible") {
+      if (classifyBobAtX(p.rodLengthM * Math.sin(theta), gratingGeometry) === "fully_visible") {
         visibleFrameCount += 1;
       }
-      drawGratingStimulusFrame(ctx, worldLayout, trial.gapM, p.rodLengthM, theta);
+      drawGratingStimulusFrame(ctx, worldLayout, gratingGeometry, p.rodLengthM, theta, motionRange);
       if (elapsed >= tQuery) {
         simQueryOvershootMs = Math.max(0, (elapsed - tQuery) * 1000);
         startReport();

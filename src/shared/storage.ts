@@ -30,6 +30,7 @@ import {
   type Trial,
 } from "./experimentTypes";
 import type { ExperimentId } from "../experiments/types";
+import { EXPERIMENT_4_GRATING_CONDITIONS } from "../experiments/experiment-4/protocol";
 
 /** 存在且与人口学/刺激集同时有效时，才允许进入 runner。 */
 export const SESSION_RUN_TOKEN_KEY = "intuition-physics:experiment-2:run-active";
@@ -80,10 +81,12 @@ function parseUnit(raw: unknown): StimulusUnit | null {
     const energyJ = finiteNumber(raw, "energyJ");
     const durationSec = finiteNumber(raw, "durationSec");
     const queryTimeSec = finiteNumber(raw, "queryTimeSec");
+    const visibleWindowCountRaw = finiteNumber(raw, "visibleWindowCount");
     const gapM = finiteNumber(raw, "gapM");
     const barWidthM = finiteNumber(raw, "barWidthM");
+    const gratingPeriodM = finiteNumber(raw, "gratingPeriodM");
+    const gratingOffsetM = finiteNumber(raw, "gratingOffsetM");
     const bobRadiusM = finiteNumber(raw, "bobRadiusM");
-    const gapLevel = raw.gapLevel;
     const initialSide = raw.initialSide;
     const initialDirection = raw.initialDirection;
     const responseOrder =
@@ -99,13 +102,18 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       energyJ === null ||
       durationSec === null ||
       queryTimeSec === null ||
+      visibleWindowCountRaw === null ||
       gapM === null ||
       barWidthM === null ||
+      gratingPeriodM === null ||
+      gratingOffsetM === null ||
       bobRadiusM === null ||
       occlusionSegmentIndex === null ||
       queryBarIndex === null ||
       !Number.isInteger(queryBarIndex) ||
-      (gapLevel !== "small" && gapLevel !== "medium" && gapLevel !== "large") ||
+      (visibleWindowCountRaw !== 2 &&
+        visibleWindowCountRaw !== 3 &&
+        visibleWindowCountRaw !== 4) ||
       (initialSide !== "left" && initialSide !== "right") ||
       (initialDirection !== "leftward" && initialDirection !== "rightward") ||
       (responseOrder !== "angle_first" && responseOrder !== "speed_first") ||
@@ -115,6 +123,17 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       durationSec <= 0 ||
       queryTimeSec < 0 ||
       queryTimeSec > durationSec
+    ) {
+      return null;
+    }
+    const visibleWindowCount = visibleWindowCountRaw as 2 | 3 | 4;
+    const expectedGeometry = EXPERIMENT_4_GRATING_CONDITIONS[visibleWindowCount];
+    if (
+      Math.abs(gapM - expectedGeometry.gapM) > 1e-9 ||
+      Math.abs(barWidthM - expectedGeometry.barWidthM) > 1e-9 ||
+      Math.abs(gratingPeriodM - expectedGeometry.periodM) > 1e-9 ||
+      Math.abs(gratingOffsetM - expectedGeometry.offsetM) > 1e-9 ||
+      Math.abs(gratingPeriodM - (barWidthM + gapM)) > 1e-9
     ) {
       return null;
     }
@@ -156,9 +175,11 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       energyJ,
       durationSec,
       queryTimeSec,
-      gapLevel,
+      visibleWindowCount,
       gapM,
       barWidthM,
+      gratingPeriodM,
+      gratingOffsetM,
       bobRadiusM,
       initialSide,
       initialDirection,

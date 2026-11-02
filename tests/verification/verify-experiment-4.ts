@@ -4,6 +4,11 @@ import {
 } from "../../src/experiments/experiment-4/generateRuntimeSet.ts";
 import {
   bobVisibilityAtTime,
+  classifyBobAtX,
+  fullyVisibleIntervalsBetween,
+  gratingBarCentersM,
+  gratingBarIndexAtX,
+  gratingGeometryForVisibleWindowCount,
   gratingPeriodM,
   queryableWindows,
   sampleQueryTimeSec,
@@ -13,18 +18,19 @@ import {
   firstFullyVisibleTimeSec,
 } from "../../src/experiments/experiment-4/grating.ts";
 import {
-  EXPERIMENT_4_BAR_WIDTH_M,
   EXPERIMENT_4_BOB_RADIUS_M,
   EXPERIMENT_4_DURATION_SEC,
   EXPERIMENT_4_ENERGY_CENTER_J,
   EXPERIMENT_4_ENERGY_MAX_J,
   EXPERIMENT_4_ENERGY_MIN_J,
   EXPERIMENT_4_FORMAL_TRIALS,
-  EXPERIMENT_4_GAP_LEVELS,
+  EXPERIMENT_4_GRATING_CONDITIONS,
   EXPERIMENT_4_GRAVITY,
   EXPERIMENT_4_INITIAL_SIDE_SEQUENCE,
   EXPERIMENT_4_OMEGA_MAX_RAD_PER_SEC,
   EXPERIMENT_4_ROD_LENGTH_M,
+  EXPERIMENT_4_VISIBLE_WINDOW_COUNT_ORDER,
+  type Experiment4GratingGeometry,
 } from "../../src/experiments/experiment-4/protocol.ts";
 import {
   buildExperiment4StimulusTrialsCsv,
@@ -32,6 +38,10 @@ import {
   experiment4DataFilename,
 } from "../../src/experiments/experiment-4/exportStimulusCsv.ts";
 import { collectExperiment4TrialDescriptors } from "../../src/experiments/experiment-4/trialDescriptor.ts";
+import {
+  buildExperiment4StimulusSetExportPayload,
+  EXPERIMENT_4_STIMULUS_EXPORT_SCHEMA_VERSION,
+} from "../../src/experiments/experiment-4/exportStimulusSetJson.ts";
 import {
   buildExperiment4SubjectId,
   isExperiment4ParticipantInfo,
@@ -68,36 +78,14 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-function classifyBobAtXExport(xM: number, gapM: number) {
-  const r = EXPERIMENT_4_BOB_RADIUS_M;
-  const halfBar = EXPERIMENT_4_BAR_WIDTH_M / 2;
-  const period = gratingPeriodM(gapM);
-  const n = Math.round(xM / period);
-  const center = n * period;
-  const d = Math.abs(xM - center);
-  if (d <= halfBar - r) return "fully_occluded";
-  if (d >= halfBar + r && d <= period - halfBar - r) return "fully_visible";
-  return "partial";
-}
-
-// re-export for angle boundary checks
-function classifyBobAtXLocal(x: number, gap: number) {
-  return classifyBobAtXExport(x, gap);
-}
-
-function angleDegFromX(xM: number): number {
-  return (Math.asin(xM / EXPERIMENT_4_ROD_LENGTH_M) * 180) / Math.PI;
-}
-
-function assertGapGeometry(gapM: number): void {
-  const period = gratingPeriodM(gapM);
-  assert(Math.abs(period - (EXPERIMENT_4_BAR_WIDTH_M + gapM)) < 1e-9, "周期");
-  const halfBar = EXPERIMENT_4_BAR_WIDTH_M / 2;
-  const gapInner = halfBar + EXPERIMENT_4_BOB_RADIUS_M + 0.05;
-  const gapOuter = period - halfBar - EXPERIMENT_4_BOB_RADIUS_M - 0.05;
-  const xMidGap = (gapInner + gapOuter) / 2;
-  assert(classifyBobAtXLocal(xMidGap, gapM) === "fully_visible", "间隙中部应完全可见");
-  assert(classifyBobAtXLocal(0, gapM) === "fully_occluded", "中心应遮挡");
+function assertGratingGeometry(geometry: Experiment4GratingGeometry): void {
+  assert(Math.abs(gratingPeriodM(geometry) - geometry.periodM) < 1e-12, "周期接口");
+  assert(Math.abs(geometry.periodM - (geometry.barWidthM + geometry.gapM)) < 1e-9, "P=B+G");
+  assert(Math.abs(geometry.gapM - 0.45) < 1e-12, "透明观察宽度固定为 0.45 m");
+  const gapCenter = geometry.offsetM + geometry.periodM / 2;
+  assert(classifyBobAtX(gapCenter, geometry) === "fully_visible", "间隙中部应完全可见");
+  assert(classifyBobAtX(geometry.offsetM, geometry) === "fully_occluded", "k=0 条中心应遮挡");
+  assert(gratingBarIndexAtX(geometry.offsetM, geometry) === 0, "offset 应对应 k=0 条中心");
 }
 
 const participant = {
@@ -109,8 +97,28 @@ assert(isExperiment4ParticipantInfo(participant));
 
 const set = generateExperiment4RuntimeStimulusSet({ rng: mulberry32(42) });
 assertExperiment4RuntimeStimulusSet(set);
-assert(set.schemaVersion === 4, "实验四刺激 schema 应为 4");
-assert(parseExperiment4StimulusSet({ ...set, schemaVersion: 3 }) === null, "旧 schema 3 缓存应失效");
+assert(set.schemaVersion === 5, "实验四刺激 schema 应为 5");
+assert(parseExperiment4StimulusSet({ ...set, schemaVersion: 4 }) === null, "旧 schema 4 缓存应失效");
+const expectedGeometries = [
+  [2, 0.45, 2.378427, 2.828427, 1.639214],
+  [3, 0.45, 1.435618, 1.885618, 0.225],
+  [4, 0.45, 0.964214, 1.414214, 0.932107],
+] as const;
+for (const [count, gapM, barWidthM, periodM, offsetM] of expectedGeometries) {
+  const geometry = EXPERIMENT_4_GRATING_CONDITIONS[count];
+  assert(
+    geometry.gapM === gapM && geometry.barWidthM === barWidthM &&
+      geometry.periodM === periodM && geometry.offsetM === offsetM,
+    `N=${count} 应锁定六位小数光栅参数`,
+  );
+}
+const invalidGeometrySet = JSON.parse(JSON.stringify(set)) as typeof set;
+const invalidGeometryUnit = invalidGeometrySet.sequence
+  .flatMap((segment) => segment.kind === "rest" ? segment.units : segment.children.flatMap((trial) => trial.units))
+  .find((unit) => unit.type === "gratingPendulumStimulus");
+assert(invalidGeometryUnit?.type === "gratingPendulumStimulus", "应找到实验四刺激单元");
+invalidGeometryUnit.barWidthM += 0.001;
+assert(parseExperiment4StimulusSet(invalidGeometrySet) === null, "不匹配条件表的光栅几何必须被拒绝");
 assert(SPEED_STRIP_SCALE_ENERGY_J === 11.48, "实验四色带应按 11.48 J 标定");
 assert(
   Math.abs(SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC - Math.sqrt(2 * 11.48)) < 1e-12,
@@ -164,16 +172,42 @@ assert(
   "刺激、作答与反馈应共用同一悬点与 4 m 比例",
 );
 
-for (const gapM of Object.values(EXPERIMENT_4_GAP_LEVELS)) {
-  const periodM = gratingPeriodM(gapM);
-  const barPx = EXPERIMENT_4_BAR_WIDTH_M * worldLayout.pxPerM;
-  const gapPx = gapM * worldLayout.pxPerM;
+for (const count of EXPERIMENT_4_VISIBLE_WINDOW_COUNT_ORDER) {
+  const geometry = gratingGeometryForVisibleWindowCount(count);
+  assertGratingGeometry(geometry);
+  const periodM = gratingPeriodM(geometry);
+  const barPx = geometry.barWidthM * worldLayout.pxPerM;
+  const gapPx = geometry.gapM * worldLayout.pxPerM;
   const periodPx = periodM * worldLayout.pxPerM;
   assert(Math.abs(barPx + gapPx - periodPx) < 1e-9, "光栅米制比例应一致");
   assert(
-    Math.abs(barPx / periodPx - EXPERIMENT_4_BAR_WIDTH_M / periodM) < 1e-12,
+    Math.abs(barPx / periodPx - geometry.barWidthM / periodM) < 1e-12,
     "光栅遮挡比例应与物理尺寸一致",
   );
+  const centers = gratingBarCentersM(
+    geometry,
+    worldLayout.canvasW / 2 / worldLayout.pxPerM,
+  );
+  assert(
+    centers[0]! - geometry.barWidthM / 2 < -worldLayout.canvasW / 2 / worldLayout.pxPerM &&
+      centers[centers.length - 1]! + geometry.barWidthM / 2 >
+        worldLayout.canvasW / 2 / worldLayout.pxPerM,
+    `N=${count} 光栅条应覆盖完整画布`,
+  );
+}
+
+const canonicalRelease = pendulumParamsForRelease("right", EXPERIMENT_4_ENERGY_CENTER_J);
+const actualXMaxM = canonicalRelease.rodLengthM * Math.sin(canonicalRelease.theta0Rad);
+for (const count of EXPERIMENT_4_VISIBLE_WINDOW_COUNT_ORDER) {
+  const geometry = EXPERIMENT_4_GRATING_CONDITIONS[count];
+  const intervals = fullyVisibleIntervalsBetween(-actualXMaxM, actualXMaxM, geometry);
+  assert(intervals.length === count, `N=${count} 应有 ${count} 个完整可见窗口`);
+  for (const interval of intervals) {
+    assert(
+      Math.abs(interval.xEndM - interval.xStartM - 0.29) < 1e-9,
+      `N=${count} 完整可见空间宽度应为 0.29 m`,
+    );
+  }
 }
 
 for (const d of descriptors) {
@@ -231,15 +265,29 @@ for (const d of formal) {
     `随机初始状态必须保持目标机械能: ${d.trial_id}`,
   );
   assert(
-    bobVisibilityAtTime(d.query_time_sec, params, d.gap_m) === "fully_occluded",
+    bobVisibilityAtTime(d.query_time_sec, params, {
+      visibleWindowCount: d.visible_window_count,
+      gapM: d.gap_m,
+      barWidthM: d.bar_width_m,
+      periodM: d.grating_period_m,
+      offsetM: d.grating_offset_m,
+    }) === "fully_occluded",
     `t_q 应遮挡 ${d.trial_id}`,
   );
+  const geometry = gratingGeometryForVisibleWindowCount(d.visible_window_count);
   assert(
-    d.query_grating_index ===
-      Math.round(
-        (d.rod_length_m * Math.sin(d.theta_q_rad)) / gratingPeriodM(d.gap_m),
-      ),
+    d.query_grating_index === gratingBarIndexAtX(
+      d.rod_length_m * Math.sin(d.theta_q_rad),
+      geometry,
+    ),
     `询问光栅条编号应与真值位置一致: ${d.trial_id}`,
+  );
+  assert(
+    d.gap_m === geometry.gapM &&
+      d.bar_width_m === geometry.barWidthM &&
+      d.grating_period_m === geometry.periodM &&
+      d.grating_offset_m === geometry.offsetM,
+    `逐试次光栅参数应匹配 N=${d.visible_window_count}`,
   );
 }
 
@@ -252,26 +300,16 @@ assert(
   "正式试次初始位置应随随机相位连续变化",
 );
 
-assertGapGeometry(EXPERIMENT_4_GAP_LEVELS.small);
-assertGapGeometry(EXPERIMENT_4_GAP_LEVELS.medium);
-assertGapGeometry(EXPERIMENT_4_GAP_LEVELS.large);
-
-assert(Math.abs(angleDegFromX(1.1) - 16.0) < 0.3, "中央遮挡外缘角度");
-assert(Math.abs(angleDegFromX(1.55) - 22.8) < 0.3, "小档间隙内缘角度");
-assert(Math.abs(angleDegFromX(3.75) - 69.6) < 0.3, "小档外侧角度");
-assert(Math.abs(angleDegFromX(2.0) - 30.0) < 0.3, "中档间隙内缘角度");
-assert(Math.abs(angleDegFromX(2.45) - 37.8) < 0.3, "大档间隙内缘角度");
-
 const blockSides = new Map<string, { left: number; right: number }>();
 for (const d of formal) {
-  const key = d.gap_level;
+  const key = String(d.visible_window_count);
   const entry = blockSides.get(key) ?? { left: 0, right: 0 };
   entry[d.initial_side] += 1;
   blockSides.set(key, entry);
 }
-for (const level of Object.keys(EXPERIMENT_4_GAP_LEVELS)) {
-  const counts = blockSides.get(level);
-  assert(counts && counts.left === 10 && counts.right === 10, `${level} 左右计数`);
+for (const count of EXPERIMENT_4_VISIBLE_WINDOW_COUNT_ORDER) {
+  const counts = blockSides.get(String(count));
+  assert(counts && counts.left === 10 && counts.right === 10, `N=${count} 左右计数`);
 }
 
 assert(
@@ -330,7 +368,7 @@ const blockOrderPattern = (seed: number) =>
     generateExperiment4RuntimeStimulusSet({ rng: mulberry32(seed) }),
   )
     .filter((d) => d.segment_kind === "block" && d.trial_index_in_block === 1)
-    .map((d) => d.gap_level)
+    .map((d) => d.visible_window_count)
     .join(",");
 assert(
   new Set([1, 2, 3, 4, 5].map(blockOrderPattern)).size > 1,
@@ -357,18 +395,19 @@ assert(
   "旧刺激集缺省汇报顺序应按 angle_first 读入",
 );
 
-for (const gapM of Object.values(EXPERIMENT_4_GAP_LEVELS)) {
+for (const count of EXPERIMENT_4_VISIBLE_WINDOW_COUNT_ORDER) {
+  const geometry = gratingGeometryForVisibleWindowCount(count);
   for (const energyJ of [
     EXPERIMENT_4_ENERGY_MIN_J,
     EXPERIMENT_4_ENERGY_CENTER_J,
     EXPERIMENT_4_ENERGY_MAX_J,
   ]) {
     const params = pendulumParamsForRelease("left", energyJ);
-    const timeline = buildOcclusionTimeline(params, gapM);
+    const timeline = buildOcclusionTimeline(params, geometry);
     const firstVis = firstFullyVisibleTimeSec(timeline);
     const windows = queryableWindows(timeline, EXPERIMENT_4_DURATION_SEC, firstVis);
     const total = windows.reduce((z, w) => z + (w.tMaxSec - w.tMinSec), 0);
-    assert(total > 0.1, `gap ${gapM}, energy ${energyJ} 应有可询问窗口`);
+    assert(total > 0.1, `N=${count}, energy ${energyJ} 应有可询问窗口`);
   }
 }
 
@@ -404,7 +443,10 @@ assert(
 );
 const csv = buildExperiment4StimulusTrialsCsv(completeRows, participant, "f");
 assert(csv.includes("experiment-4"), "CSV 含 experiment_id");
-assert(csv.includes("gap_level") || csv.includes("query_time_sec"), "CSV 列头");
+assert(csv.includes("visible_window_count"), "CSV 应导出可见窗口数条件");
+assert(csv.includes("grating_period_m"), "CSV 应导出光栅周期");
+assert(csv.includes("grating_offset_m"), "CSV 应导出光栅 offset");
+assert(!csv.includes("gap_level"), "CSV 不应继续导出旧间隙档字段");
 assert(csv.includes("pendulum_E_J"), "CSV 应导出逐试次机械能");
 assert(csv.includes("initial_direction"), "CSV 应导出初始运动方向");
 assert(csv.includes("query_grating_index"), "CSV 应导出询问光栅条编号");
@@ -412,5 +454,16 @@ assert(csv.includes("speed_scale_energy_j"), "CSV 应导出色带标定能量");
 assert(csv.includes("speed_scale_linear_v_max_m_per_sec"), "CSV 应导出最高线速度");
 assert(csv.includes("linear_speed_reported_m_per_sec"), "CSV 应导出报告线速度");
 assert(csv.includes("delta_linear_speed_m_per_sec"), "CSV 应导出线速度误差");
+assert(csv.split("\r\n")[1]?.includes(",6,"), "CSV 数据 schema 应为 6");
+const stimulusPayload = buildExperiment4StimulusSetExportPayload(set, participant);
+assert(EXPERIMENT_4_STIMULUS_EXPORT_SCHEMA_VERSION === 3, "刺激导出 schema 应为 3");
+assert(stimulusPayload.schema_version === 3, "刺激 JSON 应写入 schema 3");
+assert(
+  stimulusPayload.trials.every((trial) =>
+    trial.visible_window_count === 2 ||
+    trial.visible_window_count === 3 ||
+    trial.visible_window_count === 4),
+  "刺激 JSON 应导出可见窗口数条件",
+);
 
 console.log("verify-experiment-4: OK");

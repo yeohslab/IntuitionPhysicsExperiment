@@ -5,18 +5,18 @@ import {
 } from "../../experiment/physics/pendulum";
 import type { PendulumParams } from "../../experiment/physics/pendulum";
 import {
-  EXPERIMENT_4_BAR_WIDTH_M,
   EXPERIMENT_4_BOB_RADIUS_M,
   EXPERIMENT_4_DURATION_SEC,
   EXPERIMENT_4_ENERGY_CENTER_J,
-  EXPERIMENT_4_GAP_LEVELS,
+  EXPERIMENT_4_GRATING_CONDITIONS,
   EXPERIMENT_4_GRAVITY,
   EXPERIMENT_4_INITIAL_TURN_MARGIN_FRACTION,
   EXPERIMENT_4_OCCLUSION_MARGIN_SEC,
   EXPERIMENT_4_QUERY_MIN_SEC,
   EXPERIMENT_4_ROD_LENGTH_M,
-  type Experiment4GapLevel,
+  type Experiment4GratingGeometry,
   type Experiment4InitialDirection,
+  type Experiment4VisibleWindowCount,
 } from "./protocol";
 
 export type BobVisibility = "fully_occluded" | "fully_visible" | "partial";
@@ -30,25 +30,45 @@ export type OcclusionSegment = {
 /** 遮挡时间表时间步（秒）；1 ms 精度过慢，5 ms 足够试次规划。 */
 const DT_SEC = 0.005;
 
-export function gratingPeriodM(gapM: number): number {
-  return EXPERIMENT_4_BAR_WIDTH_M + gapM;
+export function gratingGeometryForVisibleWindowCount(
+  visibleWindowCount: Experiment4VisibleWindowCount,
+): Experiment4GratingGeometry {
+  return EXPERIMENT_4_GRATING_CONDITIONS[visibleWindowCount];
 }
 
-export function gratingBarCentersM(gapM: number, xMax = 8): number[] {
-  const period = gratingPeriodM(gapM);
-  const centers: number[] = [0];
-  for (let k = 1; k * period <= xMax + period; k++) {
-    centers.push(k * period, -k * period);
+export function gratingPeriodM(geometry: Experiment4GratingGeometry): number {
+  return geometry.periodM;
+}
+
+export function gratingBarIndexAtX(
+  xM: number,
+  geometry: Experiment4GratingGeometry,
+): number {
+  return Math.round((xM - geometry.offsetM) / geometry.periodM);
+}
+
+export function gratingBarCentersM(
+  geometry: Experiment4GratingGeometry,
+  xMax = 8,
+): number[] {
+  const kMin = Math.floor((-xMax - geometry.offsetM) / geometry.periodM) - 1;
+  const kMax = Math.ceil((xMax - geometry.offsetM) / geometry.periodM) + 1;
+  const centers: number[] = [];
+  for (let k = kMin; k <= kMax; k += 1) {
+    centers.push(geometry.offsetM + k * geometry.periodM);
   }
-  return centers.sort((a, b) => a - b);
+  return centers;
 }
 
-export function classifyBobAtX(xM: number, gapM: number): BobVisibility {
+export function classifyBobAtX(
+  xM: number,
+  geometry: Experiment4GratingGeometry,
+): BobVisibility {
   const r = EXPERIMENT_4_BOB_RADIUS_M;
-  const halfBar = EXPERIMENT_4_BAR_WIDTH_M / 2;
-  const period = gratingPeriodM(gapM);
-  const n = Math.round(xM / period);
-  const center = n * period;
+  const halfBar = geometry.barWidthM / 2;
+  const period = geometry.periodM;
+  const n = gratingBarIndexAtX(xM, geometry);
+  const center = geometry.offsetM + n * period;
   const d = Math.abs(xM - center);
   if (d <= halfBar - r) return "fully_occluded";
   if (d >= halfBar + r && d <= period - halfBar - r) return "fully_visible";
@@ -58,23 +78,48 @@ export function classifyBobAtX(xM: number, gapM: number): BobVisibility {
 export function bobVisibilityAtTime(
   tSec: number,
   params: PendulumParams,
-  gapM: number,
+  geometry: Experiment4GratingGeometry,
 ): BobVisibility {
   const analysis = analyzePendulum(params);
   const { theta } = pendulumThetaOmegaAt(tSec, params, analysis);
   const x = params.rodLengthM * Math.sin(theta);
-  return classifyBobAtX(x, gapM);
+  return classifyBobAtX(x, geometry);
+}
+
+export type FullyVisibleSpatialInterval = { xStartM: number; xEndM: number };
+
+export function fullyVisibleIntervalsBetween(
+  xMinM: number,
+  xMaxM: number,
+  geometry: Experiment4GratingGeometry,
+): FullyVisibleSpatialInterval[] {
+  const lo = Math.min(xMinM, xMaxM);
+  const hi = Math.max(xMinM, xMaxM);
+  const halfBar = geometry.barWidthM / 2;
+  const inset = halfBar + EXPERIMENT_4_BOB_RADIUS_M;
+  const centers = gratingBarCentersM(geometry, Math.max(Math.abs(lo), Math.abs(hi)) + geometry.periodM);
+  const intervals: FullyVisibleSpatialInterval[] = [];
+  for (let index = 0; index < centers.length - 1; index += 1) {
+    const xStartM = Math.max(lo, centers[index]! + inset);
+    const xEndM = Math.min(hi, centers[index + 1]! - inset);
+    if (xEndM > xStartM + 1e-12) intervals.push({ xStartM, xEndM });
+  }
+  return intervals;
 }
 
 const occlusionTimelineCache = new Map<string, OcclusionSegment[]>();
 
 export function buildOcclusionTimeline(
   params: PendulumParams,
-  gapM: number,
+  geometry: Experiment4GratingGeometry,
   durationSec = EXPERIMENT_4_DURATION_SEC,
 ): OcclusionSegment[] {
   const cacheKey = [
-    gapM,
+    geometry.visibleWindowCount,
+    geometry.gapM,
+    geometry.barWidthM,
+    geometry.periodM,
+    geometry.offsetM,
     durationSec,
     params.theta0Rad,
     params.omega0RadPerSec,
@@ -87,7 +132,7 @@ export function buildOcclusionTimeline(
   const analysis = analyzePendulum(params);
   const visibilityAt = (tSec: number): BobVisibility => {
     const { theta } = pendulumThetaOmegaAt(tSec, params, analysis);
-    return classifyBobAtX(params.rodLengthM * Math.sin(theta), gapM);
+    return classifyBobAtX(params.rodLengthM * Math.sin(theta), geometry);
   };
 
   const segments: OcclusionSegment[] = [];
@@ -269,19 +314,15 @@ export function sampleExperiment4EnergyJ(): number {
   return EXPERIMENT_4_ENERGY_CENTER_J;
 }
 
-export function gapMFromLevel(level: Experiment4GapLevel): number {
-  return EXPERIMENT_4_GAP_LEVELS[level];
-}
-
 export function planTrialQuery(
   side: "left" | "right",
   direction: Experiment4InitialDirection,
-  gapLevel: Experiment4GapLevel,
+  visibleWindowCount: Experiment4VisibleWindowCount,
   rng: () => number,
 ): {
   params: PendulumParams;
   energyJ: number;
-  gapM: number;
+  geometry: Experiment4GratingGeometry;
   tQuerySec: number;
   occlusionSegmentIndex: number;
   timeline: OcclusionSegment[];
@@ -290,8 +331,8 @@ export function planTrialQuery(
 } {
   const energyJ = sampleExperiment4EnergyJ();
   const params = pendulumParamsForInitialState(side, direction, energyJ, rng);
-  const gapM = gapMFromLevel(gapLevel);
-  const timeline = buildOcclusionTimeline(params, gapM);
+  const geometry = gratingGeometryForVisibleWindowCount(visibleWindowCount);
+  const timeline = buildOcclusionTimeline(params, geometry);
   const firstVisibleSec = firstFullyVisibleTimeSec(timeline);
   const windows = queryableWindows(
     timeline,
@@ -300,13 +341,14 @@ export function planTrialQuery(
   );
   const { tQuerySec, segmentIndex } = sampleQueryTimeSec(windows, rng);
   const queryState = pendulumThetaOmegaAt(tQuerySec, params, analyzePendulum(params));
-  const queryBarIndex = Math.round(
-    (params.rodLengthM * Math.sin(queryState.theta)) / gratingPeriodM(gapM),
+  const queryBarIndex = gratingBarIndexAtX(
+    params.rodLengthM * Math.sin(queryState.theta),
+    geometry,
   );
   return {
     params,
     energyJ,
-    gapM,
+    geometry,
     tQuerySec,
     occlusionSegmentIndex: segmentIndex,
     timeline,

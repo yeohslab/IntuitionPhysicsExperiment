@@ -1,7 +1,7 @@
 /** 实验二运行时刺激集版本。 */
 export const EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
 /** 实验四运行时刺激集版本。 */
-export const EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION = 4 as const;
+export const EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION = 5 as const;
 /** 实验五运行时刺激集版本。 */
 export const EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
 /** 训练一运行时刺激集版本。 */
@@ -63,9 +63,11 @@ export interface GratingPendulumStimulusUnit {
   energyJ: number;
   durationSec: number;
   queryTimeSec: number;
-  gapLevel: "small" | "medium" | "large";
+  visibleWindowCount: 2 | 3 | 4;
   gapM: number;
   barWidthM: number;
+  gratingPeriodM: number;
+  gratingOffsetM: number;
   bobRadiusM: number;
   initialSide: "left" | "right";
   initialDirection: "leftward" | "rightward";
