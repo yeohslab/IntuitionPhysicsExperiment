@@ -1,14 +1,14 @@
-import {
-  SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC,
-  SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC,
-  SPEED_STRIP_SCALE_ENERGY_J,
-  speedStripPositionFromLinearSpeedMPerSec,
-} from "../../experiment/physics/speedStripScale";
 import type {
   ExperimentTraining1StimulusSet,
   SpeedColorTrainingStimulusUnit,
 } from "../../shared/experimentTypes";
-import { TRAINING_1_PROTOCOL_VERSION } from "./protocol";
+import {
+  TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC,
+  TRAINING_1_OMEGA_SCALE_RAD_PER_SEC,
+  TRAINING_1_PROTOCOL_VERSION,
+  TRAINING_1_SPEED_SCALE_ENERGY_J,
+} from "./protocol";
+import { trainingStripPositionFromLinearSpeedMPerSec } from "./trialPhysics";
 
 export type ExperimentTraining1TrialDescriptor = {
   experiment_id: "training-1";
@@ -68,7 +68,7 @@ export function describeTraining1Trial(
     initial_direction: unit.initialDirection,
     motion_loop_mode: unit.loopMode,
     target_strip_position: unit.targetStripPosition,
-    speed_strip_truth_position: speedStripPositionFromLinearSpeedMPerSec(
+    speed_strip_truth_position: trainingStripPositionFromLinearSpeedMPerSec(
       unit.linearSpeedMPerSec,
     ),
     linear_speed_m_per_sec: unit.linearSpeedMPerSec,
@@ -77,9 +77,9 @@ export function describeTraining1Trial(
     initial_x_m: unit.initialXM,
     report_available_at_sec: unit.reportDelaySec,
     first_traversal_duration_sec: unit.firstTraversalDurationSec,
-    speed_scale_energy_j: SPEED_STRIP_SCALE_ENERGY_J,
-    speed_scale_linear_v_max_m_per_sec: SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC,
-    speed_scale_omega_max_rad_per_sec: SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC,
+    speed_scale_energy_j: TRAINING_1_SPEED_SCALE_ENERGY_J,
+    speed_scale_linear_v_max_m_per_sec: TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC,
+    speed_scale_omega_max_rad_per_sec: TRAINING_1_OMEGA_SCALE_RAD_PER_SEC,
   };
 }
 

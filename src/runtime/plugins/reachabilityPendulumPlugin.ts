@@ -4,6 +4,7 @@ import { analyzePendulum, pendulumThetaOmegaAt } from "../../experiment/physics/
 import { setupHiDpiCanvas } from "../../experiment/physics/render/canvasCoords";
 import { GRATING_CANVAS_LOGICAL_H, GRATING_CANVAS_LOGICAL_W } from "../../experiment/physics/render/gratingCanvas";
 import { drawReachabilityMotionFrame, drawReachabilityTargetFrame, reachabilityWorldLayout } from "../../experiment/physics/render/reachabilityCanvas";
+import type { Experiment4GratingGeometry } from "../../experiments/experiment-4/protocol";
 import { playBoundaryCueNow } from "../../shared/playEstimateCue";
 import { updateRecoveryCursor } from "../../shared/recovery";
 import type { ExperimentId } from "../../experiments/types";
@@ -22,6 +23,11 @@ const info = {
     amplitudeDeg: { type: ParameterType.FLOAT, default: 40 },
     visibleDurationSec: { type: ParameterType.FLOAT, default: 0.4 },
     responseDeadlineSec: { type: ParameterType.FLOAT, default: 4 },
+    visibleWindowCount: { type: ParameterType.INT, default: 2 },
+    gapM: { type: ParameterType.FLOAT, default: 0.45 },
+    barWidthM: { type: ParameterType.FLOAT, default: 2.378427 },
+    gratingPeriodM: { type: ParameterType.FLOAT, default: 2.828427 },
+    gratingOffsetM: { type: ParameterType.FLOAT, default: 0 },
     yesKey: { type: ParameterType.STRING, default: "f" },
     noKey: { type: ParameterType.STRING, default: "j" },
     correctResponse: { type: ParameterType.STRING, default: "reachable" },
@@ -34,6 +40,7 @@ const info = {
 type Trial = {
   theta0Deg: number; omega0DegPerSec: number; rodLengthM: number; gravity: number; bobRadiusM: number;
   targetAngleDeg: number; amplitudeDeg: number; visibleDurationSec: number; responseDeadlineSec: number;
+  visibleWindowCount: 2 | 3 | 4; gapM: number; barWidthM: number; gratingPeriodM: number; gratingOffsetM: number;
   yesKey: "f" | "j"; noKey: "f" | "j"; correctResponse: "reachable" | "unreachable";
   practice: boolean; unitMeta: Record<string, unknown>;
 };
@@ -59,6 +66,13 @@ export default class ReachabilityPendulumPlugin {
     const analysis = analyzePendulum(params);
     const targetRad = trial.targetAngleDeg * Math.PI / 180;
     const amplitudeSignedRad = Math.sign(targetRad) * trial.amplitudeDeg * Math.PI / 180;
+    const geometry: Experiment4GratingGeometry = {
+      visibleWindowCount: trial.visibleWindowCount,
+      gapM: trial.gapM,
+      barWidthM: trial.barWidthM,
+      periodM: trial.gratingPeriodM,
+      offsetM: trial.gratingOffsetM,
+    };
     const experimentId = (trial.unitMeta.runtime_experiment_id ?? "experiment-5") as ExperimentId;
     let raf = 0;
     let deadlineTimer = 0;
@@ -110,7 +124,7 @@ export default class ReachabilityPendulumPlugin {
       phase = "feedback";
       window.clearTimeout(deadlineTimer);
       const correct = response === trial.correctResponse;
-      drawReachabilityTargetFrame(ctx, layout, trial.rodLengthM, targetRad, amplitudeSignedRad);
+      drawReachabilityTargetFrame(ctx, layout, geometry, trial.rodLengthM, targetRad, amplitudeSignedRad);
       const outcome = response === null ? "未在时限内作答" : correct ? "正确" : "错误";
       feedback.innerHTML = `<p class="physics-feedback ${correct ? "is-correct" : "is-error"}"><strong>${outcome}</strong>。红线为目标，蓝线为实际最大摆角；目标${trial.correctResponse === "reachable" ? "在最大摆角以内，所以会到达" : "超过最大摆角，所以不会到达"}。按空格继续。</p>`;
       hint.textContent = "练习反馈";
@@ -129,7 +143,7 @@ export default class ReachabilityPendulumPlugin {
       boundaryMs = now;
       responseStartMs = now;
       boundaryOvershootMs = Math.max(0, now - startMs - trial.visibleDurationSec * 1000);
-      drawReachabilityTargetFrame(ctx, layout, trial.rodLengthM, targetRad);
+      drawReachabilityTargetFrame(ctx, layout, geometry, trial.rodLengthM, targetRad);
       playBoundaryAudioAnchor = playBoundaryCueNow();
       hint.innerHTML = `目标出现：<strong>${trial.yesKey.toUpperCase()} = 会到达</strong>，<strong>${trial.noKey.toUpperCase()} = 不会到达</strong>`;
       updateRecoveryCursor({ ...cursorMeta(trial.unitMeta), phase: "estimate" }, experimentId);
@@ -143,7 +157,7 @@ export default class ReachabilityPendulumPlugin {
       lastFrameMs = now;
       const elapsed = (now - startMs) / 1000;
       if (elapsed >= trial.visibleDurationSec) { showResponse(now); return; }
-      drawReachabilityMotionFrame(ctx, layout, trial.rodLengthM, trial.bobRadiusM, pendulumThetaOmegaAt(elapsed, params, analysis).theta);
+      drawReachabilityMotionFrame(ctx, layout, geometry, trial.rodLengthM, trial.bobRadiusM, pendulumThetaOmegaAt(elapsed, params, analysis).theta);
       raf = requestAnimationFrame(tick);
     };
     function onKey(event: KeyboardEvent) {
@@ -170,7 +184,7 @@ export default class ReachabilityPendulumPlugin {
     window.addEventListener("keydown", onKey);
     window.addEventListener(PHYSICS_ABORT_EVENT, cleanup);
     document.addEventListener("visibilitychange", onVisibility);
-    drawReachabilityMotionFrame(ctx, layout, trial.rodLengthM, trial.bobRadiusM, params.theta0Rad);
+    drawReachabilityMotionFrame(ctx, layout, geometry, trial.rodLengthM, trial.bobRadiusM, params.theta0Rad);
     raf = requestAnimationFrame(tick);
   }
 }

@@ -1,11 +1,15 @@
 /** 实验二运行时刺激集版本。 */
 export const EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
 /** 实验四运行时刺激集版本。 */
-export const EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION = 5 as const;
+export const EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION = 6 as const;
 /** 实验五运行时刺激集版本。 */
-export const EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
-/** 训练一运行时刺激集版本。 */
-export const EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION = 6 as const;
+export const EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
+/** 实验四协议 2.0 运行时刺激集版本。 */
+export const EXPERIMENT_4_V2_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
+/** 实验五协议 2.0 运行时刺激集版本。 */
+export const EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
+/** 训练一运行时刺激集版本。7：色带右端改为 60° 静止释放的最低点速度。 */
+export const EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION = 7 as const;
 
 export type StimulusUnitType =
   | "textDisplay"
@@ -13,6 +17,9 @@ export type StimulusUnitType =
   | "pendulumStimulus"
   | "gratingPendulumStimulus"
   | "reachabilityPendulumStimulus"
+  | "protocol2PendulumDemo"
+  | "trackingPendulumV2Stimulus"
+  | "bellReachabilityV2Stimulus"
   | "speedColorTrainingStimulus"
   | "training1Summary";
 
@@ -140,11 +147,88 @@ export interface ReachabilityPendulumStimulusUnit {
   judgmentTimeSec: number;
   visibleDurationSec: number;
   responseDeadlineSec: number;
+  /** 与实验四一致、按 11.48 J 完整横穿标定的光栅条件。 */
+  visibleWindowCount: 2 | 3 | 4;
+  gapM: number;
+  barWidthM: number;
+  gratingPeriodM: number;
+  gratingOffsetM: number;
   side: "left" | "right";
   relation: ReachabilityRelation;
   correctResponse: ReachabilityRelation;
   yesKey: "f" | "j";
   noKey: "f" | "j";
+}
+
+export type Protocol2GratingCondition = "G1" | "G2" | "G3";
+
+export type Protocol2VisibleSegment = {
+  /** Relative to motion playback start. */
+  tStartSec: number;
+  /** Relative to motion playback start. */
+  tEndSec: number;
+  truncatedByBlank: boolean;
+};
+
+export interface Protocol2PendulumDemoUnit {
+  id: string;
+  type: "protocol2PendulumDemo";
+  amplitudeDeg: number;
+  rodLengthM: number;
+  gravity: number;
+  bobRadiusM: number;
+}
+
+interface Protocol2OccludedMotionUnit {
+  theta0Deg: number;
+  omega0DegPerSec: number;
+  rodLengthM: number;
+  gravity: number;
+  bobRadiusM: number;
+  energyJ: number;
+  amplitudeDeg: number;
+  queryThetaDeg: number;
+  queryOmegaRadPerSec: number;
+  queryTimeSec: number;
+  blankStartSec: number;
+  blankDurationSec: number;
+  visibleSegments: Protocol2VisibleSegment[];
+  gratingCondition: Protocol2GratingCondition;
+  gapM: number;
+  barWidthM: number;
+  gratingPeriodM: number;
+  gratingOffsetM: number;
+  stateSiteId: string;
+  modelDtSec: number;
+}
+
+export interface TrackingPendulumV2StimulusUnit
+  extends Protocol2OccludedMotionUnit {
+  id: string;
+  type: "trackingPendulumV2Stimulus";
+  trackingCondition: "no_hidden_reversal" | "hidden_reversal";
+  initialSide: "left" | "right";
+  initialDirection: "leftward" | "rightward";
+  cueDurationMs: number;
+  reversalTimeSec: number | null;
+  speedScaleLinearMPerSec: number;
+}
+
+export interface BellReachabilityV2StimulusUnit
+  extends Protocol2OccludedMotionUnit {
+  id: string;
+  type: "bellReachabilityV2Stimulus";
+  deltaHM: number;
+  bellContactHeightM: number;
+  bellThetaDeg: number;
+  bellSide: "left" | "right";
+  correctResponse: ReachabilityRelation;
+  yesKey: "f" | "j";
+  noKey: "f" | "j";
+  plannedVisibleTurn: boolean;
+  plannedVisibleTurnTimeSec: number | null;
+  plannedVisibleContact: boolean;
+  plannedVisibleContactTimeSec: number | null;
 }
 
 export type StimulusUnit =
@@ -153,6 +237,9 @@ export type StimulusUnit =
   | PendulumStimulusUnit
   | GratingPendulumStimulusUnit
   | ReachabilityPendulumStimulusUnit
+  | Protocol2PendulumDemoUnit
+  | TrackingPendulumV2StimulusUnit
+  | BellReachabilityV2StimulusUnit
   | SpeedColorTrainingStimulusUnit
   | Training1SummaryUnit;
 
@@ -202,6 +289,16 @@ export interface Experiment4StimulusSet extends RuntimeStimulusSet {
 /** 实验五运行时刺激集。 */
 export interface Experiment5StimulusSet extends RuntimeStimulusSet {
   schemaVersion: typeof EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION;
+}
+
+/** 实验四协议 2.0 运行时刺激集。 */
+export interface Experiment4V2StimulusSet extends RuntimeStimulusSet {
+  schemaVersion: typeof EXPERIMENT_4_V2_STIMULUS_SET_SCHEMA_VERSION;
+}
+
+/** 实验五协议 2.0 运行时刺激集。 */
+export interface Experiment5V2StimulusSet extends RuntimeStimulusSet {
+  schemaVersion: typeof EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION;
 }
 
 /** 训练一运行时刺激集。 */

@@ -24,6 +24,11 @@ export type Experiment5TrialDescriptor = {
   disappearance_omega_deg_per_sec: number;
   visible_duration_sec: number;
   response_deadline_sec: number;
+  visible_window_count: 2 | 3 | 4;
+  gap_m: number;
+  bar_width_m: number;
+  grating_period_m: number;
+  grating_offset_m: number;
   side: "left" | "right";
   reachability: "reachable" | "unreachable";
   correct_response: "reachable" | "unreachable";
@@ -57,6 +62,8 @@ export function collectExperiment5TrialDescriptors(set: Experiment5StimulusSet):
         omega_0_deg_per_sec: u.omega0DegPerSec, disappearance_theta_deg: u.disappearanceThetaDeg,
         disappearance_omega_deg_per_sec: u.disappearanceOmegaDegPerSec,
         visible_duration_sec: u.visibleDurationSec, response_deadline_sec: u.responseDeadlineSec,
+        visible_window_count: u.visibleWindowCount, gap_m: u.gapM, bar_width_m: u.barWidthM,
+        grating_period_m: u.gratingPeriodM, grating_offset_m: u.gratingOffsetM,
         side: u.side, reachability: u.relation, correct_response: u.correctResponse,
         yes_key: u.yesKey, no_key: u.noKey, rod_length_m: u.rodLengthM,
         gravity_m_per_sec2: u.gravity, bob_radius_m: u.bobRadiusM,

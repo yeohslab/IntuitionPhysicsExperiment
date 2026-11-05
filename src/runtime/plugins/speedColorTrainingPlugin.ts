@@ -8,18 +8,18 @@ import {
 } from "../../experiment/physics/render/linearMotionCanvas";
 import { setupHiDpiCanvas } from "../../experiment/physics/render/canvasCoords";
 import {
-  linearSpeedMPerSecFromSpeedStripPosition,
-  SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC,
-  SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC,
-  SPEED_STRIP_SCALE_ENERGY_J,
-  speedStripPositionFromLinearSpeedMPerSec,
-} from "../../experiment/physics/speedStripScale";
-import {
   TRAINING_1_FEEDBACK_HOLD_MS,
   TRAINING_1_FEEDBACK_PHASE_TIMELINE,
+  TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC,
+  TRAINING_1_OMEGA_SCALE_RAD_PER_SEC,
+  TRAINING_1_SPEED_SCALE_ENERGY_J,
 } from "../../experiments/training-1/protocol";
 import { training1AssessmentAttemptFromCompletedTrials } from "../../experiments/training-1/mastery";
-import { trainingMotionStateAt } from "../../experiments/training-1/trialPhysics";
+import {
+  trainingLinearSpeedMPerSec,
+  trainingMotionStateAt,
+  trainingStripPositionFromLinearSpeedMPerSec,
+} from "../../experiments/training-1/trialPhysics";
 import { transitionMaskedAmbientToEstimateCue } from "../../shared/playEstimateCue";
 import type {
   SpeedColorTrainingDirection,
@@ -106,7 +106,7 @@ class SpeedColorTrainingPlugin {
     const actions = controls.querySelector(".physics-report-actions") as HTMLElement;
     const canSkipFeedbackPhase = trial.mode === "guided" &&
       trial.trainingSegment.startsWith("guided_");
-    const truthPosition = speedStripPositionFromLinearSpeedMPerSec(
+    const truthPosition = trainingStripPositionFromLinearSpeedMPerSec(
       trial.linearSpeedMPerSec,
     );
     const previousAssessmentTrials = (
@@ -165,14 +165,14 @@ class SpeedColorTrainingPlugin {
         speed_strip_truth_position: truthPosition,
         delta_strip_position: delta,
         abs_delta_strip_position: delta === null ? null : Math.abs(delta),
-        speed_scale_energy_j: SPEED_STRIP_SCALE_ENERGY_J,
+        speed_scale_energy_j: TRAINING_1_SPEED_SCALE_ENERGY_J,
         speed_scale_linear_v_max_m_per_sec:
-          SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC,
+          TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC,
         speed_scale_omega_max_rad_per_sec:
-          SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC,
+          TRAINING_1_OMEGA_SCALE_RAD_PER_SEC,
         speed_reported_m_per_sec: speedPosition === null
           ? null
-          : linearSpeedMPerSecFromSpeedStripPosition(speedPosition),
+          : trainingLinearSpeedMPerSec(speedPosition),
         rt_speed_sec: rtSpeedSec,
         rt_total_sec: reportStartMs === null || confirmationMs === null
           ? null

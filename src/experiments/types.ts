@@ -3,7 +3,9 @@ import type { JsPsych } from "jspsych";
 import type {
   Experiment2StimulusSet,
   Experiment4StimulusSet,
+  Experiment4V2StimulusSet,
   Experiment5StimulusSet,
+  Experiment5V2StimulusSet,
   ExperimentTraining1StimulusSet,
 } from "../shared/experimentTypes";
 import type {
@@ -14,15 +16,23 @@ import type {
   Training1ParticipantInfo,
 } from "../shared/participant";
 
-export type ExperimentId =
+export type LogicalExperimentId =
   | "experiment-2"
   | "experiment-4"
   | "experiment-5"
   | "training-1";
+export type ExperimentVariantId =
+  | LogicalExperimentId
+  | "experiment-4-v2"
+  | "experiment-5-v2";
+/** Backward-compatible name used by runtime/storage code. */
+export type ExperimentId = ExperimentVariantId;
 export type AnyRuntimeStimulusSet =
   | Experiment2StimulusSet
   | Experiment4StimulusSet
+  | Experiment4V2StimulusSet
   | Experiment5StimulusSet
+  | Experiment5V2StimulusSet
   | ExperimentTraining1StimulusSet;
 
 export type SpeedCueConfig =
@@ -47,7 +57,8 @@ export interface ExperimentDefinition<
   P extends AnyParticipantInfo = AnyParticipantInfo,
   S extends AnyRuntimeStimulusSet = AnyRuntimeStimulusSet,
 > {
-  id: ExperimentId;
+  id: ExperimentVariantId;
+  experimentId: LogicalExperimentId;
   title: string;
   summary: string;
   protocolVersion: string;
@@ -95,6 +106,16 @@ export type Experiment4Definition = ExperimentDefinition<
 export type Experiment5Definition = ExperimentDefinition<
   Experiment5ParticipantInfo,
   Experiment5StimulusSet
+>;
+
+export type Experiment4V2Definition = ExperimentDefinition<
+  Experiment4ParticipantInfo,
+  Experiment4V2StimulusSet
+>;
+
+export type Experiment5V2Definition = ExperimentDefinition<
+  Experiment5ParticipantInfo,
+  Experiment5V2StimulusSet
 >;
 
 export type Training1Definition = ExperimentDefinition<

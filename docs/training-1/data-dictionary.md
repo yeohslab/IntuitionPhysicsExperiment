@@ -1,6 +1,6 @@
 # 训练一：数据字典（协议 1.0.0）
 
-CSV 列见 `src/experiments/training-1/exportStimulusCsv.ts` 中的 `TRAINING_1_CSV_COLUMNS`，数据 schema 为 7。
+CSV 列见 `src/experiments/training-1/exportStimulusCsv.ts` 中的 `TRAINING_1_CSV_COLUMNS`，数据 schema 为 8。
 
 | 列 | 说明 |
 | --- | --- |
@@ -23,9 +23,9 @@ CSV 列见 `src/experiments/training-1/exportStimulusCsv.ts` 中的 `TRAINING_1_
 | `speed_strip_position` | 被试报告的色带位置 |
 | `speed_strip_truth_position` | 真实速度对应的色带位置 |
 | `delta_strip_position` / `abs_delta_strip_position` | 有符号/绝对色带位置误差 |
-| `speed_scale_energy_j` | 色带右端标定能量，固定为 $11.48\,\mathrm{J}$ |
-| `speed_scale_linear_v_max_m_per_sec` | 色带右端线速度，约 $4.791659\,\mathrm{m/s}$ |
-| `speed_scale_omega_max_rad_per_sec` | 实验四中等效角速度，约 $1.197915\,\mathrm{rad/s}$ |
+| `speed_scale_energy_j` | 色带右端标定能量，固定为 $19.6\,\mathrm{J}$（$60^\circ$ 静止释放） |
+| `speed_scale_linear_v_max_m_per_sec` | 色带右端线速度，约 $6.260990\,\mathrm{m/s}$ |
+| `speed_scale_omega_max_rad_per_sec` | 同一右端对应的角速度，约 $1.565248\,\mathrm{rad/s}$ |
 | `speed_reported_m_per_sec` | 被试色带选择换算的线速度 |
 | `rt_speed_sec` | 色带出现后到首次选择的时间 |
 | `rt_total_sec` | 色带出现后到确认的时间 |

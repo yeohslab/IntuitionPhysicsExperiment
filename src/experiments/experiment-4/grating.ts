@@ -2,6 +2,7 @@ import {
   analyzePendulum,
   PENDULUM_MASS_KG,
   pendulumThetaOmegaAt,
+  type PendulumAnalysis,
 } from "../../experiment/physics/pendulum";
 import type { PendulumParams } from "../../experiment/physics/pendulum";
 import {
@@ -186,20 +187,139 @@ export type QueryableWindow = {
   tMinSec: number;
   tMaxSec: number;
   segmentIndex: number;
-  /** 该次通过在合法时间域内的完整遮挡用时，用于光栅条概率加权。 */
-  samplingWeightSec: number;
+  /** 该可询问遮挡段上摆球中心走过的轨迹弧长（米）。 */
+  samplingWeightM: number;
 };
+
+type ArcPiece = { t0Sec: number; t1Sec: number; arcM: number };
+
+/** 往复摆的转折时刻。从任意非零速度出发，下一次 ω=0 相隔半个周期。 */
+function firstTurningTimeSec(params: PendulumParams, analysis: PendulumAnalysis): number {
+  if (analysis.regime === "rotation" || !(analysis.T > 0)) return Number.POSITIVE_INFINITY;
+  const omega0 = pendulumThetaOmegaAt(0, params, analysis).omega;
+  if (Math.abs(omega0) <= 1e-8) return 0;
+  const half = analysis.T / 2;
+  let lo = 0;
+  let hi = half;
+  const sign = Math.sign(omega0);
+  for (let i = 0; i < 70; i += 1) {
+    const mid = (lo + hi) / 2;
+    const omega = pendulumThetaOmegaAt(mid, params, analysis).omega;
+    if (omega * sign > 0) lo = mid;
+    else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+function turningTimesBetween(
+  turnRefSec: number,
+  periodSec: number,
+  t0Sec: number,
+  t1Sec: number,
+): number[] {
+  if (!(t1Sec > t0Sec) || !(periodSec > 0) || !Number.isFinite(turnRefSec)) return [];
+  const half = periodSec / 2;
+  const turns: number[] = [];
+  const nStart = Math.ceil((t0Sec - turnRefSec) / half + 1e-9);
+  const nEnd = Math.floor((t1Sec - turnRefSec) / half - 1e-9);
+  for (let n = nStart; n <= nEnd; n += 1) {
+    const t = turnRefSec + n * half;
+    if (t > t0Sec && t < t1Sec) turns.push(t);
+  }
+  return turns;
+}
+
+function arcPieces(
+  params: PendulumParams,
+  analysis: PendulumAnalysis,
+  turnRefSec: number,
+  t0Sec: number,
+  t1Sec: number,
+): ArcPiece[] {
+  if (!(t1Sec > t0Sec)) return [];
+  const bounds = [
+    t0Sec,
+    ...turningTimesBetween(turnRefSec, analysis.T, t0Sec, t1Sec),
+    t1Sec,
+  ];
+  const pieces: ArcPiece[] = [];
+  for (let i = 0; i < bounds.length - 1; i += 1) {
+    const t0 = bounds[i]!;
+    const t1 = bounds[i + 1]!;
+    if (t1 <= t0) continue;
+    const theta0 = pendulumThetaOmegaAt(t0, params, analysis).theta;
+    const theta1 = pendulumThetaOmegaAt(t1, params, analysis).theta;
+    pieces.push({
+      t0Sec: t0,
+      t1Sec: t1,
+      arcM: params.rodLengthM * Math.abs(theta1 - theta0),
+    });
+  }
+  return pieces;
+}
+
+/** 摆球中心在 [t0, t1] 上走过的弧长。折返时去程和回程都计入。 */
+export function bobTrajectoryArcLengthM(
+  params: PendulumParams,
+  t0Sec: number,
+  t1Sec: number,
+  analysis = analyzePendulum(params),
+): number {
+  const pieces = arcPieces(params, analysis, firstTurningTimeSec(params, analysis), t0Sec, t1Sec);
+  return pieces.reduce((sum, piece) => sum + piece.arcM, 0);
+}
+
+function timeAtArcFraction(
+  params: PendulumParams,
+  analysis: PendulumAnalysis,
+  turnRefSec: number,
+  t0Sec: number,
+  t1Sec: number,
+  fraction: number,
+): number {
+  const pieces = arcPieces(params, analysis, turnRefSec, t0Sec, t1Sec);
+  if (pieces.length === 0) return t0Sec;
+  const total = pieces.reduce((sum, piece) => sum + piece.arcM, 0);
+  if (total <= 1e-15) return t0Sec;
+  let remaining = Math.min(Math.max(fraction, 0), 1) * total;
+  const last = pieces[pieces.length - 1]!;
+  for (const piece of pieces) {
+    const takesRest = piece === last || remaining <= piece.arcM;
+    if (!takesRest) {
+      remaining -= piece.arcM;
+      continue;
+    }
+    if (piece.arcM <= 1e-15) return piece.t1Sec;
+    const target = Math.min(remaining, piece.arcM);
+    const theta0 = pendulumThetaOmegaAt(piece.t0Sec, params, analysis).theta;
+    let lo = piece.t0Sec;
+    let hi = piece.t1Sec;
+    for (let i = 0; i < 56; i += 1) {
+      const mid = (lo + hi) / 2;
+      const theta = pendulumThetaOmegaAt(mid, params, analysis).theta;
+      const arc = params.rodLengthM * Math.abs(theta - theta0);
+      if (arc < target) lo = mid;
+      else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+  return last.t1Sec;
+}
 
 /**
  * 可询问窗口：完全遮挡段内部，满足 min 时间、首次可见、两端 margin；
  * 最后一段遮挡若延续到 duration，右端点为 durationSec。
+ * 抽样权重是窗口内的轨迹弧长，不是遮挡用时。
  */
 export function queryableWindows(
   segments: readonly OcclusionSegment[],
   durationSec: number,
   firstVisibleSec: number | null,
+  params: PendulumParams,
 ): QueryableWindow[] {
   const windows: QueryableWindow[] = [];
+  const analysis = analyzePendulum(params);
+  const turnRefSec = firstTurningTimeSec(params, analysis);
   const minT = Math.max(
     EXPERIMENT_4_QUERY_MIN_SEC,
     firstVisibleSec ?? EXPERIMENT_4_QUERY_MIN_SEC,
@@ -213,40 +333,50 @@ export function queryableWindows(
     const tMin = seg.tStartSec + EXPERIMENT_4_OCCLUSION_MARGIN_SEC;
     const tMax = tEnd - EXPERIMENT_4_OCCLUSION_MARGIN_SEC;
     const lo = Math.max(tMin, minT);
-    if (tMax > lo + 1e-9) {
-      windows.push({
-        tMinSec: lo,
-        tMaxSec: tMax,
-        segmentIndex: index,
-        samplingWeightSec: tEnd - Math.max(seg.tStartSec, minT),
-      });
-    }
+    if (!(tMax > lo + 1e-9)) return;
+    const arcM = arcPieces(params, analysis, turnRefSec, lo, tMax)
+      .reduce((sum, piece) => sum + piece.arcM, 0);
+    if (arcM <= 1e-9) return;
+    windows.push({
+      tMinSec: lo,
+      tMaxSec: tMax,
+      segmentIndex: index,
+      samplingWeightM: arcM,
+    });
   });
   return windows;
 }
 
 export function sampleQueryTimeSec(
   windows: readonly QueryableWindow[],
+  params: PendulumParams,
   rng: () => number,
 ): { tQuerySec: number; segmentIndex: number } {
-  // 先按该次通过的完整遮挡用时分配概率、再在安全窗口内部均匀取时刻。
-  // 因此通过越慢、停留越久的光栅条被询问概率越高；0.15 s 安全边距
-  // 只限制实际询问位置，不会反过来改变光栅条的抽样权重。
-  const total = windows.reduce((z, w) => z + w.samplingWeightSec, 0);
+  // 先按可询问遮挡段的轨迹弧长分配概率，再沿该段弧长均匀取位置。
+  // 停留时间长只说明速度慢，不提高该位置被抽到的概率。
+  const analysis = analyzePendulum(params);
+  const turnRefSec = firstTurningTimeSec(params, analysis);
+  const total = windows.reduce((sum, window) => sum + window.samplingWeightM, 0);
   if (total <= 0) {
-    throw new Error("无可询问时间窗口");
+    throw new Error("无可询问弧长");
   }
   let u = rng() * total;
-  for (const w of windows) {
-    if (u <= w.samplingWeightSec) {
+  for (const window of windows) {
+    if (u <= window.samplingWeightM) {
+      const fraction = window.samplingWeightM <= 0 ? 0 : u / window.samplingWeightM;
       return {
-        tQuerySec:
-          w.tMinSec +
-          (u / w.samplingWeightSec) * (w.tMaxSec - w.tMinSec),
-        segmentIndex: w.segmentIndex,
+        tQuerySec: timeAtArcFraction(
+          params,
+          analysis,
+          turnRefSec,
+          window.tMinSec,
+          window.tMaxSec,
+          fraction,
+        ),
+        segmentIndex: window.segmentIndex,
       };
     }
-    u -= w.samplingWeightSec;
+    u -= window.samplingWeightM;
   }
   const last = windows[windows.length - 1]!;
   return {
@@ -338,8 +468,9 @@ export function planTrialQuery(
     timeline,
     EXPERIMENT_4_DURATION_SEC,
     firstVisibleSec,
+    params,
   );
-  const { tQuerySec, segmentIndex } = sampleQueryTimeSec(windows, rng);
+  const { tQuerySec, segmentIndex } = sampleQueryTimeSec(windows, params, rng);
   const queryState = pendulumThetaOmegaAt(tQuerySec, params, analyzePendulum(params));
   const queryBarIndex = gratingBarIndexAtX(
     params.rodLengthM * Math.sin(queryState.theta),

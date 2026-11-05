@@ -10,7 +10,7 @@ import { EXPERIMENT_5_FORMAL_TRIALS, EXPERIMENT_5_PROTOCOL_VERSION } from "./pro
 import { collectExperiment5TrialDescriptors } from "./trialDescriptor";
 
 export const experiment5Definition: Experiment5Definition = {
-  id: "experiment-5", title: "实验五", summary: "协议 1.0.0：连续能量单摆的目标可达性判断。",
+  id: "experiment-5", experimentId: "experiment-5", title: "实验五", summary: "协议 1.0.0：连续能量单摆的目标可达性判断。",
   protocolVersion: EXPERIMENT_5_PROTOCOL_VERSION, internalStimulusSchemaVersion: EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION,
   dataSchemaVersion: EXPERIMENT_5_DATA_SCHEMA_VERSION, formalTrialCount: EXPERIMENT_5_FORMAL_TRIALS,
   startHash: "#/experiment-5/start", runnerHash: "#/experiment-5/runner",

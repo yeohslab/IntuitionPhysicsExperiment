@@ -1,11 +1,8 @@
-import {
-  linearSpeedMPerSecFromSpeedStripPosition,
-  speedStripPositionFromLinearSpeedMPerSec,
-} from "../../experiment/physics/speedStripScale";
 import type {
   SpeedColorTrainingStimulusUnit,
 } from "../../shared/experimentTypes";
 import {
+  TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC,
   TRAINING_1_REPORT_DELAY_SEC,
   TRAINING_1_TRACK_HALF_SPAN_M,
 } from "./protocol";
@@ -13,7 +10,24 @@ import {
 type TrainingUnitFields = Omit<SpeedColorTrainingStimulusUnit, "id" | "type">;
 
 export function trainingLinearSpeedMPerSec(targetStripPosition: number): number {
-  return linearSpeedMPerSecFromSpeedStripPosition(targetStripPosition);
+  if (!Number.isFinite(targetStripPosition)) return 0;
+  const position = Math.max(0, Math.min(1, targetStripPosition));
+  return position * TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC;
+}
+
+export function trainingStripPositionFromLinearSpeedMPerSec(
+  linearSpeedMPerSec: number,
+): number {
+  if (
+    !Number.isFinite(linearSpeedMPerSec) ||
+    TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC <= 0
+  ) {
+    return 0;
+  }
+  return Math.max(
+    0,
+    Math.min(1, Math.abs(linearSpeedMPerSec) / TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC),
+  );
 }
 
 export type TrainingMotionState = {
@@ -81,7 +95,7 @@ export function buildLinearTrainingUnit(
   const firstTraversalDurationSec = stationary
     ? null
     : (trackRightXM - trackLeftXM) / linearSpeedMPerSec;
-  const truth = speedStripPositionFromLinearSpeedMPerSec(linearSpeedMPerSec);
+  const truth = trainingStripPositionFromLinearSpeedMPerSec(linearSpeedMPerSec);
   if (Math.abs(truth - targetStripPosition) > 1e-12) {
     throw new Error("训练一线速度与色带目标不一致");
   }

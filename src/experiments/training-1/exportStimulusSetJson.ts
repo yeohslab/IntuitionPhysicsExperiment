@@ -1,6 +1,9 @@
 import { triggerTextDownload } from "../../shared/download";
 import type { Training1ParticipantInfo } from "../../shared/participant";
-import type { ExperimentTraining1StimulusSet } from "../../shared/experimentTypes";
+import {
+  EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION,
+  type ExperimentTraining1StimulusSet,
+} from "../../shared/experimentTypes";
 import { TRAINING_1_PROTOCOL_VERSION } from "./protocol";
 import { collectTraining1TrialDescriptors } from "./trialDescriptor";
 
@@ -13,7 +16,7 @@ export function buildTraining1StimulusSetPayload(
   participant: Training1ParticipantInfo,
 ) {
   return {
-    schema_version: 6,
+    schema_version: EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION,
     experiment_id: "training-1" as const,
     protocol_version: TRAINING_1_PROTOCOL_VERSION,
     participant: { ...participant },

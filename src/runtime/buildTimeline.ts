@@ -18,9 +18,15 @@ import type {
   GratingPendulumStimulusUnit,
   ReachabilityPendulumStimulusUnit,
   SpeedColorTrainingStimulusUnit,
+  Protocol2PendulumDemoUnit,
+  TrackingPendulumV2StimulusUnit,
+  BellReachabilityV2StimulusUnit,
 } from "../shared/experimentTypes";
 import SpeedColorTrainingPlugin from "./plugins/speedColorTrainingPlugin";
 import Training1SummaryPlugin from "./plugins/training1SummaryPlugin";
+import Protocol2PendulumDemoPlugin from "./plugins/protocol2PendulumDemoPlugin";
+import TrackingPendulumV2Plugin from "./plugins/trackingPendulumV2Plugin";
+import BellReachabilityV2Plugin from "./plugins/bellReachabilityV2Plugin";
 
 export type BuildTimelineOptions = {
   wrapPracticeSegment?: (
@@ -65,6 +71,44 @@ function unitToTrial(
     blockChildId: ctx.blockChildId ?? "",
   };
   switch (unit.type) {
+    case "protocol2PendulumDemo": {
+      const dUnit = unit as Protocol2PendulumDemoUnit;
+      return {
+        type: Protocol2PendulumDemoPlugin,
+        amplitudeDeg: dUnit.amplitudeDeg,
+        rodLengthM: dUnit.rodLengthM,
+        gravity: dUnit.gravity,
+        bobRadiusM: dUnit.bobRadiusM,
+        unitMeta: { ...data, runtime_experiment_id: experimentId },
+        data: { ...data, runtime_experiment_id: experimentId },
+      };
+    }
+    case "trackingPendulumV2Stimulus": {
+      const tUnit = unit as TrackingPendulumV2StimulusUnit;
+      const meta = descriptor
+        ? { ...descriptor, runtime_experiment_id: experimentId }
+        : { ...data, runtime_experiment_id: experimentId };
+      return {
+        type: TrackingPendulumV2Plugin,
+        unit: tUnit,
+        practice: ctx.segmentKind === "practice",
+        unitMeta: meta,
+        data: { ...meta, unit_type: "trackingPendulumV2Stimulus" },
+      };
+    }
+    case "bellReachabilityV2Stimulus": {
+      const bUnit = unit as BellReachabilityV2StimulusUnit;
+      const meta = descriptor
+        ? { ...descriptor, runtime_experiment_id: experimentId }
+        : { ...data, runtime_experiment_id: experimentId };
+      return {
+        type: BellReachabilityV2Plugin,
+        unit: bUnit,
+        practice: ctx.segmentKind === "practice",
+        unitMeta: meta,
+        data: { ...meta, unit_type: "bellReachabilityV2Stimulus" },
+      };
+    }
     case "reachabilityPendulumStimulus": {
       const rUnit = unit as ReachabilityPendulumStimulusUnit;
       return {
@@ -78,6 +122,11 @@ function unitToTrial(
         amplitudeDeg: rUnit.amplitudeDeg,
         visibleDurationSec: rUnit.visibleDurationSec,
         responseDeadlineSec: rUnit.responseDeadlineSec,
+        visibleWindowCount: rUnit.visibleWindowCount,
+        gapM: rUnit.gapM,
+        barWidthM: rUnit.barWidthM,
+        gratingPeriodM: rUnit.gratingPeriodM,
+        gratingOffsetM: rUnit.gratingOffsetM,
         yesKey: rUnit.yesKey,
         noKey: rUnit.noKey,
         correctResponse: rUnit.correctResponse,

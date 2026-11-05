@@ -12,6 +12,7 @@ import {
   TRAINING_1_REMEDIATION_TRIALS,
   TRAINING_1_SPEED_BIN_COUNT,
   TRAINING_1_SPEED_SCALE_ENERGY_J,
+  TRAINING_1_SPEED_SCALE_RELEASE_ANGLE_DEG,
   TRAINING_1_TOTAL_RUNTIME_TRIALS,
 } from "../../src/experiments/training-1/protocol.ts";
 import {
@@ -48,23 +49,46 @@ const rng = () => {
 };
 const set = generateTraining1RuntimeStimulusSet(participant, { rng });
 assertTraining1RuntimeStimulusSet(set);
-assert(set.schemaVersion === 6, "训练一刺激 schema 应为 6");
+assert(set.schemaVersion === 7, "训练一刺激 schema 应为 7");
 assert(parseTraining1StimulusSet(set) !== null, "新版训练一刺激集应可载入");
 assert(
   parseTraining1StimulusSet({ ...set, schemaVersion: 5 }) === null,
   "旧 schema 5 刺激集不得恢复",
 );
-
-assert(SPEED_STRIP_SCALE_ENERGY_J === 11.48, "色带标定能量应为 11.48 J");
-assert(TRAINING_1_SPEED_SCALE_ENERGY_J === 11.48, "训练一标定能量应为 11.48 J");
 assert(
-  Math.abs(SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC - Math.sqrt(2 * 11.48)) < 1e-12,
-  "最高线速度应由 11.48 J 和 1 kg 质量得到",
+  parseTraining1StimulusSet({ ...set, schemaVersion: 6 }) === null,
+  "旧 schema 6 刺激集不得恢复",
+);
+{
+  const mismatched = structuredClone(set);
+  const stale = mismatched.sequence
+    .flatMap((segment) => segment.kind === "practice" ? segment.children : [])
+    .flatMap((trial) => trial.units)
+    .find((unit) => unit.type === "speedColorTrainingStimulus" && unit.linearSpeedMPerSec > 0);
+  assert(stale?.type === "speedColorTrainingStimulus", "应能找到一条运动刺激");
+  stale.linearSpeedMPerSec = Math.sqrt(2 * 11.48);
+  assert(parseTraining1StimulusSet(mismatched) === null, "45° 标尺下的线速度不得按 60° 标尺恢复");
+}
+
+assert(TRAINING_1_SPEED_SCALE_RELEASE_ANGLE_DEG === 60, "训练一右端应按 60° 静止释放标定");
+assert(TRAINING_1_SPEED_SCALE_ENERGY_J === 19.6, "训练一标定能量应为 19.6 J");
+assert(
+  Math.abs(TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC - Math.sqrt(2 * 19.6)) < 1e-12,
+  "训练一最高线速度应由 19.6 J 和 1 kg 质量得到",
 );
 assert(
-  Math.abs(TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC - SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC) < 1e-12 &&
-    Math.abs(TRAINING_1_OMEGA_SCALE_RAD_PER_SEC - SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC) < 1e-12,
-  "训练一必须与实验四色带共用线速度和角速度尺度",
+  Math.abs(TRAINING_1_OMEGA_SCALE_RAD_PER_SEC - TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC / 4) < 1e-12,
+  "训练一角速度应为线速度除以 4 m 摆长",
+);
+assert(SPEED_STRIP_SCALE_ENERGY_J === 11.48, "实验四色带仍应按 11.48 J 标定");
+assert(
+  Math.abs(SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC - Math.sqrt(2 * 11.48)) < 1e-12,
+  "实验四最高线速度仍应由 11.48 J 得到",
+);
+assert(
+  Math.abs(TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC - SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC) > 1 &&
+    Math.abs(TRAINING_1_OMEGA_SCALE_RAD_PER_SEC - SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC) > 0.2,
+  "训练一不得再与实验四共用线速度和角速度尺度",
 );
 
 const descriptors = collectTraining1TrialDescriptors(set);
@@ -143,6 +167,11 @@ for (const item of descriptors) {
     );
   }
   assert(Math.abs(item.speed_strip_truth_position - item.target_strip_position) < 1e-12, "线速度与色带目标应一致");
+  assert(item.speed_scale_energy_j === 19.6, "描述符应记录 19.6 J 标定能量");
+  assert(
+    Math.abs(item.linear_speed_m_per_sec - item.target_strip_position * TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC) < 1e-12,
+    "线速度应按 60° 最低点速度缩放",
+  );
 }
 assert(TRAINING_1_FEEDBACK_HOLD_MS === 2000, "有反馈确认后应继续运动恰好 2 秒");
 
@@ -214,10 +243,10 @@ assert(
 );
 assert(csv.includes("report_available_at_sec"), "CSV 应记录开放作答时间");
 assert(csv.includes("motion_elapsed_at_confirmation_sec"), "CSV 应记录确认时累计运动时间");
-assert(csv.includes("\r\ntraining-1,1.0.0,7,"), "CSV 数据 schema 应为 7");
+assert(csv.includes("\r\ntraining-1,1.0.0,8,"), "CSV 数据 schema 应为 8");
 assert(csv.includes("mastery_final_within_threshold_count"), "CSV 应记录阈值内次数");
 assert(!csv.includes("mastery_final_within_015_count"), "CSV 不再使用 0.15 阈值列名");
 assert(csv.includes("feedback_phase_skipped"), "CSV 应记录是否跳过整个反馈阶段");
 assert(!csv.includes("training_trial_skipped"), "CSV 不再记录逐题跳过");
 
-console.log("verify-training-1: OK（无示范、6 题测验、误差 0.15/0.25、整段跳过反馈、循环补强，刺激 schema 6 / 数据 schema 7）");
+console.log("verify-training-1: OK（无示范、6 题测验、误差 0.15/0.25、整段跳过反馈、循环补强，60° 标尺，刺激 schema 7 / 数据 schema 8）");

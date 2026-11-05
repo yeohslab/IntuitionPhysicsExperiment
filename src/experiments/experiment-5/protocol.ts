@@ -2,8 +2,12 @@ import {
   EXPERIMENT_4_BOB_RADIUS_M,
   EXPERIMENT_4_ENERGY_MAX_J,
   EXPERIMENT_4_ENERGY_MIN_J,
+  EXPERIMENT_4_GRATING_CONDITIONS,
   EXPERIMENT_4_GRAVITY,
   EXPERIMENT_4_ROD_LENGTH_M,
+  EXPERIMENT_4_VISIBLE_WINDOW_COUNT_ORDER,
+  type Experiment4GratingGeometry,
+  type Experiment4VisibleWindowCount,
 } from "../experiment-4/protocol";
 
 export const EXPERIMENT_5_ID = "experiment-5" as const;
@@ -13,6 +17,9 @@ export const EXPERIMENT_5_GRAVITY = EXPERIMENT_4_GRAVITY;
 export const EXPERIMENT_5_BOB_RADIUS_M = EXPERIMENT_4_BOB_RADIUS_M;
 export const EXPERIMENT_5_ENERGY_MIN_J = EXPERIMENT_4_ENERGY_MIN_J;
 export const EXPERIMENT_5_ENERGY_MAX_J = EXPERIMENT_4_ENERGY_MAX_J;
+/** 实验五直接复用实验四按 11.48 J 标定的三套光栅几何。 */
+export const EXPERIMENT_5_GRATING_CONDITIONS = EXPERIMENT_4_GRATING_CONDITIONS;
+export const EXPERIMENT_5_VISIBLE_WINDOW_COUNT_ORDER = EXPERIMENT_4_VISIBLE_WINDOW_COUNT_ORDER;
 export const EXPERIMENT_5_VISIBLE_DURATION_SEC = 0.4;
 export const EXPERIMENT_5_RESPONSE_DEADLINE_SEC = 4;
 export const EXPERIMENT_5_FIXATION_MS = 1000;
@@ -27,6 +34,8 @@ export const EXPERIMENT_5_TOTAL_RUNTIME_TRIALS = 54;
 
 export type Experiment5BoundaryGapDeg = typeof EXPERIMENT_5_BOUNDARY_GAPS_DEG[number];
 export type Experiment5JudgmentDistanceM = typeof EXPERIMENT_5_JUDGMENT_DISTANCES_M[number];
+export type Experiment5VisibleWindowCount = Experiment4VisibleWindowCount;
+export type Experiment5GratingGeometry = Experiment4GratingGeometry;
 
 export function experiment5KeyMapping(subjectId: string): {
   yesKey: "f" | "j";

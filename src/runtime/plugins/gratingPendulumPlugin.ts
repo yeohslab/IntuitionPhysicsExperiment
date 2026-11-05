@@ -64,7 +64,7 @@ const info = {
     gapM: { type: ParameterType.FLOAT, default: 0.45 },
     barWidthM: { type: ParameterType.FLOAT, default: 2.378427 },
     gratingPeriodM: { type: ParameterType.FLOAT, default: 2.828427 },
-    gratingOffsetM: { type: ParameterType.FLOAT, default: 1.639214 },
+    gratingOffsetM: { type: ParameterType.FLOAT, default: 0 },
     responseOrder: { type: ParameterType.STRING, default: "angle_first" },
     unitMeta: { type: ParameterType.COMPLEX, default: {} },
   },

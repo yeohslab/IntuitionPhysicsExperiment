@@ -10,6 +10,7 @@ import {
   gratingBarIndexAtX,
   gratingGeometryForVisibleWindowCount,
   gratingPeriodM,
+  bobTrajectoryArcLengthM,
   queryableWindows,
   sampleQueryTimeSec,
   buildOcclusionTimeline,
@@ -21,8 +22,6 @@ import {
   EXPERIMENT_4_BOB_RADIUS_M,
   EXPERIMENT_4_DURATION_SEC,
   EXPERIMENT_4_ENERGY_CENTER_J,
-  EXPERIMENT_4_ENERGY_MAX_J,
-  EXPERIMENT_4_ENERGY_MIN_J,
   EXPERIMENT_4_FORMAL_TRIALS,
   EXPERIMENT_4_GRATING_CONDITIONS,
   EXPERIMENT_4_GRAVITY,
@@ -47,7 +46,7 @@ import {
   isExperiment4ParticipantInfo,
 } from "../../src/shared/participant.ts";
 import { parseExperiment4StimulusSet } from "../../src/shared/storage.ts";
-import { analyzePendulum, pendulumRegime } from "../../src/experiment/physics/pendulum.ts";
+import { analyzePendulum, pendulumRegime, pendulumThetaOmegaAt } from "../../src/experiment/physics/pendulum.ts";
 import {
   SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC,
   SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC,
@@ -82,10 +81,21 @@ function assertGratingGeometry(geometry: Experiment4GratingGeometry): void {
   assert(Math.abs(gratingPeriodM(geometry) - geometry.periodM) < 1e-12, "周期接口");
   assert(Math.abs(geometry.periodM - (geometry.barWidthM + geometry.gapM)) < 1e-9, "P=B+G");
   assert(Math.abs(geometry.gapM - 0.45) < 1e-12, "透明观察宽度固定为 0.45 m");
-  const gapCenter = geometry.offsetM + geometry.periodM / 2;
-  assert(classifyBobAtX(gapCenter, geometry) === "fully_visible", "间隙中部应完全可见");
   assert(classifyBobAtX(geometry.offsetM, geometry) === "fully_occluded", "k=0 条中心应遮挡");
   assert(gratingBarIndexAtX(geometry.offsetM, geometry) === 0, "offset 应对应 k=0 条中心");
+  const n = geometry.visibleWindowCount;
+  if (n === 2 || n === 4) {
+    assert(classifyBobAtX(0, geometry) === "fully_occluded", "偶数 N 时支点应在遮挡条中心");
+  } else {
+    assert(classifyBobAtX(0, geometry) === "fully_visible", "奇数 N 时支点应在透明间隙中心");
+  }
+  const reachM = EXPERIMENT_4_ROD_LENGTH_M + EXPERIMENT_4_BOB_RADIUS_M;
+  const centers = gratingBarCentersM(geometry, reachM + geometry.periodM);
+  for (const center of centers) {
+    if (Math.abs(center) < 1e-9) continue;
+    const mirror = centers.some((c) => Math.abs(c + center) < 1e-6);
+    assert(mirror, `遮挡条中心 ${center} 应有关于支点的对称伙伴`);
+  }
 }
 
 const participant = {
@@ -97,12 +107,12 @@ assert(isExperiment4ParticipantInfo(participant));
 
 const set = generateExperiment4RuntimeStimulusSet({ rng: mulberry32(42) });
 assertExperiment4RuntimeStimulusSet(set);
-assert(set.schemaVersion === 5, "实验四刺激 schema 应为 5");
-assert(parseExperiment4StimulusSet({ ...set, schemaVersion: 4 }) === null, "旧 schema 4 缓存应失效");
+assert(set.schemaVersion === 6, "实验四刺激 schema 应为 6");
+assert(parseExperiment4StimulusSet({ ...set, schemaVersion: 5 }) === null, "旧 schema 5 缓存应失效");
 const expectedGeometries = [
-  [2, 0.45, 2.378427, 2.828427, 1.639214],
-  [3, 0.45, 1.435618, 1.885618, 0.225],
-  [4, 0.45, 0.964214, 1.414214, 0.932107],
+  [2, 0.45, 2.378427, 2.828427, 0],
+  [3, 0.45, 1.435618, 1.885618, 0.942809],
+  [4, 0.45, 0.964214, 1.414214, 0],
 ] as const;
 for (const [count, gapM, barWidthM, periodM, offsetM] of expectedGeometries) {
   const geometry = EXPERIMENT_4_GRATING_CONDITIONS[count];
@@ -340,13 +350,50 @@ for (const blockIndex of [1, 2, 3]) {
   }
 }
 
-// 按窗口时长抽样：3 倍长的遮挡窗口应占据 3 倍随机数测度。
+// 按轨迹弧长抽样：3 倍弧长的遮挡窗口应占据 3 倍随机数测度。
+const arcWeightParams = pendulumParamsForRelease("right", EXPERIMENT_4_ENERGY_CENTER_J);
 const weightedWindows = [
-  { tMinSec: 0, tMaxSec: 0.7, segmentIndex: 0, samplingWeightSec: 1 },
-  { tMinSec: 2, tMaxSec: 4.7, segmentIndex: 1, samplingWeightSec: 3 },
+  { tMinSec: 0.2, tMaxSec: 0.7, segmentIndex: 0, samplingWeightM: 1 },
+  { tMinSec: 1.2, tMaxSec: 1.7, segmentIndex: 1, samplingWeightM: 3 },
 ];
-assert(sampleQueryTimeSec(weightedWindows, () => 0.2).segmentIndex === 0, "短窗口权重");
-assert(sampleQueryTimeSec(weightedWindows, () => 0.3).segmentIndex === 1, "长窗口权重");
+assert(sampleQueryTimeSec(weightedWindows, arcWeightParams, () => 0.2).segmentIndex === 0, "短弧权重");
+assert(sampleQueryTimeSec(weightedWindows, arcWeightParams, () => 0.3).segmentIndex === 1, "长弧权重");
+
+const arcAnalysis = analyzePendulum(arcWeightParams);
+const halfPeriodArcM = bobTrajectoryArcLengthM(arcWeightParams, 0, arcAnalysis.T / 2, arcAnalysis);
+const fullPeriodArcM = bobTrajectoryArcLengthM(arcWeightParams, 0, arcAnalysis.T, arcAnalysis);
+const amplitudeRad = Math.abs(pendulumThetaOmegaAt(0, arcWeightParams, arcAnalysis).theta);
+assert(
+  Math.abs(halfPeriodArcM - 2 * EXPERIMENT_4_ROD_LENGTH_M * amplitudeRad) < 1e-4,
+  "半周期弧长应为从一侧转折点到另一侧的弧长",
+);
+assert(
+  Math.abs(fullPeriodArcM - 4 * EXPERIMENT_4_ROD_LENGTH_M * amplitudeRad) < 1e-4,
+  "整周期弧长应计入去程和回程",
+);
+const slowEnd = 0.45;
+const thetaSlow0 = pendulumThetaOmegaAt(0.05, arcWeightParams, arcAnalysis).theta;
+const thetaSlow1 = pendulumThetaOmegaAt(slowEnd, arcWeightParams, arcAnalysis).theta;
+const midArc = sampleQueryTimeSec(
+  [{
+    tMinSec: 0.05,
+    tMaxSec: slowEnd,
+    segmentIndex: 0,
+    samplingWeightM: bobTrajectoryArcLengthM(arcWeightParams, 0.05, slowEnd, arcAnalysis),
+  }],
+  arcWeightParams,
+  () => 0.5,
+).tQuerySec;
+const thetaMidArc = pendulumThetaOmegaAt(midArc, arcWeightParams, arcAnalysis).theta;
+const thetaMidTime = pendulumThetaOmegaAt((0.05 + slowEnd) / 2, arcWeightParams, arcAnalysis).theta;
+assert(
+  Math.abs(thetaMidArc - (thetaSlow0 + thetaSlow1) / 2) < 1e-3,
+  "弧长中点应对齐角度中点",
+);
+assert(
+  Math.abs(thetaMidArc - thetaMidTime) > 1e-3,
+  "弧长中点不应退回时间中点",
+);
 
 const practiceOrders = new Set(
   descriptors.filter((d) => d.segment_kind === "practice").map((d) => d.response_order),
@@ -397,18 +444,12 @@ assert(
 
 for (const count of EXPERIMENT_4_VISIBLE_WINDOW_COUNT_ORDER) {
   const geometry = gratingGeometryForVisibleWindowCount(count);
-  for (const energyJ of [
-    EXPERIMENT_4_ENERGY_MIN_J,
-    EXPERIMENT_4_ENERGY_CENTER_J,
-    EXPERIMENT_4_ENERGY_MAX_J,
-  ]) {
-    const params = pendulumParamsForRelease("left", energyJ);
-    const timeline = buildOcclusionTimeline(params, geometry);
-    const firstVis = firstFullyVisibleTimeSec(timeline);
-    const windows = queryableWindows(timeline, EXPERIMENT_4_DURATION_SEC, firstVis);
-    const total = windows.reduce((z, w) => z + (w.tMaxSec - w.tMinSec), 0);
-    assert(total > 0.1, `N=${count}, energy ${energyJ} 应有可询问窗口`);
-  }
+  const params = pendulumParamsForRelease("left", EXPERIMENT_4_ENERGY_CENTER_J);
+  const timeline = buildOcclusionTimeline(params, geometry);
+  const firstVis = firstFullyVisibleTimeSec(timeline);
+  const windows = queryableWindows(timeline, EXPERIMENT_4_DURATION_SEC, firstVis, params);
+  const totalArcM = windows.reduce((z, w) => z + w.samplingWeightM, 0);
+  assert(totalArcM > 0.05, `N=${count} 在注册能量 ${EXPERIMENT_4_ENERGY_CENTER_J} J 应有可询问弧长`);
 }
 
 for (const side of ["left", "right"] as const) {

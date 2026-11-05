@@ -12,7 +12,7 @@ export const EXPERIMENT_4_DURATION_SEC = 10.0;
 export const EXPERIMENT_4_INITIAL_CUE_MS = 2000;
 /** 每个试次的机械能固定为原抽样区间 [8.48, 14.48] J 的中点。 */
 export const EXPERIMENT_4_ENERGY_CENTER_J = 11.48;
-/** 训练一和实验四速度色带右端使用的标定能量。 */
+/** 实验四速度色带右端使用的标定能量。训练一另行按 60° 静止释放标定。 */
 export const EXPERIMENT_4_SPEED_SCALE_ENERGY_J = EXPERIMENT_4_ENERGY_CENTER_J;
 /** 实验五仍使用的原区间半宽。 */
 export const EXPERIMENT_4_ENERGY_HALF_RANGE_J = 3;
@@ -42,21 +42,21 @@ export const EXPERIMENT_4_GRATING_CONDITIONS = {
     gapM: 0.45,
     barWidthM: 2.378427,
     periodM: 2.828427,
-    offsetM: 1.639214,
+    offsetM: 0,
   },
   3: {
     visibleWindowCount: 3,
     gapM: 0.45,
     barWidthM: 1.435618,
     periodM: 1.885618,
-    offsetM: 0.225,
+    offsetM: 0.942809,
   },
   4: {
     visibleWindowCount: 4,
     gapM: 0.45,
     barWidthM: 0.964214,
     periodM: 1.414214,
-    offsetM: 0.932107,
+    offsetM: 0,
   },
 } as const satisfies Record<Experiment4VisibleWindowCount, Experiment4GratingGeometry>;
 
@@ -107,7 +107,7 @@ export const EXPERIMENT_4_OMEGA_MIN_RAD_PER_SEC = pendulumOmegaRadForEnergyAtBot
   EXPERIMENT_4_ENERGY_MIN_J,
   EXPERIMENT_4_ROD_LENGTH_M,
 );
-/** 实验四固定能量在最低点的最大角速度，也是速度色带右端。 */
+/** 实验四固定能量在最低点的最大角速度，也是实验四速度色带右端。 */
 export const EXPERIMENT_4_OMEGA_MAX_RAD_PER_SEC = pendulumOmegaRadForEnergyAtBottom(
   EXPERIMENT_4_SPEED_SCALE_ENERGY_J,
   EXPERIMENT_4_ROD_LENGTH_M,

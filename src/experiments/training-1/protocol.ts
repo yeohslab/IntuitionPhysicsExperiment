@@ -1,18 +1,35 @@
 import {
-  SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC,
-  SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC,
-  SPEED_STRIP_SCALE_ENERGY_J,
-} from "../../experiment/physics/speedStripScale";
-import { EXPERIMENT_4_ROD_LENGTH_M } from "../experiment-4/protocol";
+  PENDULUM_MASS_KG,
+  pendulumOmegaRadForEnergyAtBottom,
+} from "../../experiment/physics/pendulum";
+import {
+  EXPERIMENT_4_GRAVITY,
+  EXPERIMENT_4_ROD_LENGTH_M,
+} from "../experiment-4/protocol";
 
 export const TRAINING_1_ID = "training-1" as const;
 export const TRAINING_1_PROTOCOL_VERSION = "1.0.0" as const;
 
-export const TRAINING_1_SPEED_SCALE_ENERGY_J = SPEED_STRIP_SCALE_ENERGY_J;
+/** 色带右端对应从此角度静止释放后，摆球在最低点的速度。 */
+export const TRAINING_1_SPEED_SCALE_RELEASE_ANGLE_DEG = 60;
+
+/**
+ * cos(60°)=1/2，能量取确定值，不用 Math.cos。
+ * E = m g L (1 − 1/2) = 19.6 J。
+ */
+export const TRAINING_1_SPEED_SCALE_ENERGY_J =
+  PENDULUM_MASS_KG *
+  EXPERIMENT_4_GRAVITY *
+  EXPERIMENT_4_ROD_LENGTH_M *
+  (1 - 1 / 2);
+
+export const TRAINING_1_OMEGA_SCALE_RAD_PER_SEC = pendulumOmegaRadForEnergyAtBottom(
+  TRAINING_1_SPEED_SCALE_ENERGY_J,
+  EXPERIMENT_4_ROD_LENGTH_M,
+);
+
 export const TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC =
-  SPEED_STRIP_LINEAR_V_SCALE_M_PER_SEC;
-export const TRAINING_1_OMEGA_SCALE_RAD_PER_SEC =
-  SPEED_STRIP_OMEGA_SCALE_RAD_PER_SEC;
+  EXPERIMENT_4_ROD_LENGTH_M * TRAINING_1_OMEGA_SCALE_RAD_PER_SEC;
 
 export const TRAINING_1_FIXATION_MS = 1000;
 export const TRAINING_1_FIXATION_TEXT = "+";

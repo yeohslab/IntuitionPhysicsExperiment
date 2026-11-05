@@ -1,4 +1,5 @@
 import { analyzePendulum } from "../experiment/physics/pendulum";
+import { TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC } from "../experiments/training-1/protocol";
 import { withSyncedTotalTimeT } from "../experiment/physics/timePhases";
 import {
   isExperiment2ParticipantInfo,
@@ -12,11 +13,15 @@ import {
   EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION,
   EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION,
   EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION,
+  EXPERIMENT_4_V2_STIMULUS_SET_SCHEMA_VERSION,
+  EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION,
   EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION,
   type BlockSegment,
   type Experiment2StimulusSet,
   type Experiment4StimulusSet,
   type Experiment5StimulusSet,
+  type Experiment4V2StimulusSet,
+  type Experiment5V2StimulusSet,
   type ExperimentTraining1StimulusSet,
   type SpeedColorTrainingStimulusUnit,
   type GratingOcclusionSegmentRecord,
@@ -28,9 +33,13 @@ import {
   type TopLevelSequenceItem,
   type RuntimeStimulusSet,
   type Trial,
+  type TrackingPendulumV2StimulusUnit,
+  type BellReachabilityV2StimulusUnit,
+  type Protocol2PendulumDemoUnit,
 } from "./experimentTypes";
 import type { ExperimentId } from "../experiments/types";
 import { EXPERIMENT_4_GRATING_CONDITIONS } from "../experiments/experiment-4/protocol";
+import { PROTOCOL_2_GRATING_CONDITIONS } from "../experiments/protocol-2/common";
 
 /** 存在且与人口学/刺激集同时有效时，才允许进入 runner。 */
 export const SESSION_RUN_TOKEN_KEY = "intuition-physics:experiment-2:run-active";
@@ -71,6 +80,137 @@ function parseUnit(raw: unknown): StimulusUnit | null {
   if (raw.type === "textControl") {
     if (typeof raw.text !== "string" || typeof raw.key !== "string") return null;
     return { id, type: "textControl", text: raw.text, key: raw.key };
+  }
+
+  if (raw.type === "protocol2PendulumDemo") {
+    const amplitudeDeg = finiteNumber(raw, "amplitudeDeg");
+    const rodLengthM = finiteNumber(raw, "rodLengthM");
+    const gravity = finiteNumber(raw, "gravity");
+    const bobRadiusM = finiteNumber(raw, "bobRadiusM");
+    if (
+      amplitudeDeg === null || rodLengthM === null || gravity === null ||
+      bobRadiusM === null || amplitudeDeg <= 0 || amplitudeDeg >= 90 ||
+      rodLengthM <= 0 || gravity <= 0 || bobRadiusM <= 0
+    ) return null;
+    return {
+      id, type: "protocol2PendulumDemo", amplitudeDeg, rodLengthM, gravity,
+      bobRadiusM,
+    } satisfies Protocol2PendulumDemoUnit;
+  }
+
+  if (
+    raw.type === "trackingPendulumV2Stimulus" ||
+    raw.type === "bellReachabilityV2Stimulus"
+  ) {
+    const numericKeys = [
+      "theta0Deg", "omega0DegPerSec", "rodLengthM", "gravity", "bobRadiusM",
+      "energyJ", "amplitudeDeg", "queryThetaDeg", "queryOmegaRadPerSec",
+      "queryTimeSec", "blankStartSec", "blankDurationSec", "gapM",
+      "barWidthM", "gratingPeriodM", "gratingOffsetM", "modelDtSec",
+    ] as const;
+    const n = Object.fromEntries(
+      numericKeys.map((key) => [key, finiteNumber(raw, key)]),
+    ) as Record<(typeof numericKeys)[number], number | null>;
+    if (
+      numericKeys.some((key) => n[key] === null) ||
+      n.rodLengthM! <= 0 || n.gravity! <= 0 || n.bobRadiusM! <= 0 ||
+      n.energyJ! <= 0 || n.amplitudeDeg! <= 0 || n.queryTimeSec! <= 0 ||
+      n.blankStartSec! <= 0 || n.blankDurationSec! <= 0 ||
+      n.queryTimeSec! <= n.blankStartSec! || n.gapM! <= 0 ||
+      n.barWidthM! <= 0 || n.gratingPeriodM! <= 0 || n.modelDtSec! <= 0 ||
+      (raw.gratingCondition !== "G1" && raw.gratingCondition !== "G2" &&
+        raw.gratingCondition !== "G3") ||
+      typeof raw.stateSiteId !== "string" || !Array.isArray(raw.visibleSegments)
+    ) return null;
+    const visibleSegments = raw.visibleSegments.map((item) => {
+      if (!isRecord(item)) return null;
+      const tStartSec = finiteNumber(item, "tStartSec");
+      const tEndSec = finiteNumber(item, "tEndSec");
+      if (
+        tStartSec === null || tEndSec === null || tStartSec < 0 ||
+        tEndSec <= tStartSec || typeof item.truncatedByBlank !== "boolean"
+      ) return null;
+      return { tStartSec, tEndSec, truncatedByBlank: item.truncatedByBlank };
+    });
+    if (visibleSegments.length !== 3 || visibleSegments.some((x) => x === null)) {
+      return null;
+    }
+    const protocol2Geometry = PROTOCOL_2_GRATING_CONDITIONS[raw.gratingCondition];
+    if (
+      Math.abs(n.gapM! - protocol2Geometry.gapM) > 1e-9 ||
+      Math.abs(n.barWidthM! - protocol2Geometry.barWidthM) > 1e-9 ||
+      Math.abs(n.gratingPeriodM! - protocol2Geometry.periodM) > 1e-9 ||
+      Math.abs(n.gratingOffsetM! - protocol2Geometry.offsetM) > 1e-9
+    ) return null;
+    const base = {
+      id,
+      theta0Deg: n.theta0Deg!, omega0DegPerSec: n.omega0DegPerSec!,
+      rodLengthM: n.rodLengthM!, gravity: n.gravity!, bobRadiusM: n.bobRadiusM!,
+      energyJ: n.energyJ!, amplitudeDeg: n.amplitudeDeg!,
+      queryThetaDeg: n.queryThetaDeg!, queryOmegaRadPerSec: n.queryOmegaRadPerSec!,
+      queryTimeSec: n.queryTimeSec!, blankStartSec: n.blankStartSec!,
+      blankDurationSec: n.blankDurationSec!,
+      visibleSegments: visibleSegments as NonNullable<(typeof visibleSegments)[number]>[],
+      gratingCondition: raw.gratingCondition,
+      gapM: n.gapM!, barWidthM: n.barWidthM!,
+      gratingPeriodM: n.gratingPeriodM!, gratingOffsetM: n.gratingOffsetM!,
+      stateSiteId: raw.stateSiteId, modelDtSec: n.modelDtSec!,
+    } as const;
+    if (raw.type === "trackingPendulumV2Stimulus") {
+      const cueDurationMs = finiteNumber(raw, "cueDurationMs");
+      const reversalRaw = raw.reversalTimeSec;
+      const reversalTimeSec = reversalRaw === null
+        ? null
+        : finiteNumber(raw, "reversalTimeSec");
+      const speedScaleLinearMPerSec = finiteNumber(raw, "speedScaleLinearMPerSec");
+      if (
+        (raw.trackingCondition !== "no_hidden_reversal" &&
+          raw.trackingCondition !== "hidden_reversal") ||
+        (raw.initialSide !== "left" && raw.initialSide !== "right") ||
+        (raw.initialDirection !== "leftward" && raw.initialDirection !== "rightward") ||
+        cueDurationMs === null || cueDurationMs <= 0 ||
+        speedScaleLinearMPerSec === null || speedScaleLinearMPerSec <= 0 ||
+        (reversalRaw !== null && reversalTimeSec === null)
+      ) return null;
+      return {
+        ...base, type: "trackingPendulumV2Stimulus",
+        trackingCondition: raw.trackingCondition,
+        initialSide: raw.initialSide, initialDirection: raw.initialDirection,
+        cueDurationMs, reversalTimeSec, speedScaleLinearMPerSec,
+      } satisfies TrackingPendulumV2StimulusUnit;
+    }
+    const bellNumericKeys = [
+      "deltaHM", "bellContactHeightM", "bellThetaDeg",
+    ] as const;
+    const b = Object.fromEntries(
+      bellNumericKeys.map((key) => [key, finiteNumber(raw, key)]),
+    ) as Record<(typeof bellNumericKeys)[number], number | null>;
+    const plannedTurnRaw = raw.plannedVisibleTurnTimeSec;
+    const plannedContactRaw = raw.plannedVisibleContactTimeSec;
+    const plannedVisibleTurnTimeSec = plannedTurnRaw === null
+      ? null : finiteNumber(raw, "plannedVisibleTurnTimeSec");
+    const plannedVisibleContactTimeSec = plannedContactRaw === null
+      ? null : finiteNumber(raw, "plannedVisibleContactTimeSec");
+    if (
+      bellNumericKeys.some((key) => b[key] === null) ||
+      (raw.bellSide !== "left" && raw.bellSide !== "right") ||
+      (raw.correctResponse !== "reachable" && raw.correctResponse !== "unreachable") ||
+      (raw.yesKey !== "f" && raw.yesKey !== "j") ||
+      (raw.noKey !== "f" && raw.noKey !== "j") || raw.yesKey === raw.noKey ||
+      typeof raw.plannedVisibleTurn !== "boolean" ||
+      typeof raw.plannedVisibleContact !== "boolean" ||
+      (plannedTurnRaw !== null && plannedVisibleTurnTimeSec === null) ||
+      (plannedContactRaw !== null && plannedVisibleContactTimeSec === null)
+    ) return null;
+    return {
+      ...base, type: "bellReachabilityV2Stimulus",
+      deltaHM: b.deltaHM!, bellContactHeightM: b.bellContactHeightM!,
+      bellThetaDeg: b.bellThetaDeg!, bellSide: raw.bellSide,
+      correctResponse: raw.correctResponse, yesKey: raw.yesKey, noKey: raw.noKey,
+      plannedVisibleTurn: raw.plannedVisibleTurn,
+      plannedVisibleTurnTimeSec, plannedVisibleContact: raw.plannedVisibleContact,
+      plannedVisibleContactTimeSec,
+    } satisfies BellReachabilityV2StimulusUnit;
   }
 
   if (raw.type === "gratingPendulumStimulus") {
@@ -276,6 +416,9 @@ function parseUnit(raw: unknown): StimulusUnit | null {
     ) {
       return null;
     }
+    const expectedLinearSpeed =
+      Math.max(0, Math.min(1, targetStripPosition)) * TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC;
+    if (Math.abs(linearSpeedMPerSec - expectedLinearSpeed) > 1e-9) return null;
     const stationary = linearSpeedMPerSec <= 1e-12;
     if (stationary) {
       if (initialDirection !== "stationary" || loopMode !== "stationary" ||
@@ -319,6 +462,7 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       "disappearanceOmegaDegPerSec", "rodLengthM", "gravity", "bobRadiusM",
       "energyJ", "amplitudeDeg", "targetAngleDeg", "boundaryGapDeg",
       "judgmentDistanceM", "judgmentTimeSec", "visibleDurationSec", "responseDeadlineSec",
+      "visibleWindowCount", "gapM", "barWidthM", "gratingPeriodM", "gratingOffsetM",
     ] as const;
     const n = Object.fromEntries(numericKeys.map((key) => [key, finiteNumber(raw, key)])) as Record<typeof numericKeys[number], number | null>;
     if (
@@ -333,6 +477,16 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       n.energyJ! <= 0 || n.judgmentDistanceM! <= 0 || n.judgmentTimeSec! <= 0 ||
       n.visibleDurationSec! <= 0 || n.responseDeadlineSec! <= 0
     ) return null;
+    if (n.visibleWindowCount !== 2 && n.visibleWindowCount !== 3 && n.visibleWindowCount !== 4) return null;
+    const visibleWindowCount = n.visibleWindowCount as 2 | 3 | 4;
+    const geometry = EXPERIMENT_4_GRATING_CONDITIONS[visibleWindowCount];
+    if (
+      Math.abs(n.gapM! - geometry.gapM) > 1e-9 ||
+      Math.abs(n.barWidthM! - geometry.barWidthM) > 1e-9 ||
+      Math.abs(n.gratingPeriodM! - geometry.periodM) > 1e-9 ||
+      Math.abs(n.gratingOffsetM! - geometry.offsetM) > 1e-9 ||
+      Math.abs(n.gratingPeriodM! - n.barWidthM! - n.gapM!) > 1e-9
+    ) return null;
     return {
       id, type: "reachabilityPendulumStimulus",
       theta0Deg: n.theta0Deg!, omega0DegPerSec: n.omega0DegPerSec!,
@@ -341,6 +495,8 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       amplitudeDeg: n.amplitudeDeg!, targetAngleDeg: n.targetAngleDeg!, boundaryGapDeg: n.boundaryGapDeg!,
       judgmentDistanceM: n.judgmentDistanceM!, judgmentTimeSec: n.judgmentTimeSec!,
       visibleDurationSec: n.visibleDurationSec!, responseDeadlineSec: n.responseDeadlineSec!,
+      visibleWindowCount, gapM: n.gapM!, barWidthM: n.barWidthM!,
+      gratingPeriodM: n.gratingPeriodM!, gratingOffsetM: n.gratingOffsetM!,
       side: raw.side, relation: raw.relation, correctResponse: raw.correctResponse,
       yesKey: raw.yesKey, noKey: raw.noKey,
     } satisfies ReachabilityPendulumStimulusUnit;
@@ -478,6 +634,24 @@ export function parseExperiment5StimulusSet(
   return parseRuntimeStimulusSet(raw, EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION) as Experiment5StimulusSet | null;
 }
 
+export function parseExperiment4V2StimulusSet(
+  raw: unknown,
+): Experiment4V2StimulusSet | null {
+  return parseRuntimeStimulusSet(
+    raw,
+    EXPERIMENT_4_V2_STIMULUS_SET_SCHEMA_VERSION,
+  ) as Experiment4V2StimulusSet | null;
+}
+
+export function parseExperiment5V2StimulusSet(
+  raw: unknown,
+): Experiment5V2StimulusSet | null {
+  return parseRuntimeStimulusSet(
+    raw,
+    EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION,
+  ) as Experiment5V2StimulusSet | null;
+}
+
 export function parseTraining1StimulusSet(
   raw: unknown,
 ): ExperimentTraining1StimulusSet | null {
@@ -493,7 +667,9 @@ function parseSetForExperiment(
 ): RuntimeStimulusSet | null {
   if (experimentId === "experiment-2") return parseExperiment2StimulusSet(raw);
   if (experimentId === "experiment-4") return parseExperiment4StimulusSet(raw);
+  if (experimentId === "experiment-4-v2") return parseExperiment4V2StimulusSet(raw);
   if (experimentId === "experiment-5") return parseExperiment5StimulusSet(raw);
+  if (experimentId === "experiment-5-v2") return parseExperiment5V2StimulusSet(raw);
   if (experimentId === "training-1") return parseTraining1StimulusSet(raw);
   return null;
 }
@@ -508,7 +684,13 @@ function parseParticipantForExperiment(
   if (experimentId === "experiment-4") {
     return isExperiment4ParticipantInfo(raw) ? raw : null;
   }
+  if (experimentId === "experiment-4-v2") {
+    return isExperiment4ParticipantInfo(raw) ? raw : null;
+  }
   if (experimentId === "experiment-5") {
+    return isExperiment5ParticipantInfo(raw) ? raw : null;
+  }
+  if (experimentId === "experiment-5-v2") {
     return isExperiment5ParticipantInfo(raw) ? raw : null;
   }
   if (experimentId === "training-1") {

@@ -19,6 +19,7 @@ import {
   EXPERIMENT_5_FORMAL_BLOCKS,
   EXPERIMENT_5_FORMAL_TRIALS,
   EXPERIMENT_5_FORMAL_TRIALS_PER_BLOCK,
+  EXPERIMENT_5_GRATING_CONDITIONS,
   EXPERIMENT_5_GRAVITY,
   EXPERIMENT_5_JUDGMENT_DISTANCES_M,
   EXPERIMENT_5_PRACTICE_TRIALS,
@@ -26,16 +27,22 @@ import {
   EXPERIMENT_5_ROD_LENGTH_M,
   EXPERIMENT_5_TOTAL_RUNTIME_TRIALS,
   EXPERIMENT_5_VISIBLE_DURATION_SEC,
+  EXPERIMENT_5_VISIBLE_WINDOW_COUNT_ORDER,
   experiment5KeyMapping,
   type Experiment5BoundaryGapDeg,
   type Experiment5JudgmentDistanceM,
+  type Experiment5VisibleWindowCount,
 } from "./protocol";
 
-type Condition = {
+type BaseCondition = {
   relation: ReachabilityRelation;
   gap: Experiment5BoundaryGapDeg;
   distance: Experiment5JudgmentDistanceM;
   side: "left" | "right";
+};
+
+type Condition = BaseCondition & {
+  visibleWindowCount: Experiment5VisibleWindowCount;
 };
 
 export type GenerateExperiment5RuntimeSetOptions = {
@@ -104,6 +111,7 @@ export function buildExperiment5Unit(
   const disappearanceOmega = sign * canonicalDisappearance.omega0RadPerSec;
   const judgmentTimeSec = timeToBoundary(canonicalDisappearance, boundaryAbsRad);
   const mapping = experiment5KeyMapping(participant.subject_id);
+  const geometry = EXPERIMENT_5_GRATING_CONDITIONS[condition.visibleWindowCount];
   const unit: ReachabilityPendulumStimulusUnit = {
     id: newId(),
     type: "reachabilityPendulumStimulus",
@@ -122,6 +130,11 @@ export function buildExperiment5Unit(
     judgmentTimeSec,
     visibleDurationSec: EXPERIMENT_5_VISIBLE_DURATION_SEC,
     responseDeadlineSec: EXPERIMENT_5_RESPONSE_DEADLINE_SEC,
+    visibleWindowCount: condition.visibleWindowCount,
+    gapM: geometry.gapM,
+    barWidthM: geometry.barWidthM,
+    gratingPeriodM: geometry.periodM,
+    gratingOffsetM: geometry.offsetM,
     side: condition.side,
     relation: condition.relation,
     correctResponse: condition.relation,
@@ -145,6 +158,15 @@ export function assertExperiment5Unit(unit: ReachabilityPendulumStimulusUnit): v
   const recomputedD = (boundaryAbs - Math.abs(end.theta)) * unit.rodLengthM;
   if (Math.abs(recomputedD - unit.judgmentDistanceM) > 1e-8) throw new Error("实验五判定路程重算不一致");
   if (!(unit.judgmentTimeSec > 0)) throw new Error("实验五判定时间必须为正");
+  const geometry = EXPERIMENT_5_GRATING_CONDITIONS[unit.visibleWindowCount];
+  if (!geometry ||
+      Math.abs(unit.gapM - geometry.gapM) > 1e-9 ||
+      Math.abs(unit.barWidthM - geometry.barWidthM) > 1e-9 ||
+      Math.abs(unit.gratingPeriodM - geometry.periodM) > 1e-9 ||
+      Math.abs(unit.gratingOffsetM - geometry.offsetM) > 1e-9 ||
+      Math.abs(unit.gratingPeriodM - unit.gapM - unit.barWidthM) > 1e-9) {
+    throw new Error("实验五光栅几何必须与实验四一致");
+  }
 }
 
 function fixation() { return { id: newId(), type: "textDisplay" as const, text: EXPERIMENT_5_FIXATION_TEXT, durationMs: EXPERIMENT_5_FIXATION_MS }; }
@@ -158,21 +180,33 @@ function conditionOrderValid(items: readonly Condition[]): boolean {
     const four = items.slice(i - 3, i + 1);
     if (four.every((x) => x.relation === four[0]!.relation)) return false;
     if (four.every((x) => x.side === four[0]!.side)) return false;
+    if (four.every((x) => x.visibleWindowCount === four[0]!.visibleWindowCount)) return false;
   }
   return true;
 }
 
-function shuffledConstrained(items: Condition[], rng: () => number): Condition[] {
+function shuffledConstrained(items: BaseCondition[], rng: () => number): Condition[] {
   for (let attempt = 0; attempt < 10000; attempt += 1) {
     const copy = [...items];
     shuffleInPlace(copy, rng);
-    if (conditionOrderValid(copy)) return copy;
+    const gratingConditions = EXPERIMENT_5_VISIBLE_WINDOW_COUNT_ORDER.flatMap(
+      (visibleWindowCount) => Array.from(
+        { length: items.length / EXPERIMENT_5_VISIBLE_WINDOW_COUNT_ORDER.length },
+        () => visibleWindowCount,
+      ),
+    );
+    shuffleInPlace(gratingConditions, rng);
+    const combined = copy.map((condition, index) => ({
+      ...condition,
+      visibleWindowCount: gratingConditions[index]!,
+    }));
+    if (conditionOrderValid(combined)) return combined;
   }
   throw new Error("无法生成满足连续条件限制的实验五 Block");
 }
 
-function formalConditions(): Condition[][] {
-  const blocks = Array.from({ length: 4 }, () => [] as Condition[]);
+function formalConditions(): BaseCondition[][] {
+  const blocks = Array.from({ length: 4 }, () => [] as BaseCondition[]);
   for (const [rIndex, relation] of (["reachable", "unreachable"] as const).entries()) {
     for (const gap of EXPERIMENT_5_BOUNDARY_GAPS_DEG) {
       for (const [dIndex, distance] of EXPERIMENT_5_JUDGMENT_DISTANCES_M.entries()) {
@@ -190,13 +224,17 @@ export function generateExperiment5RuntimeStimulusSet(participant: Experiment5Pa
   let completed = 0;
   const report = () => options.onProgress?.(++completed, EXPERIMENT_5_TOTAL_RUNTIME_TRIALS);
   const mapping = experiment5KeyMapping(participant.subject_id);
-  const practiceConditions: Condition[] = [];
+  const practiceConditions: BaseCondition[] = [];
   let p = 0;
   for (const relation of ["reachable", "unreachable"] as const) for (const gap of EXPERIMENT_5_BOUNDARY_GAPS_DEG) {
     practiceConditions.push({ relation, gap, distance: EXPERIMENT_5_JUDGMENT_DISTANCES_M[p % 4]!, side: p++ % 2 === 0 ? "left" : "right" });
   }
   shuffleInPlace(practiceConditions, rng);
-  const practice = { kind: "practice" as const, id: newId(), children: practiceConditions.map((c) => { const t = makeTrial(c, participant, rng); report(); return t; }) };
+  const practiceGratings = EXPERIMENT_5_VISIBLE_WINDOW_COUNT_ORDER.flatMap(
+    (visibleWindowCount) => [visibleWindowCount, visibleWindowCount],
+  );
+  shuffleInPlace(practiceGratings, rng);
+  const practice = { kind: "practice" as const, id: newId(), children: practiceConditions.map((c, index) => { const t = makeTrial({ ...c, visibleWindowCount: practiceGratings[index]! }, participant, rng); report(); return t; }) };
   const blockConditions = formalConditions();
   const blockLabels = [0, 1, 2, 3];
   shuffleInPlace(blockLabels, rng);
@@ -220,6 +258,10 @@ export function assertExperiment5RuntimeStimulusSet(set: Experiment5StimulusSet)
   if (blocks.length !== EXPERIMENT_5_FORMAL_BLOCKS) throw new Error("实验五 Block 数错误");
   const all = blocks.flatMap((b) => b.children.map((t) => t.units.find((u): u is ReachabilityPendulumStimulusUnit => u.type === "reachabilityPendulumStimulus")!));
   if (all.length !== EXPERIMENT_5_FORMAL_TRIALS) throw new Error("实验五正式试次数错误");
+  const practiceUnits = practices[0]!.children.map((t) => t.units.find((u): u is ReachabilityPendulumStimulusUnit => u.type === "reachabilityPendulumStimulus")!);
+  for (const count of EXPERIMENT_5_VISIBLE_WINDOW_COUNT_ORDER) {
+    if (practiceUnits.filter((u) => u.visibleWindowCount === count).length !== 2) throw new Error("实验五练习光栅条件平衡错误");
+  }
   for (const block of blocks) {
     if (block.children.length !== EXPERIMENT_5_FORMAL_TRIALS_PER_BLOCK) throw new Error("实验五每 Block 试次数错误");
     const units = block.children.map((t) => t.units.find((u): u is ReachabilityPendulumStimulusUnit => u.type === "reachabilityPendulumStimulus")!);
@@ -227,7 +269,8 @@ export function assertExperiment5RuntimeStimulusSet(set: Experiment5StimulusSet)
     for (const side of ["left", "right"]) if (units.filter((u) => u.side === side).length !== 6) throw new Error("实验五左右 Block 平衡错误");
     for (const gap of EXPERIMENT_5_BOUNDARY_GAPS_DEG) if (units.filter((u) => u.boundaryGapDeg === gap).length !== 4) throw new Error("实验五边界差 Block 平衡错误");
     for (const distance of EXPERIMENT_5_JUDGMENT_DISTANCES_M) if (units.filter((u) => u.judgmentDistanceM === distance).length !== 3) throw new Error("实验五路程 Block 平衡错误");
-    if (!conditionOrderValid(units.map((u) => ({ relation: u.relation, gap: u.boundaryGapDeg as Experiment5BoundaryGapDeg, distance: u.judgmentDistanceM as Experiment5JudgmentDistanceM, side: u.side })))) throw new Error("实验五连续条件限制错误");
+    for (const count of EXPERIMENT_5_VISIBLE_WINDOW_COUNT_ORDER) if (units.filter((u) => u.visibleWindowCount === count).length !== 4) throw new Error("实验五光栅条件 Block 平衡错误");
+    if (!conditionOrderValid(units.map((u) => ({ relation: u.relation, gap: u.boundaryGapDeg as Experiment5BoundaryGapDeg, distance: u.judgmentDistanceM as Experiment5JudgmentDistanceM, side: u.side, visibleWindowCount: u.visibleWindowCount })))) throw new Error("实验五连续条件限制错误");
   }
   all.forEach(assertExperiment5Unit);
   const combos = new Set(all.map((u) => `${u.relation}|${u.boundaryGapDeg}|${u.judgmentDistanceM}|${u.side}`));

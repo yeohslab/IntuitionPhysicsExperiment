@@ -1,8 +1,10 @@
 import {
+  drawGratingBars,
   gratingWorldLayout,
   worldToCanvas,
   type GratingWorldLayout,
 } from "./gratingCanvas";
+import type { GratingGeometry } from "../gratingGeometry";
 
 const BG = "#f8fafc";
 
@@ -10,9 +12,12 @@ export function reachabilityWorldLayout(width: number, height: number, rodLength
   return gratingWorldLayout(width, height, rodLengthM);
 }
 
-function drawBase(ctx: CanvasRenderingContext2D, layout: GratingWorldLayout, rodLengthM: number): void {
+function drawBackground(ctx: CanvasRenderingContext2D, layout: GratingWorldLayout): void {
   ctx.fillStyle = BG;
   ctx.fillRect(0, 0, layout.canvasW, layout.canvasH);
+}
+
+function drawGuideAndPivot(ctx: CanvasRenderingContext2D, layout: GratingWorldLayout, rodLengthM: number): void {
   const pivot = worldToCanvas(layout, 0, 0);
   ctx.strokeStyle = "#94a3b8";
   ctx.lineWidth = 2;
@@ -41,8 +46,8 @@ function drawRadialTick(ctx: CanvasRenderingContext2D, layout: GratingWorldLayou
   ctx.stroke();
 }
 
-export function drawReachabilityMotionFrame(ctx: CanvasRenderingContext2D, layout: GratingWorldLayout, rodLengthM: number, bobRadiusM: number, thetaRad: number): void {
-  drawBase(ctx, layout, rodLengthM);
+export function drawReachabilityMotionFrame(ctx: CanvasRenderingContext2D, layout: GratingWorldLayout, geometry: GratingGeometry, rodLengthM: number, bobRadiusM: number, thetaRad: number): void {
+  drawBackground(ctx, layout);
   const bob = worldToCanvas(layout, rodLengthM * Math.sin(thetaRad), -rodLengthM * Math.cos(thetaRad));
   ctx.fillStyle = "#2563eb";
   ctx.strokeStyle = "#1d4ed8";
@@ -51,10 +56,14 @@ export function drawReachabilityMotionFrame(ctx: CanvasRenderingContext2D, layou
   ctx.arc(bob.x, bob.y, bobRadiusM * layout.pxPerM, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
+  drawGratingBars(ctx, layout, geometry);
+  drawGuideAndPivot(ctx, layout, rodLengthM);
 }
 
-export function drawReachabilityTargetFrame(ctx: CanvasRenderingContext2D, layout: GratingWorldLayout, rodLengthM: number, targetThetaRad: number, amplitudeThetaRad?: number): void {
-  drawBase(ctx, layout, rodLengthM);
+export function drawReachabilityTargetFrame(ctx: CanvasRenderingContext2D, layout: GratingWorldLayout, geometry: GratingGeometry, rodLengthM: number, targetThetaRad: number, amplitudeThetaRad?: number): void {
+  drawBackground(ctx, layout);
+  drawGratingBars(ctx, layout, geometry);
+  drawGuideAndPivot(ctx, layout, rodLengthM);
   drawRadialTick(ctx, layout, rodLengthM, targetThetaRad, "#dc2626", 5);
   if (amplitudeThetaRad !== undefined) drawRadialTick(ctx, layout, rodLengthM, amplitudeThetaRad, "#2563eb", 4);
 }

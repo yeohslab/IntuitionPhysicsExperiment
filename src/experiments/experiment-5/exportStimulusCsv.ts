@@ -4,13 +4,14 @@ import type { Experiment5ParticipantInfo } from "../../shared/participant";
 import type { ExperimentStatus } from "../../runtime/export/exportStimulusCsv";
 import { EXPERIMENT_5_FORMAL_TRIALS, EXPERIMENT_5_PROTOCOL_VERSION } from "./protocol";
 
-export const EXPERIMENT_5_DATA_SCHEMA_VERSION = 1 as const;
+export const EXPERIMENT_5_DATA_SCHEMA_VERSION = 2 as const;
 export const EXPERIMENT_5_CSV_COLUMNS = [
   "experiment_id","protocol_version","data_schema_version","subject_id","gender_code","age_years","experiment_status",
   "trial_id","unit_id","segment_kind","block_index","trial_index_in_block","formal_trial_index",
   "energy_J","amplitude_deg","target_angle_deg","boundary_gap_deg","judgment_distance_m","judgment_time_sec","tau_sec",
   "theta_0_deg","omega_0_deg_per_sec","disappearance_theta_deg","disappearance_omega_deg_per_sec",
-  "visible_duration_sec","response_deadline_sec","side","reachability","correct_response","yes_key","no_key",
+  "visible_duration_sec","response_deadline_sec","visible_window_count","gap_m","bar_width_m","grating_period_m","grating_offset_m",
+  "side","reachability","correct_response","yes_key","no_key",
   "response_judgment","response_key","correct","rt_sec","timed_out","boundary_performance_ms","response_start_performance_ms",
   "audio_context_boundary_sec","sim_frame_count","sim_max_frame_gap_ms","sim_boundary_overshoot_ms",
   "visibility_pause_count","visibility_pause_sec","timing_valid","rod_length_m","gravity_m_per_sec2","bob_radius_m",

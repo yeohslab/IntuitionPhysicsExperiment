@@ -9,11 +9,13 @@ import {
   type PendulumLayout,
   type PendulumMotionRange,
 } from "./pendulumCanvas";
-import { gratingBarCentersM } from "../../../experiments/experiment-4/grating";
+import {
+  gratingBarCentersM,
+  type GratingGeometry,
+} from "../gratingGeometry";
 import {
   EXPERIMENT_4_BOB_RADIUS_M,
   EXPERIMENT_4_ROD_LENGTH_M,
-  type Experiment4GratingGeometry,
 } from "../../../experiments/experiment-4/protocol";
 
 /** 实验四使用独立的近 16:9 画布，不影响实验二。 */
@@ -83,10 +85,10 @@ export function worldToCanvas(
   };
 }
 
-function drawGratingBars(
+export function drawGratingBars(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,
-  geometry: Experiment4GratingGeometry,
+  geometry: GratingGeometry,
 ): void {
   const halfBarPx = (geometry.barWidthM / 2) * layout.pxPerM;
   const visibleHalfWidthM = layout.canvasW / 2 / layout.pxPerM;
@@ -146,7 +148,7 @@ function drawGratingBob(
 export function drawGratingStimulusFrame(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,
-  geometry: Experiment4GratingGeometry,
+  geometry: GratingGeometry,
   rodLengthM: number,
   thetaRad: number,
   motionRange: PendulumMotionRange,
@@ -165,7 +167,7 @@ export function drawGratingStimulusFrame(
 function underlayGrating(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,
-  geometry: Experiment4GratingGeometry,
+  geometry: GratingGeometry,
 ): void {
   ctx.save();
   ctx.globalCompositeOperation = "destination-over";
@@ -181,7 +183,7 @@ function underlayGrating(
 export function drawGratingReportFrame(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,
-  geometry: Experiment4GratingGeometry,
+  geometry: GratingGeometry,
   pendLayout: PendulumLayout,
   motionRange: PendulumMotionRange,
   thetaEstRad: number,
@@ -199,7 +201,7 @@ export function drawGratingReportFrame(
 export function drawGratingIdleFrame(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,
-  geometry: Experiment4GratingGeometry,
+  geometry: GratingGeometry,
   pendLayout: PendulumLayout,
   motionRange: PendulumMotionRange,
 ): void {
@@ -210,7 +212,7 @@ export function drawGratingIdleFrame(
 export function drawGratingFeedbackFrame(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,
-  geometry: Experiment4GratingGeometry,
+  geometry: GratingGeometry,
   pendLayout: PendulumLayout,
   motionRange: PendulumMotionRange,
   thetaEstRad: number,

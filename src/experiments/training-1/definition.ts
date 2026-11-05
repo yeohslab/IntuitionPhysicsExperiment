@@ -14,6 +14,7 @@ import { TRAINING_1_PROTOCOL_VERSION } from "./protocol";
 
 export const training1Definition: Training1Definition = {
   id: "training-1",
+  experimentId: "training-1",
   title: "训练一",
   summary: "协议 1.0.0：通过水平匀速小球学习速度—颜色映射。",
   protocolVersion: TRAINING_1_PROTOCOL_VERSION,

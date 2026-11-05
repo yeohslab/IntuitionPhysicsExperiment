@@ -21,6 +21,7 @@ import { generateExperiment4RuntimeStimulusSetAsync } from "./generateRuntimeSet
 
 export const experiment4Definition: Experiment4Definition = {
   id: "experiment-4",
+  experimentId: "experiment-4",
   title: "实验四",
   summary: "协议 1.0.0：光栅遮挡单摆；角度与速度汇报顺序随机平衡。",
   protocolVersion: EXPERIMENT_4_PROTOCOL_VERSION,

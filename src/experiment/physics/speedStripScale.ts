@@ -4,7 +4,7 @@ import {
   EXPERIMENT_4_SPEED_SCALE_ENERGY_J,
 } from "../../experiments/experiment-4/protocol";
 
-/** 训练一和实验四共用的速度色带标定能量。 */
+/** 实验四汇报色带右端的标定能量。训练一使用自己的 60° 标尺。 */
 export const SPEED_STRIP_SCALE_ENERGY_J = EXPERIMENT_4_SPEED_SCALE_ENERGY_J;
 
 /** 实验四固定能量在最低点的最大角速度（rad/s）。 */

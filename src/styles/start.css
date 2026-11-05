@@ -126,6 +126,22 @@
   margin-top: 0;
 }
 
+.experiment-card__versions {
+  display: grid;
+  gap: 1rem;
+}
+
+.experiment-card__version {
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.experiment-card__version > p:first-child {
+  margin-top: 0;
+}
+
 .experiment-card__recovery {
   min-height: 1.5em;
   color: #9a3412;

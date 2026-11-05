@@ -8,7 +8,7 @@ export function training1WelcomeText(): string {
   return `<h1>训练一：速度与颜色</h1>
 <p class="instr-summary">学习匀速小球的速度大小与色带位置、颜色之间的对应关系。</p>
 <div class="instr-left">
-<p>色带左端表示<strong>静止</strong>，右端表示<strong>最高速</strong>（约 ${TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC.toFixed(2)} m/s，与实验四色带完全相同）。颜色沿 Turbo 标尺连续变化：深蓝紫 → 亮蓝 → 青绿 → 亮黄 → 橙红 → 深红。</p>
+<p>色带左端表示<strong>静止</strong>，右端表示<strong>最高速</strong>（约 ${TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC.toFixed(2)} m/s，对应 60° 静止释放的单摆在最低点的速度）。颜色沿 Turbo 标尺连续变化：深蓝紫 → 亮蓝 → 青绿 → 亮黄 → 橙红 → 深红。</p>
 <p>小球只沿水平直线做匀速运动。本训练不包含单摆、圆弧、摆杆、光栅、遮挡或角度判断。</p>
 </div>
 <p>按空格键继续</p>`;

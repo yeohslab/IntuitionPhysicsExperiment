@@ -5,7 +5,7 @@ import type { ExperimentStatus } from "../../runtime/export/exportStimulusCsv";
 import { TRAINING_1_PROTOCOL_VERSION } from "./protocol";
 import { evaluateTraining1Mastery } from "./mastery";
 
-export const TRAINING_1_DATA_SCHEMA_VERSION = 7 as const;
+export const TRAINING_1_DATA_SCHEMA_VERSION = 8 as const;
 const TRIAL_TYPE = "speed-color-training";
 
 export const TRAINING_1_CSV_COLUMNS = [
