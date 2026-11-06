@@ -181,7 +181,7 @@ export default class BellReachabilityV2Plugin {
       const state = pendulumThetaOmegaAt(elapsed, params, analysis);
       drawProtocol2BellMotionFrame(
         ctx, layout, geometry, u.rodLengthM, u.bobRadiusM,
-        (u.amplitudeDeg * Math.PI) / 180, state.theta, bellThetaRad, alpha,
+        (u.amplitudeDeg * Math.PI) / 180, state.theta, bellThetaRad, alpha, true,
       );
       raf = requestAnimationFrame(replayTick);
     };
@@ -243,7 +243,7 @@ export default class BellReachabilityV2Plugin {
       const state = pendulumThetaOmegaAt(elapsed, params, analysis);
       drawProtocol2BellMotionFrame(
         ctx, layout, geometry, u.rodLengthM, u.bobRadiusM,
-        (u.amplitudeDeg * Math.PI) / 180, state.theta, bellThetaRad, sceneAlpha,
+        (u.amplitudeDeg * Math.PI) / 180, state.theta, bellThetaRad, sceneAlpha, false,
       );
       u.visibleSegments.forEach((segment, index) => {
         if (elapsed < segment.tStartSec || elapsed > segment.tEndSec) return;

@@ -81,6 +81,7 @@ export function drawProtocol2MotionFrame(
   amplitudeRad: number,
   thetaRad: number,
   sceneAlpha = 1,
+  showAmplitudeGuide = true,
 ): void {
   background(ctx, layout);
   const alpha = Math.max(0, Math.min(1, sceneAlpha));
@@ -89,7 +90,14 @@ export function drawProtocol2MotionFrame(
   ctx.globalAlpha = alpha;
   bob(ctx, layout, rodLengthM, bobRadiusM, thetaRad);
   if (geometry) drawGratingBars(ctx, layout, geometry);
-  guide(ctx, layout, rodLengthM, amplitudeRad);
+  if (showAmplitudeGuide) guide(ctx, layout, rodLengthM, amplitudeRad);
+  else {
+    const pivot = worldToCanvas(layout, 0, 0);
+    ctx.fillStyle = "#0f172a";
+    ctx.beginPath();
+    ctx.arc(pivot.x, pivot.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -138,6 +146,7 @@ export function drawProtocol2BellMotionFrame(
   thetaRad: number,
   bellThetaRad: number,
   sceneAlpha = 1,
+  showAmplitudeGuide = true,
 ): void {
   drawProtocol2MotionFrame(
     ctx,
@@ -148,6 +157,7 @@ export function drawProtocol2BellMotionFrame(
     amplitudeRad,
     thetaRad,
     sceneAlpha,
+    showAmplitudeGuide,
   );
   const alpha = Math.max(0, Math.min(1, sceneAlpha));
   if (alpha <= 0) return;

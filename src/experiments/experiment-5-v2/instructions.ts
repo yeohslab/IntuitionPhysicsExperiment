@@ -2,8 +2,8 @@ import { EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK } from "./protocol";
 
 export function experiment5V2WelcomeText(yesKey: string, noKey: string): string {
   return `<h1>实验五 · 协议 2.0</h1><div class="instr-left">
-  <p>摆球会在固定光栅后连续运动。每个试次开始前会提示起始侧和运动方向。铃铛会从运动开始前一直显示到开始变淡。</p>
-  <p>三档光栅分别播放4、5、6个可见运动片段。空白前画面会在0.30秒内变淡，然后整个画面空白0.70秒。请判断摆球继续运动是否可能到达铃铛。</p>
+  <p>摆球会在固定光栅后连续运动。每个试次开始前会提示起始侧和运动方向。铃铛会从运动开始一直显示到画面空白。</p>
+  <p>画面会在摆球靠近铃铛之前变成空白，并盖住这次上摆的端点。请判断摆球继续运动是否可能到达铃铛。</p>
   <p><strong>${yesKey.toUpperCase()} = 会到达</strong>，<strong>${noKey.toUpperCase()} = 不会到达</strong>。本任务没有作答超时。</p>
   <p>练习有反馈，正式试次无反馈。</p></div><p>按空格继续</p>`;
 }

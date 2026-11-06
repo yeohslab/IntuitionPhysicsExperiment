@@ -1,4 +1,5 @@
 import { cryptoRandom, shuffleInPlace } from "../../experiment/stimulus/cryptoRandom";
+import { analyzePendulum, pendulumThetaOmegaAt } from "../../experiment/physics/pendulum";
 import { newId } from "../../shared/ids";
 import type {
   BellReachabilityV2StimulusUnit,
@@ -17,19 +18,18 @@ import {
   PROTOCOL_2_GRATING_ORDER,
   PROTOCOL_2_MODEL_DT_SEC,
   THREE_CONDITION_PERMUTATIONS,
-  planProtocol2Motion,
-  protocol2BlankSweepsBell,
-  protocol2FirstVisibleContactTime,
-  protocol2FirstVisibleTurnTime,
-  protocol2StateSites,
-  protocol2VisibleSegmentCount,
   subjectNumber,
-  type Protocol2MotionPlan,
-  type Protocol2StateSite,
 } from "../protocol-2/common";
 import {
+  experiment5V2ApproachSide,
+  experiment5V2BellThetaRad,
+  experiment5V2EndpointReachesBell,
+  planExperiment5V2Approach,
+  type Experiment5V2ApproachPlan,
+  type Experiment5V2ApproachSide,
+} from "./approachPlan";
+import {
   EXPERIMENT_5_V2_AMPLITUDES_DEG,
-  EXPERIMENT_5_V2_BLANK_DURATION_SEC,
   EXPERIMENT_5_V2_BOB_RADIUS_M,
   EXPERIMENT_5_V2_CUE_MS,
   EXPERIMENT_5_V2_FIXATION_MS,
@@ -67,71 +67,14 @@ function rest(text: string): RestSegment {
   return { kind: "rest", id: newId(), units: [control(text)] };
 }
 
-function listedBellSwept(plan: Protocol2MotionPlan, deltaHM: number, side: "left" | "right"): boolean {
-  return protocol2BlankSweepsBell(plan, bellThetaRad(plan.amplitudeDeg, deltaHM, side).theta);
-}
-
-function blankSweepCounts(plan: Protocol2MotionPlan): { swept: number; missed: number } {
-  let swept = 0;
-  let missed = 0;
-  for (const deltaHM of EXPERIMENT_5_V2_DELTA_H_M) {
-    for (const side of ["left", "right"] as const) {
-      if (listedBellSwept(plan, deltaHM, side)) swept += 1;
-      else missed += 1;
-    }
-  }
-  return { swept, missed };
-}
-
-function commonFeasibleSites(amplitudeDeg: number): Protocol2StateSite[] {
-  return protocol2StateSites(amplitudeDeg).filter((site) => {
-    try {
-      const plans = PROTOCOL_2_GRATING_ORDER.map((gratingId) =>
-        planProtocol2Motion(
-          amplitudeDeg,
-          site,
-          PROTOCOL_2_GRATING_CONDITIONS[gratingId],
-        ),
-      );
-      const counts = blankSweepCounts(plans[0]!);
-      return counts.swept > 0 && counts.missed > 0;
-    } catch {
-      return false;
-    }
-  });
-}
-
-export function selectExperiment5V2QuerySite(
-  amplitudeDeg: number,
-  amplitudeIndex: number,
-  participant: Experiment5ParticipantInfo,
-): Protocol2StateSite {
-  const candidates = commonFeasibleSites(amplitudeDeg);
-  if (candidates.length === 0) {
-    throw new Error(`${amplitudeDeg}°没有既扫到又扫不到铃铛的跨光栅查询状态`);
-  }
-  return candidates[
-    (subjectNumber(participant.subject_id) - 1 + amplitudeIndex) % candidates.length
-  ]!;
-}
-
-function bellThetaRad(amplitudeDeg: number, deltaHM: number, side: "left" | "right") {
-  const baseHeight = EXPERIMENT_5_V2_ROD_LENGTH_M *
-    (1 - Math.cos((amplitudeDeg * Math.PI) / 180));
-  const height = baseHeight + deltaHM;
-  const magnitude = Math.acos(1 - height / EXPERIMENT_5_V2_ROD_LENGTH_M);
-  return { height, theta: side === "right" ? magnitude : -magnitude };
-}
-
 function bellUnit(
-  plan: Protocol2MotionPlan,
+  plan: Experiment5V2ApproachPlan,
   deltaHM: number,
-  side: "left" | "right",
+  side: Experiment5V2ApproachSide,
   participant: Experiment5ParticipantInfo,
 ): BellReachabilityV2StimulusUnit {
-  const bell = bellThetaRad(plan.amplitudeDeg, deltaHM, side);
-  const contactTime = protocol2FirstVisibleContactTime(plan, bell.theta);
-  const turnTime = protocol2FirstVisibleTurnTime(plan);
+  const bell = experiment5V2BellThetaRad(plan.amplitudeDeg, deltaHM, side);
+  const contactTime = visibleContactTime(plan, bell.theta);
   return {
     id: newId(),
     type: "bellReachabilityV2Stimulus",
@@ -159,13 +102,36 @@ function bellUnit(
     bellContactHeightM: bell.height,
     bellThetaDeg: (bell.theta * 180) / Math.PI,
     bellSide: side,
-    correctResponse: protocol2BlankSweepsBell(plan, bell.theta) ? "reachable" : "unreachable",
+    correctResponse: experiment5V2EndpointReachesBell(plan.amplitudeDeg, bell.theta)
+      ? "reachable" : "unreachable",
     ...experiment5V2KeyMapping(participant.subject_id),
-    plannedVisibleTurn: turnTime !== null,
-    plannedVisibleTurnTimeSec: turnTime,
+    plannedVisibleTurn: false,
+    plannedVisibleTurnTimeSec: null,
     plannedVisibleContact: contactTime !== null,
     plannedVisibleContactTimeSec: contactTime,
   };
+}
+
+function visibleContactTime(plan: Experiment5V2ApproachPlan, bellThetaRad: number): number | null {
+  const toleranceRad = EXPERIMENT_5_V2_BOB_RADIUS_M / EXPERIMENT_5_V2_ROD_LENGTH_M;
+  const params = {
+    theta0Rad: (plan.theta0Deg * Math.PI) / 180,
+    omega0RadPerSec: (plan.omega0DegPerSec * Math.PI) / 180,
+    rodLengthM: EXPERIMENT_5_V2_ROD_LENGTH_M,
+    gravity: EXPERIMENT_5_V2_GRAVITY,
+  };
+  const analysis = analyzePendulum(params);
+  for (const segment of plan.visibleSegments) {
+    for (let time = segment.tStartSec; time <= segment.tEndSec + 1e-9; time += 1 / 240) {
+      const theta = pendulumThetaOmegaAt(
+        Math.min(time, segment.tEndSec),
+        params,
+        analysis,
+      ).theta;
+      if (Math.abs(theta - bellThetaRad) <= toleranceRad) return time;
+    }
+  }
+  return null;
 }
 
 function cueUnit(unit: BellReachabilityV2StimulusUnit): TextDisplayUnit {
@@ -204,19 +170,15 @@ function bellUnitOf(trial: Trial): BellReachabilityV2StimulusUnit {
 
 function orderingValid(trials: readonly Trial[], limitAnswer: boolean): boolean {
   let answerRun = 0;
-  let sideRun = 0;
   let gratingRun = 0;
   let lastAnswer = "";
-  let lastSide = "";
   let lastGrating = "";
   for (const trial of trials) {
     const unit = bellUnitOf(trial);
     answerRun = unit.correctResponse === lastAnswer ? answerRun + 1 : 1;
-    sideRun = unit.bellSide === lastSide ? sideRun + 1 : 1;
     gratingRun = unit.gratingCondition === lastGrating ? gratingRun + 1 : 1;
-    if (sideRun > 3 || gratingRun > 3 || (limitAnswer && answerRun > 3)) return false;
+    if (gratingRun > 3 || (limitAnswer && answerRun > 3)) return false;
     lastAnswer = unit.correctResponse;
-    lastSide = unit.bellSide;
     lastGrating = unit.gratingCondition;
   }
   return true;
@@ -267,18 +229,16 @@ function formalBlock(
   rng: () => number,
   onTrial: () => void,
 ): BlockSegment {
-  const site = selectExperiment5V2QuerySite(amplitudeDeg, amplitudeIndex, participant);
+  const apexSide = experiment5V2ApproachSide(participant.subject_id, amplitudeIndex);
   const trials: Trial[] = [];
   for (const gratingId of PROTOCOL_2_GRATING_ORDER) {
-    const plan = planProtocol2Motion(
+    const plan = planExperiment5V2Approach(
       amplitudeDeg,
-      site,
+      apexSide,
       PROTOCOL_2_GRATING_CONDITIONS[gratingId],
     );
     for (const deltaHM of EXPERIMENT_5_V2_DELTA_H_M) {
-      for (const side of ["left", "right"] as const) {
-        trials.push(asTrial(bellUnit(plan, deltaHM, side, participant)));
-      }
+      trials.push(asTrial(bellUnit(plan, deltaHM, apexSide, participant)));
     }
   }
   const ordered = constrainedShuffle(trials, rng);
@@ -286,76 +246,33 @@ function formalBlock(
   return { kind: "block", id: newId(), children: ordered };
 }
 
-type PracticeBell = { delta: number; side: "left" | "right" };
-
-function classifyBells(plan: Protocol2MotionPlan): { swept: PracticeBell[]; missed: PracticeBell[] } {
-  const swept: PracticeBell[] = [];
-  const missed: PracticeBell[] = [];
-  for (const delta of EXPERIMENT_5_V2_DELTA_H_M) {
-    for (const side of ["left", "right"] as const) {
-      const choice = { delta, side };
-      if (listedBellSwept(plan, delta, side)) swept.push(choice);
-      else missed.push(choice);
-    }
-  }
-  return { swept, missed };
-}
-
-function alternateSides(bells: readonly PracticeBell[]): PracticeBell[] {
-  const left = bells.filter((bell) => bell.side === "left");
-  const right = bells.filter((bell) => bell.side === "right");
-  const ordered: PracticeBell[] = [];
-  const count = Math.max(left.length, right.length);
-  for (let index = 0; index < count; index += 1) {
-    if (index < left.length) ordered.push(left[index]!);
-    if (index < right.length) ordered.push(right[index]!);
-  }
-  return ordered;
-}
-
-function cycleBells(bells: readonly PracticeBell[], count: number): PracticeBell[] {
-  if (bells.length === 0) throw new Error("实验五V2练习缺少可用铃铛");
-  const ordered = alternateSides(bells);
-  return Array.from({ length: count }, (_, index) => ordered[index % ordered.length]!);
-}
+const PRACTICE_DELTAS: Array<{ reachable: number; unreachable: number }> = [
+  { reachable: -0.5, unreachable: 0.5 },
+  { reachable: -0.3, unreachable: 0.3 },
+  { reachable: -0.1, unreachable: 0.1 },
+];
 
 function practiceBlock(
   participant: Experiment5ParticipantInfo,
   rng: () => number,
   onTrial: () => void,
 ): PracticeSegment {
-  const site = selectExperiment5V2QuerySite(
-    EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG,
-    0,
-    participant,
-  );
+  const apexSide = experiment5V2ApproachSide(participant.subject_id, 0);
   const plans = new Map(PROTOCOL_2_GRATING_ORDER.map((gratingId) => [
     gratingId,
-    planProtocol2Motion(
+    planExperiment5V2Approach(
       EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG,
-      site,
+      apexSide,
       PROTOCOL_2_GRATING_CONDITIONS[gratingId],
     ),
   ]));
-  const { swept, missed } = classifyBells(plans.get("G1")!);
-  const reachable = cycleBells(swept, PROTOCOL_2_GRATING_ORDER.length);
-  const unreachable = cycleBells(missed, PROTOCOL_2_GRATING_ORDER.length);
   const children = PROTOCOL_2_GRATING_ORDER.flatMap((grating, index) => {
+    const pair = PRACTICE_DELTAS[index]!;
     onTrial();
     onTrial();
     return [
-      asTrial(bellUnit(
-        plans.get(grating)!,
-        reachable[index]!.delta,
-        reachable[index]!.side,
-        participant,
-      )),
-      asTrial(bellUnit(
-        plans.get(grating)!,
-        unreachable[index]!.delta,
-        unreachable[index]!.side,
-        participant,
-      )),
+      asTrial(bellUnit(plans.get(grating)!, pair.reachable, apexSide, participant)),
+      asTrial(bellUnit(plans.get(grating)!, pair.unreachable, apexSide, participant)),
     ];
   });
   shuffleInPlace(children, rng);
@@ -485,7 +402,7 @@ export function assertExperiment5V2RuntimeStimulusSet(
     if (amplitudes.size !== 1) throw new Error("实验五V2区组内振幅不一致");
     for (const grating of PROTOCOL_2_GRATING_ORDER) {
       const group = blockUnits.filter((unit) => unit.gratingCondition === grating);
-      if (group.length !== EXPERIMENT_5_V2_DELTA_H_M.length * 2) {
+      if (group.length !== EXPERIMENT_5_V2_DELTA_H_M.length) {
         throw new Error("每个振幅×光栅的铃铛条件数量错误");
       }
       const motionFingerprints = new Set(group.map((unit) => JSON.stringify({
@@ -501,15 +418,22 @@ export function assertExperiment5V2RuntimeStimulusSet(
       throw new Error("同一振幅的查询状态未跨光栅共享");
     }
     for (const delta of EXPERIMENT_5_V2_DELTA_H_M) {
-      if (blockUnits.filter((unit) => unit.deltaHM === delta).length !== PROTOCOL_2_GRATING_ORDER.length * 2) {
-        throw new Error("每个高度偏移在振幅区组内应在每档光栅的左右各出现一次");
+      if (blockUnits.filter((unit) => unit.deltaHM === delta).length !== PROTOCOL_2_GRATING_ORDER.length) {
+        throw new Error("每个高度偏移在振幅区组内应在每档光栅出现一次");
       }
+    }
+    const apexSide = blockUnits[0]?.stateSiteId.endsWith("-left") ? "left" : "right";
+    if (blockUnits.some((unit) => unit.bellSide !== apexSide)) {
+      throw new Error("实验五V2铃铛必须放在消失时摆球朝向的一侧");
     }
     if (
       !blockUnits.some((unit) => unit.correctResponse === "reachable") ||
       !blockUnits.some((unit) => unit.correctResponse === "unreachable")
     ) {
-      throw new Error("实验五V2查询状态的空白应同时扫到和扫不到铃铛");
+      throw new Error("实验五V2区组应同时包含可达和不可达铃铛");
+    }
+    if (new Set(blockUnits.map((unit) => unit.correctResponse === "reachable" ? unit.deltaHM <= 0 : unit.deltaHM > 0)).size !== 1) {
+      throw new Error("实验五V2可达性必须与高度偏移的符号一致");
     }
   }
   for (const grating of PROTOCOL_2_GRATING_ORDER) {
@@ -522,26 +446,20 @@ export function assertExperiment5V2RuntimeStimulusSet(
     }
   }
   for (const unit of [...practice, ...formal]) {
-    if (
-      unit.visibleSegments.length !== protocol2VisibleSegmentCount(unit.gratingCondition) ||
-      Math.abs(unit.blankDurationSec - EXPERIMENT_5_V2_BLANK_DURATION_SEC) > 1e-12
-    ) {
-      throw new Error("实验五V2片段或空白时长错误");
+    if (!(unit.blankStartSec > 0) || !(unit.blankDurationSec > 0) ||
+      unit.queryTimeSec <= unit.blankStartSec) {
+      throw new Error("实验五V2空白窗口错误");
     }
-    const site = protocol2StateSites(unit.amplitudeDeg).find((item) => item.id === unit.stateSiteId);
-    if (!site) throw new Error("实验五V2查询状态不存在");
-    const plan = planProtocol2Motion(
+    const reachable = experiment5V2EndpointReachesBell(
       unit.amplitudeDeg,
-      site,
-      PROTOCOL_2_GRATING_CONDITIONS[unit.gratingCondition],
+      (unit.bellThetaDeg * Math.PI) / 180,
     );
-    const amplitudeRad = (unit.amplitudeDeg * Math.PI) / 180;
-    if (unit.deltaHM > 0 || Math.abs((unit.bellThetaDeg * Math.PI) / 180) > amplitudeRad + 1e-9) {
-      throw new Error("实验五V2铃铛不得超出可达弧线");
-    }
-    const swept = protocol2BlankSweepsBell(plan, (unit.bellThetaDeg * Math.PI) / 180);
-    if (swept !== (unit.correctResponse === "reachable")) {
+    if (reachable !== (unit.correctResponse === "reachable") ||
+      reachable !== (unit.deltaHM <= 0)) {
       throw new Error("实验五V2可达性评分错误");
+    }
+    if (unit.plannedVisibleTurn || unit.plannedVisibleContact) {
+      throw new Error("实验五V2可见窗口不得包含端点或铃铛接触");
     }
   }
   const demo = set.sequence.flatMap((item) => item.kind === "rest" ? item.units : [])

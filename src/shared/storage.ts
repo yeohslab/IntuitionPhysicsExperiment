@@ -137,11 +137,11 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       return { tStartSec, tEndSec, truncatedByBlank: item.truncatedByBlank };
     });
     const protocol2Geometry = PROTOCOL_2_GRATING_CONDITIONS[raw.gratingCondition];
-    if (
-      visibleSegments.some((segment) => segment === null) ||
+    if (visibleSegments.some((segment) => segment === null)) return null;
+    if (raw.type === "trackingPendulumV2Stimulus" && (
       visibleSegments.length !== protocol2VisibleSegmentCount(raw.gratingCondition) ||
       Math.abs(n.blankDurationSec! - PROTOCOL_2_BLANK_DURATION_SEC) > 1e-12
-    ) {
+    )) {
       return null;
     }
     if (
