@@ -313,7 +313,7 @@ export function stopMaskedAmbientSound(): void {
  * 遮挡结束的唯一声学边界：持续音停止与估计提示音起音同刻。
  * 该路径故意保持同步；AudioContext 不可用时只停止掩蔽音，不延后补播。
  */
-export function transitionMaskedAmbientToEstimateCue(): void {
+export function transitionMaskedAmbientToEstimateCue(): number | null {
   maskedWantsPlay = false;
   stopMaskedHtmlPlayback();
   maskedStartedThisTrial = false;
@@ -321,10 +321,10 @@ export function transitionMaskedAmbientToEstimateCue(): void {
   const ctx = getAudioContext();
   if (!ctx || ctx.state !== "running") {
     stopMaskedAmbientSound();
-    return;
+    return null;
   }
 
-  scheduleSynchronizedEstimateBoundary(ctx, stopMaskedWebAudioAt);
+  return scheduleSynchronizedEstimateBoundary(ctx, stopMaskedWebAudioAt);
 }
 
 /** 实验五边界提示音：不启动掩蔽音，在调用时刻直接播放 880 Hz / 80 ms。 */

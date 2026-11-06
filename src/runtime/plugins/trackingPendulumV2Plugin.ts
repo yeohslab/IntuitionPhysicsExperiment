@@ -1,5 +1,6 @@
 import type { JsPsych } from "jspsych";
 import { ParameterType } from "jspsych";
+import { protocol2SceneAlpha } from "../../experiments/protocol-2/common";
 import { analyzePendulum, pendulumThetaOmegaAt } from "../../experiment/physics/pendulum";
 import { pointerToLogical, setupHiDpiCanvas } from "../../experiment/physics/render/canvasCoords";
 import {
@@ -14,7 +15,12 @@ import {
   protocol2AngleFromPointer,
 } from "../../experiment/physics/render/protocol2Canvas";
 import { mountSpeedReportStrip, type SpeedReportStrip } from "../components/speedReportStrip";
-import { playBoundaryCueNow } from "../../shared/playEstimateCue";
+import {
+  prepareMaskedAmbientForTrial,
+  stopMaskedAmbientSound,
+  syncMaskedAmbientFromVisibility,
+  transitionMaskedAmbientToEstimateCue,
+} from "../../shared/playEstimateCue";
 import { updateRecoveryCursor } from "../../shared/recovery";
 import type { ExperimentId } from "../../experiments/types";
 import { PHYSICS_ABORT_EVENT } from "./physicsStimulusPlugin";
@@ -40,6 +46,7 @@ type Trial = {
     gapM: number; barWidthM: number; gratingPeriodM: number; gratingOffsetM: number;
     initialSide: "left" | "right"; initialDirection: "leftward" | "rightward";
     speedScaleLinearMPerSec: number;
+    reportTarget: "angle" | "speed";
   };
   practice: boolean;
   unitMeta: Record<string, unknown>;
@@ -53,7 +60,7 @@ export default class TrackingPendulumV2Plugin {
 
   trial(display: HTMLElement, trial: Trial): void {
     const u = trial.unit;
-    display.innerHTML = `<div class="physics-trial physics-trial--stimulus" tabindex="-1">
+    display.innerHTML = `<div class="physics-trial physics-trial--stimulus physics-trial--sim" tabindex="-1">
       <div class="physics-canvas-frame"><canvas class="physics-canvas physics-canvas--grating" width="${GRATING_CANVAS_LOGICAL_W}" height="${GRATING_CANVAS_LOGICAL_H}"></canvas></div>
       <div class="physics-footer">
         <p class="physics-hint" data-role="hint"></p>
@@ -88,7 +95,7 @@ export default class TrackingPendulumV2Plugin {
     let previousFrameMs: number | null = null;
     let maxFrameGapMs = 0;
     let frameCount = 0;
-    const segmentFrameCounts = [0, 0, 0];
+    const segmentFrameCounts = u.visibleSegments.map(() => 0);
     let lastVisibleFrameSec: number | null = null;
     let visibilityPauseCount = 0;
     let visibilityPauseMs = 0;
@@ -106,6 +113,7 @@ export default class TrackingPendulumV2Plugin {
     let finished = false;
 
     const cleanup = () => {
+      stopMaskedAmbientSound();
       cancelAnimationFrame(raf);
       window.clearTimeout(timer);
       window.removeEventListener(PHYSICS_ABORT_EVENT, cleanup);
@@ -171,20 +179,32 @@ export default class TrackingPendulumV2Plugin {
       cleanup();
       this.jsPsych.finishTrial(payload());
     };
+    const showResponseCursor = (visible: boolean) => {
+      root.classList.toggle("physics-trial--sim", !visible);
+    };
     const showFeedback = () => {
       phase = "feedback";
       setCursor("feedback");
-      stripHost.innerHTML = "";
+      showResponseCursor(false);
       actions.innerHTML = "";
-      drawProtocol2TrackingFeedback(
-        ctx, layout, u.rodLengthM, u.amplitudeDeg,
-        thetaEstimateRad, (u.queryThetaDeg * Math.PI) / 180,
-      );
-      const truthStrip = mountSpeedReportStrip(stripHost, { interactive: false });
-      truthStrip.setPreviewLevel(
-        Math.min(1, u.rodLengthM * Math.abs(u.queryOmegaRadPerSec) / u.speedScaleLinearMPerSec),
-      );
-      hint.textContent = "练习反馈：蓝线为真实角度，色带标记为真实速度。按空格继续。";
+      if (u.reportTarget === "angle") {
+        drawProtocol2TrackingFeedback(
+          ctx, layout, u.rodLengthM, u.amplitudeDeg,
+          thetaEstimateRad, (u.queryThetaDeg * Math.PI) / 180,
+        );
+        hint.innerHTML =
+          "练习反馈：<strong>橙色</strong>为您的选择，<strong>蓝色</strong>为真实角度。按空格继续。";
+      } else {
+        fillBlank();
+        const scale = u.speedScaleLinearMPerSec;
+        const truthLevel = scale > 0
+          ? Math.min(1, Math.max(0, (u.rodLengthM * Math.abs(u.queryOmegaRadPerSec)) / scale))
+          : 0;
+        speedStrip?.lock();
+        speedStrip?.showTruth(truthLevel);
+        hint.innerHTML =
+          "练习反馈：<strong>橙色</strong>为您的选择，<strong>蓝色</strong>为真实速度。按空格继续。";
+      }
       const onKey = (event: KeyboardEvent) => {
         if (event.code !== "Space" || event.repeat) return;
         window.removeEventListener("keydown", onKey);
@@ -201,11 +221,12 @@ export default class TrackingPendulumV2Plugin {
     const startSpeed = () => {
       phase = "speed";
       setCursor("response");
+      showResponseCursor(true);
       actions.innerHTML = "";
       canvas.removeEventListener("pointerdown", onAnglePointer);
       canvas.removeEventListener("pointermove", onAnglePointerMove);
       canvas.removeEventListener("pointerup", onAnglePointerUp);
-      hint.textContent = "再在色带上报告速度大小，然后确认。";
+      hint.textContent = "请在色带上报告空白结束瞬间的速度大小，然后确认。";
       speedStrip = mountSpeedReportStrip(stripHost);
       speedStrip.onChange((value) => {
         if (speedPosition === null) rtSpeedSec = (performance.now() - promptMs) / 1000;
@@ -222,14 +243,16 @@ export default class TrackingPendulumV2Plugin {
     };
     const confirmAngle = () => {
       if (!angleInteracted) return;
-      startSpeed();
+      if (trial.practice) showFeedback();
+      else finish();
     };
     const startAngle = () => {
       phase = "angle";
       setCursor("estimate");
+      showResponseCursor(true);
       fillBlank();
       drawProtocol2AngleReport(ctx, layout, u.rodLengthM, u.amplitudeDeg, thetaEstimateRad, false);
-      hint.textContent = "请先在橙色圆弧上报告空白结束瞬间的摆杆角度。";
+      hint.textContent = "请在橙色圆弧上报告空白结束瞬间的摆杆角度。";
       const confirm = document.createElement("button");
       confirm.className = "physics-btn physics-btn--primary";
       confirm.type = "button";
@@ -267,8 +290,9 @@ export default class TrackingPendulumV2Plugin {
 
     const startPrompt = () => {
       promptMs = performance.now();
-      audioAnchor = playBoundaryCueNow();
-      startAngle();
+      audioAnchor = transitionMaskedAmbientToEstimateCue();
+      if (u.reportTarget === "speed") startSpeed();
+      else startAngle();
     };
     const tick = (now: number) => {
       if (phase !== "motion" && phase !== "blank") return;
@@ -283,14 +307,20 @@ export default class TrackingPendulumV2Plugin {
           blankStartMs = now;
           setCursor("hide");
           fillBlank();
+          syncMaskedAmbientFromVisibility({ kind: "hide", alpha: 0 });
         }
         raf = requestAnimationFrame(tick);
         return;
       }
+      const sceneAlpha = protocol2SceneAlpha(elapsed, u.blankStartSec);
+      syncMaskedAmbientFromVisibility({
+        kind: sceneAlpha < 1 ? "fadeOut" : "show",
+        alpha: sceneAlpha,
+      });
       const state = pendulumThetaOmegaAt(elapsed, params, analysis);
       drawProtocol2MotionFrame(
         ctx, layout, geometry, u.rodLengthM, u.bobRadiusM,
-        (u.amplitudeDeg * Math.PI) / 180, state.theta,
+        (u.amplitudeDeg * Math.PI) / 180, state.theta, sceneAlpha,
       );
       u.visibleSegments.forEach((segment, index) => {
         if (elapsed >= segment.tStartSec && elapsed <= segment.tEndSec) {
@@ -307,6 +337,7 @@ export default class TrackingPendulumV2Plugin {
       motionStartMs = performance.now();
       previousFrameMs = motionStartMs;
       setCursor("show");
+      prepareMaskedAmbientForTrial();
       raf = requestAnimationFrame(tick);
     };
     function onVisibility() {
@@ -331,14 +362,11 @@ export default class TrackingPendulumV2Plugin {
         raf = requestAnimationFrame(tick);
       }
     }
-    const side = u.initialSide === "left" ? "左侧" : "右侧";
-    const direction = u.initialDirection === "leftward" ? "向左" : "向右";
     fillBlank();
-    hint.innerHTML = `本试次从<strong>${side}</strong>开始并<strong>${direction}</strong>运动。`;
     setCursor("show");
     window.addEventListener(PHYSICS_ABORT_EVENT, cleanup);
     document.addEventListener("visibilitychange", onVisibility);
-    timer = window.setTimeout(startMotion, u.cueDurationMs);
+    startMotion();
     root.focus({ preventScroll: true });
   }
 }

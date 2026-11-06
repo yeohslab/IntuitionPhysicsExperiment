@@ -7,8 +7,16 @@ import {
   GRATING_CANVAS_LOGICAL_W,
   gratingWorldLayout,
 } from "../../experiment/physics/render/gratingCanvas";
+import { protocol2SceneAlpha } from "../../experiments/protocol-2/common";
+
+const PRACTICE_REVEAL_ALPHA = 0.4;
 import { drawProtocol2BellMotionFrame } from "../../experiment/physics/render/protocol2Canvas";
-import { playBoundaryCueNow } from "../../shared/playEstimateCue";
+import {
+  prepareMaskedAmbientForTrial,
+  stopMaskedAmbientSound,
+  syncMaskedAmbientFromVisibility,
+  transitionMaskedAmbientToEstimateCue,
+} from "../../shared/playEstimateCue";
 import { updateRecoveryCursor } from "../../shared/recovery";
 import type { ExperimentId } from "../../experiments/types";
 import { PHYSICS_ABORT_EVENT } from "./physicsStimulusPlugin";
@@ -63,12 +71,14 @@ export default class BellReachabilityV2Plugin {
     const bellThetaRad = (u.bellThetaDeg * Math.PI) / 180;
     const variantId = (trial.unitMeta.runtime_experiment_id ?? "experiment-5-v2") as ExperimentId;
     const startedMs = performance.now();
-    let phase: "motion" | "blank" | "response" | "feedback" = "motion";
+    let phase: "motion" | "blank" | "response" | "replay" | "feedback" = "motion";
+    let replayStartMs = 0;
+    let replayPausedMs = 0;
     let raf = 0;
     let previousFrameMs = startedMs;
     let frameCount = 0;
     let maxFrameGapMs = 0;
-    const segmentFrameCounts = [0, 0, 0];
+    const segmentFrameCounts = u.visibleSegments.map(() => 0);
     const previousOmegaSigns: Array<number | null> = [null, null, null];
     let actualVisibleTurn = false;
     let actualVisibleTurnFrame: number | null = null;
@@ -104,6 +114,7 @@ export default class BellReachabilityV2Plugin {
       ctx.fillRect(0, 0, GRATING_CANVAS_LOGICAL_W, GRATING_CANVAS_LOGICAL_H);
     };
     const cleanup = () => {
+      stopMaskedAmbientSound();
       cancelAnimationFrame(raf);
       window.removeEventListener("keydown", onKey);
       window.removeEventListener(PHYSICS_ABORT_EVENT, cleanup);
@@ -141,12 +152,49 @@ export default class BellReachabilityV2Plugin {
       cleanup();
       this.jsPsych.finishTrial(payload());
     };
-    const showFeedback = () => {
+    const revealAlpha = (elapsedSec: number) =>
+      Math.max(PRACTICE_REVEAL_ALPHA, protocol2SceneAlpha(elapsedSec, u.blankStartSec));
+    const showVerdict = () => {
       phase = "feedback";
       cursor("feedback");
       const correct = response === u.correctResponse;
       feedback.innerHTML = `<p class="physics-feedback ${correct ? "is-correct" : "is-error"}"><strong>${correct ? "正确" : "错误"}</strong>。这个铃铛${u.correctResponse === "reachable" ? "可以" : "不可以"}到达。按空格继续。</p>`;
       hint.textContent = "练习反馈";
+    };
+    const replayTick = (now: number) => {
+      if (phase !== "replay") return;
+      const elapsed = Math.max(0, (now - replayStartMs - replayPausedMs) / 1000);
+      if (elapsed >= u.queryTimeSec) {
+        transitionMaskedAmbientToEstimateCue();
+        showVerdict();
+        return;
+      }
+      const alpha = revealAlpha(elapsed);
+      if (elapsed >= u.blankStartSec) {
+        syncMaskedAmbientFromVisibility({ kind: "hide", alpha });
+      } else {
+        syncMaskedAmbientFromVisibility({
+          kind: alpha < 1 ? "fadeOut" : "show",
+          alpha,
+        });
+      }
+      const state = pendulumThetaOmegaAt(elapsed, params, analysis);
+      drawProtocol2BellMotionFrame(
+        ctx, layout, geometry, u.rodLengthM, u.bobRadiusM,
+        (u.amplitudeDeg * Math.PI) / 180, state.theta, bellThetaRad, alpha,
+      );
+      raf = requestAnimationFrame(replayTick);
+    };
+    const startReplay = () => {
+      phase = "replay";
+      cursor("hide");
+      hint.textContent = "练习反馈：观察摆球如何继续运动";
+      feedback.innerHTML = "";
+      replayStartMs = performance.now();
+      replayPausedMs = 0;
+      stopMaskedAmbientSound();
+      prepareMaskedAmbientForTrial();
+      raf = requestAnimationFrame(replayTick);
     };
     function onKey(event: KeyboardEvent) {
       if (event.repeat) return;
@@ -157,13 +205,13 @@ export default class BellReachabilityV2Plugin {
       responseKey = key;
       response = key === u.yesKey ? "reachable" : "unreachable";
       responseRtSec = (performance.now() - promptMs) / 1000;
-      if (trial.practice) showFeedback();
+      if (trial.practice) startReplay();
       else finish();
     }
     const startResponse = () => {
       phase = "response";
       promptMs = performance.now();
-      audioAnchor = playBoundaryCueNow();
+      audioAnchor = transitionMaskedAmbientToEstimateCue();
       blank();
       hint.innerHTML = `铃铛是否可能到达？<strong>${u.yesKey.toUpperCase()} = 会到达</strong>，<strong>${u.noKey.toUpperCase()} = 不会到达</strong>`;
       cursor("estimate");
@@ -182,14 +230,20 @@ export default class BellReachabilityV2Plugin {
           blankStartMs = now;
           blank();
           cursor("hide");
+          syncMaskedAmbientFromVisibility({ kind: "hide", alpha: 0 });
         }
         raf = requestAnimationFrame(tick);
         return;
       }
+      const sceneAlpha = protocol2SceneAlpha(elapsed, u.blankStartSec);
+      syncMaskedAmbientFromVisibility({
+        kind: sceneAlpha < 1 ? "fadeOut" : "show",
+        alpha: sceneAlpha,
+      });
       const state = pendulumThetaOmegaAt(elapsed, params, analysis);
       drawProtocol2BellMotionFrame(
         ctx, layout, geometry, u.rodLengthM, u.bobRadiusM,
-        (u.amplitudeDeg * Math.PI) / 180, state.theta, bellThetaRad,
+        (u.amplitudeDeg * Math.PI) / 180, state.theta, bellThetaRad, sceneAlpha,
       );
       u.visibleSegments.forEach((segment, index) => {
         if (elapsed < segment.tStartSec || elapsed > segment.tEndSec) return;
@@ -215,13 +269,18 @@ export default class BellReachabilityV2Plugin {
       const now = performance.now();
       if (document.hidden) {
         hiddenAt = now;
-        visibilityPauseCount += 1;
+        if (phase !== "replay") visibilityPauseCount += 1;
         cancelAnimationFrame(raf);
         return;
       }
       if (hiddenAt === null) return;
       const pause = now - hiddenAt;
       hiddenAt = null;
+      if (phase === "replay") {
+        replayPausedMs += pause;
+        raf = requestAnimationFrame(replayTick);
+        return;
+      }
       visibilityPauseMs += pause;
       if (phase === "motion" || phase === "blank") {
         pausedTotalMs += pause;
@@ -235,6 +294,7 @@ export default class BellReachabilityV2Plugin {
     window.addEventListener(PHYSICS_ABORT_EVENT, cleanup);
     document.addEventListener("visibilitychange", onVisibility);
     cursor("show");
+    prepareMaskedAmbientForTrial();
     raf = requestAnimationFrame(tick);
   }
 }

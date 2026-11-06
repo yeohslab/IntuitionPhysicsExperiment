@@ -15,9 +15,31 @@ import type {
 export const PROTOCOL_2_ROD_LENGTH_M = 4;
 export const PROTOCOL_2_GRAVITY = 9.8;
 export const PROTOCOL_2_BOB_RADIUS_M = 0.08;
-export const PROTOCOL_2_BLANK_DURATION_SEC = 0.3;
+export const PROTOCOL_2_BLANK_DURATION_SEC = 0.7;
+export const PROTOCOL_2_FADE_SEC = 0.3;
 export const PROTOCOL_2_MODEL_DT_SEC = 0.05;
-export const PROTOCOL_2_VISIBLE_SEGMENT_COUNT = 3;
+
+/** 空白开始前的整幅淡出透明度。淡出不延长时间轴；空白前不足 0.3 秒时从播放起点淡起。 */
+export function protocol2SceneAlpha(elapsedSec: number, blankStartSec: number): number {
+  if (!Number.isFinite(elapsedSec) || !Number.isFinite(blankStartSec)) return 1;
+  const fadeStart = Math.max(0, blankStartSec - PROTOCOL_2_FADE_SEC);
+  if (elapsedSec <= fadeStart) return 1;
+  if (elapsedSec >= blankStartSec) return 0;
+  const span = blankStartSec - fadeStart;
+  if (span <= 1e-12) return 0;
+  return Math.max(0, Math.min(1, 1 - (elapsedSec - fadeStart) / span));
+}
+
+/** 可见片段数 = 光栅编号 + 3。G1 为 4，G2 为 5，G3 为 6。 */
+export function protocol2VisibleSegmentCount(
+  gratingId: Protocol2GratingCondition,
+): number {
+  const gratingNumber = Number(gratingId.slice(1));
+  if (!Number.isInteger(gratingNumber) || gratingNumber < 1) {
+    throw new Error(`无法读取光栅编号：${gratingId}`);
+  }
+  return gratingNumber + 3;
+}
 export const PROTOCOL_2_MIN_SEGMENT_SEC = 2 / 60;
 
 export type Protocol2GratingGeometry = GratingGeometry & {
@@ -317,9 +339,10 @@ export function planProtocol2Motion(
     geometry,
     absoluteBlankStartSec,
   );
-  const selected = segments.slice(-PROTOCOL_2_VISIBLE_SEGMENT_COUNT);
-  if (selected.length !== PROTOCOL_2_VISIBLE_SEGMENT_COUNT) {
-    throw new Error(`${site.id}/${geometry.id} 无法回溯到三个可见片段`);
+  const visibleCount = protocol2VisibleSegmentCount(geometry.id);
+  const selected = segments.slice(-visibleCount);
+  if (selected.length !== visibleCount) {
+    throw new Error(`${site.id}/${geometry.id} 无法回溯到${visibleCount}个可见片段`);
   }
   for (const segment of selected) {
     if (segment.tEndSec - segment.tStartSec < PROTOCOL_2_MIN_SEGMENT_SEC - 1e-9) {
@@ -388,16 +411,20 @@ export function protocol2FirstVisibleTurnTime(
   return null;
 }
 
-export function protocol2FirstVisibleContactTime(
-  plan: Protocol2MotionPlan,
-  bellThetaRad: number,
-): number | null {
-  const params: PendulumParams = {
+function protocol2PlanParams(plan: Protocol2MotionPlan): PendulumParams {
+  return {
     theta0Rad: (plan.theta0Deg * Math.PI) / 180,
     omega0RadPerSec: (plan.omega0DegPerSec * Math.PI) / 180,
     rodLengthM: PROTOCOL_2_ROD_LENGTH_M,
     gravity: PROTOCOL_2_GRAVITY,
   };
+}
+
+export function protocol2FirstVisibleContactTime(
+  plan: Protocol2MotionPlan,
+  bellThetaRad: number,
+): number | null {
+  const params = protocol2PlanParams(plan);
   const analysis = analyzePendulum(params);
   const toleranceRad = PROTOCOL_2_BOB_RADIUS_M / PROTOCOL_2_ROD_LENGTH_M;
   for (const segment of plan.visibleSegments) {
@@ -407,6 +434,34 @@ export function protocol2FirstVisibleContactTime(
     }
   }
   return null;
+}
+
+/** 全屏空白内摆球角度是否扫过铃铛。淡出和空白前的运动不算。 */
+export function protocol2BlankSweepsBell(
+  plan: Protocol2MotionPlan,
+  bellThetaRad: number,
+): boolean {
+  const params = protocol2PlanParams(plan);
+  const analysis = analyzePendulum(params);
+  const toleranceRad = PROTOCOL_2_BOB_RADIUS_M / PROTOCOL_2_ROD_LENGTH_M;
+  const t0 = plan.blankStartSec;
+  const t1 = plan.queryTimeSec;
+  const times = [t0, t1];
+  for (const turn of protocol2TurnTimesInPlan(plan)) {
+    if (turn >= t0 - 1e-9 && turn <= t1 + 1e-9) times.push(turn);
+  }
+  let minTheta = Number.POSITIVE_INFINITY;
+  let maxTheta = Number.NEGATIVE_INFINITY;
+  for (const time of times) {
+    const theta = pendulumThetaOmegaAt(
+      Math.min(Math.max(time, t0), t1),
+      params,
+      analysis,
+    ).theta;
+    minTheta = Math.min(minTheta, theta);
+    maxTheta = Math.max(maxTheta, theta);
+  }
+  return bellThetaRad >= minTheta - toleranceRad && bellThetaRad <= maxTheta + toleranceRad;
 }
 
 export const THREE_CONDITION_PERMUTATIONS = [

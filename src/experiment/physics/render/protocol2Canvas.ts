@@ -80,28 +80,30 @@ export function drawProtocol2MotionFrame(
   bobRadiusM: number,
   amplitudeRad: number,
   thetaRad: number,
+  sceneAlpha = 1,
 ): void {
   background(ctx, layout);
+  const alpha = Math.max(0, Math.min(1, sceneAlpha));
+  if (alpha <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
   bob(ctx, layout, rodLengthM, bobRadiusM, thetaRad);
   if (geometry) drawGratingBars(ctx, layout, geometry);
   guide(ctx, layout, rodLengthM, amplitudeRad);
+  ctx.restore();
 }
 
 function drawBell(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,
   rodLengthM: number,
-  bobRadiusM: number,
   thetaRad: number,
 ): void {
-  const centerX = rodLengthM * Math.sin(thetaRad);
-  const centerY = -rodLengthM * Math.cos(thetaRad);
-  const radialX = Math.sin(thetaRad);
-  const radialY = -Math.cos(thetaRad);
+  // 铃铛中心与摆球中心共用同一条可达弧。
   const bellCenter = worldToCanvas(
     layout,
-    centerX + radialX * (bobRadiusM + 0.13),
-    centerY + radialY * (bobRadiusM + 0.13),
+    rodLengthM * Math.sin(thetaRad),
+    -rodLengthM * Math.cos(thetaRad),
   );
   const size = 0.18 * layout.pxPerM;
   ctx.save();
@@ -135,6 +137,7 @@ export function drawProtocol2BellMotionFrame(
   amplitudeRad: number,
   thetaRad: number,
   bellThetaRad: number,
+  sceneAlpha = 1,
 ): void {
   drawProtocol2MotionFrame(
     ctx,
@@ -144,8 +147,14 @@ export function drawProtocol2BellMotionFrame(
     bobRadiusM,
     amplitudeRad,
     thetaRad,
+    sceneAlpha,
   );
-  drawBell(ctx, layout, rodLengthM, bobRadiusM, bellThetaRad);
+  const alpha = Math.max(0, Math.min(1, sceneAlpha));
+  if (alpha <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  drawBell(ctx, layout, rodLengthM, bellThetaRad);
+  ctx.restore();
 }
 
 export function drawProtocol2AngleReport(
@@ -156,7 +165,6 @@ export function drawProtocol2AngleReport(
   estimateRad: number,
   interacted: boolean,
 ): void {
-  background(ctx, layout);
   const pendulumLayout = pendulumLayoutFromGratingLayout(layout, rodLengthM);
   const range: PendulumMotionRange = {
     regime: "oscillation",
@@ -177,7 +185,6 @@ export function drawProtocol2TrackingFeedback(
   estimateRad: number,
   truthRad: number,
 ): void {
-  background(ctx, layout);
   drawPendulumFeedbackTruth(
     ctx,
     pendulumLayoutFromGratingLayout(layout, rodLengthM),

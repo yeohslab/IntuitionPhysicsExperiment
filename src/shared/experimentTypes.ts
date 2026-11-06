@@ -4,10 +4,10 @@ export const EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
 export const EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION = 6 as const;
 /** 实验五运行时刺激集版本。 */
 export const EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
-/** 实验四协议 2.0 运行时刺激集版本。 */
-export const EXPERIMENT_4_V2_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
-/** 实验五协议 2.0 运行时刺激集版本。 */
-export const EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
+/** 实验四协议 2.0 运行时刺激集版本。4：练习 6 条，角度与速度汇报各半。 */
+export const EXPERIMENT_4_V2_STIMULUS_SET_SCHEMA_VERSION = 4 as const;
+/** 实验五协议 2.0 运行时刺激集版本。5：铃铛只放在可达弧线内。 */
+export const EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION = 5 as const;
 /** 训练一运行时刺激集版本。7：色带右端改为 60° 静止释放的最低点速度。 */
 export const EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION = 7 as const;
 
@@ -212,6 +212,8 @@ export interface TrackingPendulumV2StimulusUnit
   cueDurationMs: number;
   reversalTimeSec: number | null;
   speedScaleLinearMPerSec: number;
+  /** 本试次只收集这一项汇报。 */
+  reportTarget: "angle" | "speed";
 }
 
 export interface BellReachabilityV2StimulusUnit

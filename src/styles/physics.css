@@ -172,12 +172,14 @@
   pointer-events: none;
 }
 
-/* 仿真阶段隐藏光标，进入作答（estimate/arc/feedback）后恢复 */
+/* 仿真、空白和反馈带 physics-trial--sim，隐藏光标；作答阶段去掉该类后恢复。 */
 .physics-trial--stimulus.physics-trial--sim,
 .physics-trial--stimulus.physics-trial--sim .physics-canvas,
 .physics-trial--stimulus.physics-trial--sim .physics-canvas-frame,
 .physics-trial--stimulus.physics-trial--sim .physics-speed-bar-pair,
 .physics-trial--stimulus.physics-trial--sim .physics-speed-color-strips,
+.physics-trial--stimulus.physics-trial--sim .physics-speed-report-strip,
+.physics-trial--stimulus.physics-trial--sim .physics-speed-report-strip__track,
 .physics-trial--stimulus.physics-trial--sim .physics-footer {
   cursor: none;
 }

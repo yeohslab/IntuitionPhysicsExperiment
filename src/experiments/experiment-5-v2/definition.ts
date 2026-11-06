@@ -21,7 +21,7 @@ export const experiment5V2Definition: Experiment5V2Definition = {
   id: "experiment-5-v2",
   experimentId: "experiment-5",
   title: "实验五",
-  summary: "协议 2.0.0：三个可见片段后的铃铛可达性判断。",
+  summary: "协议 2.0.0：光栅编号加3个可见片段后的铃铛可达性判断。",
   protocolVersion: EXPERIMENT_5_V2_PROTOCOL_VERSION,
   internalStimulusSchemaVersion: EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION,
   dataSchemaVersion: EXPERIMENT_5_V2_DATA_SCHEMA_VERSION,

@@ -4,6 +4,23 @@ import type {
 } from "../../shared/experimentTypes";
 import { EXPERIMENT_5_V2_PROTOCOL_VERSION } from "./protocol";
 
+const MAX_EXPORTED_VISIBLE_SEGMENTS = 6;
+
+function visibleSegmentColumns(
+  segments: Array<{ tStartSec: number; tEndSec: number; truncatedByBlank: boolean }>,
+): Record<string, number | boolean | null> {
+  const columns: Record<string, number | boolean | null> = {};
+  for (let index = 0; index < MAX_EXPORTED_VISIBLE_SEGMENTS; index += 1) {
+    const segment = segments[index];
+    const number = index + 1;
+    columns[`segment_${number}_start_sec`] = segment?.tStartSec ?? null;
+    columns[`segment_${number}_end_sec`] = segment?.tEndSec ?? null;
+  }
+  columns.last_segment_truncated_by_blank =
+    segments[segments.length - 1]?.truncatedByBlank ?? false;
+  return columns;
+}
+
 export type Experiment5V2TrialDescriptor = Record<string, unknown> & { unit_id: string };
 
 export function collectExperiment5V2TrialDescriptors(
@@ -48,13 +65,7 @@ export function collectExperiment5V2TrialDescriptors(
         grating_period_m: unit.gratingPeriodM,
         grating_offset_m: unit.gratingOffsetM,
         visible_segments_json: JSON.stringify(unit.visibleSegments),
-        segment_1_start_sec: unit.visibleSegments[0]!.tStartSec,
-        segment_1_end_sec: unit.visibleSegments[0]!.tEndSec,
-        segment_2_start_sec: unit.visibleSegments[1]!.tStartSec,
-        segment_2_end_sec: unit.visibleSegments[1]!.tEndSec,
-        segment_3_start_sec: unit.visibleSegments[2]!.tStartSec,
-        segment_3_end_sec: unit.visibleSegments[2]!.tEndSec,
-        last_segment_truncated_by_blank: unit.visibleSegments[2]!.truncatedByBlank,
+        ...visibleSegmentColumns(unit.visibleSegments),
         delta_h_m: unit.deltaHM,
         bell_contact_height_m: unit.bellContactHeightM,
         bell_theta_deg: unit.bellThetaDeg,

@@ -4,7 +4,7 @@ import type { Experiment5ParticipantInfo } from "../../shared/participant";
 import type { ExperimentStatus } from "../../runtime/export/exportStimulusCsv";
 import { EXPERIMENT_5_V2_FORMAL_TRIALS, EXPERIMENT_5_V2_PROTOCOL_VERSION } from "./protocol";
 
-export const EXPERIMENT_5_V2_DATA_SCHEMA_VERSION = 1 as const;
+export const EXPERIMENT_5_V2_DATA_SCHEMA_VERSION = 2 as const;
 export const EXPERIMENT_5_V2_CSV_COLUMNS = [
   "experiment_id", "protocol_version", "data_schema_version", "subject_id",
   "gender_code", "age_years", "experiment_status", "trial_id", "unit_id",
@@ -13,9 +13,14 @@ export const EXPERIMENT_5_V2_CSV_COLUMNS = [
   "omega_0_deg_per_sec", "query_theta_deg", "query_omega_rad_per_sec",
   "query_time_sec", "blank_start_sec", "blank_duration_sec", "grating_condition",
   "gap_m", "bar_width_m", "grating_period_m", "grating_offset_m",
-  "visible_segments_json", "segment_1_start_sec", "segment_1_end_sec",
-  "segment_2_start_sec", "segment_2_end_sec", "segment_3_start_sec",
-  "segment_3_end_sec", "last_segment_truncated_by_blank", "delta_h_m",
+  "visible_segments_json",
+  "segment_1_start_sec", "segment_1_end_sec",
+  "segment_2_start_sec", "segment_2_end_sec",
+  "segment_3_start_sec", "segment_3_end_sec",
+  "segment_4_start_sec", "segment_4_end_sec",
+  "segment_5_start_sec", "segment_5_end_sec",
+  "segment_6_start_sec", "segment_6_end_sec",
+  "last_segment_truncated_by_blank", "delta_h_m",
   "bell_contact_height_m", "bell_theta_deg", "bell_side", "correct_response",
   "yes_key", "no_key", "planned_visible_turn",
   "planned_visible_turn_first_time_sec", "planned_visible_contact",

@@ -39,7 +39,11 @@ import {
 } from "./experimentTypes";
 import type { ExperimentId } from "../experiments/types";
 import { EXPERIMENT_4_GRATING_CONDITIONS } from "../experiments/experiment-4/protocol";
-import { PROTOCOL_2_GRATING_CONDITIONS } from "../experiments/protocol-2/common";
+import {
+  PROTOCOL_2_BLANK_DURATION_SEC,
+  PROTOCOL_2_GRATING_CONDITIONS,
+  protocol2VisibleSegmentCount,
+} from "../experiments/protocol-2/common";
 
 /** 存在且与人口学/刺激集同时有效时，才允许进入 runner。 */
 export const SESSION_RUN_TOKEN_KEY = "intuition-physics:experiment-2:run-active";
@@ -132,10 +136,14 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       ) return null;
       return { tStartSec, tEndSec, truncatedByBlank: item.truncatedByBlank };
     });
-    if (visibleSegments.length !== 3 || visibleSegments.some((x) => x === null)) {
+    const protocol2Geometry = PROTOCOL_2_GRATING_CONDITIONS[raw.gratingCondition];
+    if (
+      visibleSegments.some((segment) => segment === null) ||
+      visibleSegments.length !== protocol2VisibleSegmentCount(raw.gratingCondition) ||
+      Math.abs(n.blankDurationSec! - PROTOCOL_2_BLANK_DURATION_SEC) > 1e-12
+    ) {
       return null;
     }
-    const protocol2Geometry = PROTOCOL_2_GRATING_CONDITIONS[raw.gratingCondition];
     if (
       Math.abs(n.gapM! - protocol2Geometry.gapM) > 1e-9 ||
       Math.abs(n.barWidthM! - protocol2Geometry.barWidthM) > 1e-9 ||
@@ -170,13 +178,15 @@ function parseUnit(raw: unknown): StimulusUnit | null {
         (raw.initialDirection !== "leftward" && raw.initialDirection !== "rightward") ||
         cueDurationMs === null || cueDurationMs <= 0 ||
         speedScaleLinearMPerSec === null || speedScaleLinearMPerSec <= 0 ||
-        (reversalRaw !== null && reversalTimeSec === null)
+        (reversalRaw !== null && reversalTimeSec === null) ||
+        (raw.reportTarget !== "angle" && raw.reportTarget !== "speed")
       ) return null;
       return {
         ...base, type: "trackingPendulumV2Stimulus",
         trackingCondition: raw.trackingCondition,
         initialSide: raw.initialSide, initialDirection: raw.initialDirection,
         cueDurationMs, reversalTimeSec, speedScaleLinearMPerSec,
+        reportTarget: raw.reportTarget,
       } satisfies TrackingPendulumV2StimulusUnit;
     }
     const bellNumericKeys = [
