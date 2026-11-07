@@ -17,11 +17,8 @@ import {
   PROTOCOL_2_GRATING_CONDITIONS,
   PROTOCOL_2_GRATING_ORDER,
   PROTOCOL_2_MODEL_DT_SEC,
-  THREE_CONDITION_PERMUTATIONS,
-  subjectNumber,
 } from "../protocol-2/common";
 import {
-  experiment5V2ApproachSide,
   experiment5V2BellThetaRad,
   experiment5V2EndpointReachesBell,
   planExperiment5V2Approach,
@@ -30,6 +27,7 @@ import {
 } from "./approachPlan";
 import {
   EXPERIMENT_5_V2_AMPLITUDES_DEG,
+  EXPERIMENT_5_V2_APPROACH_SIDES,
   EXPERIMENT_5_V2_BOB_RADIUS_M,
   EXPERIMENT_5_V2_CUE_MS,
   EXPERIMENT_5_V2_FIXATION_MS,
@@ -38,12 +36,14 @@ import {
   EXPERIMENT_5_V2_FORMAL_BLOCKS,
   EXPERIMENT_5_V2_FORMAL_TRIALS,
   EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK,
+  EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE,
   EXPERIMENT_5_V2_GRAVITY,
+  EXPERIMENT_5_V2_NO_KEY,
   EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG,
   EXPERIMENT_5_V2_PRACTICE_TRIALS,
   EXPERIMENT_5_V2_ROD_LENGTH_M,
   EXPERIMENT_5_V2_TOTAL_RUNTIME_TRIALS,
-  experiment5V2KeyMapping,
+  EXPERIMENT_5_V2_YES_KEY,
 } from "./protocol";
 import {
   experiment5V2BlockText,
@@ -71,7 +71,6 @@ function bellUnit(
   plan: Experiment5V2ApproachPlan,
   deltaHM: number,
   side: Experiment5V2ApproachSide,
-  participant: Experiment5ParticipantInfo,
 ): BellReachabilityV2StimulusUnit {
   const bell = experiment5V2BellThetaRad(plan.amplitudeDeg, deltaHM, side);
   const contactTime = visibleContactTime(plan, bell.theta);
@@ -104,7 +103,8 @@ function bellUnit(
     bellSide: side,
     correctResponse: experiment5V2EndpointReachesBell(plan.amplitudeDeg, bell.theta)
       ? "reachable" : "unreachable",
-    ...experiment5V2KeyMapping(participant.subject_id),
+    yesKey: EXPERIMENT_5_V2_YES_KEY,
+    noKey: EXPERIMENT_5_V2_NO_KEY,
     plannedVisibleTurn: false,
     plannedVisibleTurnTimeSec: null,
     plannedVisibleContact: contactTime !== null,
@@ -157,6 +157,28 @@ function fixationUnit(): TextDisplayUnit {
 
 function asTrial(unit: BellReachabilityV2StimulusUnit): Trial {
   return { id: newId(), units: [cueUnit(unit), fixationUnit(), unit] };
+}
+
+function motionFingerprint(unit: BellReachabilityV2StimulusUnit): string {
+  return JSON.stringify({
+    theta0Deg: unit.theta0Deg,
+    omega0DegPerSec: unit.omega0DegPerSec,
+    queryThetaDeg: unit.queryThetaDeg,
+    queryTimeSec: unit.queryTimeSec,
+    segments: unit.visibleSegments,
+  });
+}
+
+function sideFromStateSite(stateSiteId: string): Experiment5V2ApproachSide {
+  return stateSiteId.endsWith("-left") ? "left" : "right";
+}
+
+function sidesBalanced(
+  units: readonly BellReachabilityV2StimulusUnit[],
+  perSide: number,
+): boolean {
+  return EXPERIMENT_5_V2_APPROACH_SIDES.every((side) =>
+    units.filter((unit) => unit.bellSide === side).length === perSide);
 }
 
 function bellUnitOf(trial: Trial): BellReachabilityV2StimulusUnit {
@@ -219,26 +241,27 @@ function constrainedShuffle(trials: Trial[], rng: () => number): Trial[] {
       if (orderingValid(candidate, limitAnswer)) return candidate;
     }
   }
-  return interleaveByGratingAndSide(trials);
+  const fallback = trials.slice();
+  shuffleInPlace(fallback, rng);
+  return interleaveByGratingAndSide(fallback);
 }
 
 function formalBlock(
   amplitudeDeg: number,
-  amplitudeIndex: number,
-  participant: Experiment5ParticipantInfo,
   rng: () => number,
   onTrial: () => void,
 ): BlockSegment {
-  const apexSide = experiment5V2ApproachSide(participant.subject_id, amplitudeIndex);
   const trials: Trial[] = [];
-  for (const gratingId of PROTOCOL_2_GRATING_ORDER) {
-    const plan = planExperiment5V2Approach(
-      amplitudeDeg,
-      apexSide,
-      PROTOCOL_2_GRATING_CONDITIONS[gratingId],
-    );
-    for (const deltaHM of EXPERIMENT_5_V2_DELTA_H_M) {
-      trials.push(asTrial(bellUnit(plan, deltaHM, apexSide, participant)));
+  for (const apexSide of EXPERIMENT_5_V2_APPROACH_SIDES) {
+    for (const gratingId of PROTOCOL_2_GRATING_ORDER) {
+      const plan = planExperiment5V2Approach(
+        amplitudeDeg,
+        apexSide,
+        PROTOCOL_2_GRATING_CONDITIONS[gratingId],
+      );
+      for (const deltaHM of EXPERIMENT_5_V2_DELTA_H_M) {
+        trials.push(asTrial(bellUnit(plan, deltaHM, apexSide)));
+      }
     }
   }
   const ordered = constrainedShuffle(trials, rng);
@@ -253,34 +276,31 @@ const PRACTICE_DELTAS: Array<{ reachable: number; unreachable: number }> = [
 ];
 
 function practiceBlock(
-  participant: Experiment5ParticipantInfo,
   rng: () => number,
   onTrial: () => void,
 ): PracticeSegment {
-  const apexSide = experiment5V2ApproachSide(participant.subject_id, 0);
-  const plans = new Map(PROTOCOL_2_GRATING_ORDER.map((gratingId) => [
-    gratingId,
-    planExperiment5V2Approach(
-      EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG,
-      apexSide,
-      PROTOCOL_2_GRATING_CONDITIONS[gratingId],
-    ),
-  ]));
-  const children = PROTOCOL_2_GRATING_ORDER.flatMap((grating, index) => {
-    const pair = PRACTICE_DELTAS[index]!;
-    onTrial();
-    onTrial();
-    return [
-      asTrial(bellUnit(plans.get(grating)!, pair.reachable, apexSide, participant)),
-      asTrial(bellUnit(plans.get(grating)!, pair.unreachable, apexSide, participant)),
-    ];
-  });
+  const children = EXPERIMENT_5_V2_APPROACH_SIDES.flatMap((apexSide) =>
+    PROTOCOL_2_GRATING_ORDER.flatMap((grating, index) => {
+      const pair = PRACTICE_DELTAS[index]!;
+      const plan = planExperiment5V2Approach(
+        EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG,
+        apexSide,
+        PROTOCOL_2_GRATING_CONDITIONS[grating],
+      );
+      onTrial();
+      onTrial();
+      return [
+        asTrial(bellUnit(plan, pair.reachable, apexSide)),
+        asTrial(bellUnit(plan, pair.unreachable, apexSide)),
+      ];
+    }),
+  );
   shuffleInPlace(children, rng);
   return { kind: "practice", id: newId(), children };
 }
 
 export function generateExperiment5V2RuntimeStimulusSet(
-  participant: Experiment5ParticipantInfo,
+  _participant: Experiment5ParticipantInfo,
   options: GenerateExperiment5V2Options = {},
 ): Experiment5V2StimulusSet {
   const rng = options.rng ?? cryptoRandom();
@@ -289,26 +309,21 @@ export function generateExperiment5V2RuntimeStimulusSet(
     completed += 1;
     options.onProgress?.(completed, EXPERIMENT_5_V2_TOTAL_RUNTIME_TRIALS);
   };
-  const blocksByAmplitude = EXPERIMENT_5_V2_AMPLITUDES_DEG.map((amplitude, index) =>
-    formalBlock(amplitude, index, participant, rng, report),
-  );
-  const permutation = THREE_CONDITION_PERMUTATIONS[
-    (subjectNumber(participant.subject_id) - 1) % THREE_CONDITION_PERMUTATIONS.length
-  ]!;
+  const blocksByAmplitude = EXPERIMENT_5_V2_AMPLITUDES_DEG.map((amplitude) => ({
+    amplitude,
+    block: formalBlock(amplitude, rng, report),
+  }));
+  shuffleInPlace(blocksByAmplitude, rng);
   const sequence: TopLevelSequenceItem[] = [
-    rest(experiment5V2WelcomeText(
-      experiment5V2KeyMapping(participant.subject_id).yesKey,
-      experiment5V2KeyMapping(participant.subject_id).noKey,
-    )),
+    rest(experiment5V2WelcomeText()),
     rest(experiment5V2StructureText()),
     rest(experiment5V2PracticeText()),
-    practiceBlock(participant, rng, report),
+    practiceBlock(rng, report),
   ];
-  permutation.forEach((amplitudePosition, displayIndex) => {
-    const amplitude = EXPERIMENT_5_V2_AMPLITUDES_DEG[amplitudePosition]!;
+  blocksByAmplitude.forEach(({ amplitude, block }, displayIndex) => {
     sequence.push(
       rest(experiment5V2BlockText(displayIndex + 1, EXPERIMENT_5_V2_FORMAL_BLOCKS, amplitude)),
-      blocksByAmplitude[amplitudePosition]!,
+      block,
     );
   });
   const set: Experiment5V2StimulusSet = {
@@ -400,30 +415,37 @@ export function assertExperiment5V2RuntimeStimulusSet(
     const blockUnits = block.children.map(bellUnitOf);
     const amplitudes = new Set(blockUnits.map((unit) => unit.amplitudeDeg));
     if (amplitudes.size !== 1) throw new Error("实验五V2区组内振幅不一致");
+    if (!sidesBalanced(blockUnits, EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE)) {
+      throw new Error("实验五V2每个振幅区组左右试次数必须相同");
+    }
     for (const grating of PROTOCOL_2_GRATING_ORDER) {
       const group = blockUnits.filter((unit) => unit.gratingCondition === grating);
-      if (group.length !== EXPERIMENT_5_V2_DELTA_H_M.length) {
+      if (group.length !== EXPERIMENT_5_V2_DELTA_H_M.length * EXPERIMENT_5_V2_APPROACH_SIDES.length) {
         throw new Error("每个振幅×光栅的铃铛条件数量错误");
       }
-      const motionFingerprints = new Set(group.map((unit) => JSON.stringify({
-        theta0Deg: unit.theta0Deg,
-        omega0DegPerSec: unit.omega0DegPerSec,
-        queryThetaDeg: unit.queryThetaDeg,
-        queryTimeSec: unit.queryTimeSec,
-        segments: unit.visibleSegments,
-      })));
-      if (motionFingerprints.size !== 1) throw new Error("同一振幅×光栅未共享运动片段");
-    }
-    if (new Set(blockUnits.map((unit) => unit.stateSiteId)).size !== 1) {
-      throw new Error("同一振幅的查询状态未跨光栅共享");
-    }
-    for (const delta of EXPERIMENT_5_V2_DELTA_H_M) {
-      if (blockUnits.filter((unit) => unit.deltaHM === delta).length !== PROTOCOL_2_GRATING_ORDER.length) {
-        throw new Error("每个高度偏移在振幅区组内应在每档光栅出现一次");
+      for (const side of EXPERIMENT_5_V2_APPROACH_SIDES) {
+        const sideGroup = group.filter((unit) => unit.bellSide === side);
+        if (sideGroup.length !== EXPERIMENT_5_V2_DELTA_H_M.length) {
+          throw new Error("每个振幅×光栅×方向的铃铛数量错误");
+        }
+        if (new Set(sideGroup.map(motionFingerprint)).size !== 1) {
+          throw new Error("同一振幅×光栅×方向未共享运动片段");
+        }
       }
     }
-    const apexSide = blockUnits[0]?.stateSiteId.endsWith("-left") ? "left" : "right";
-    if (blockUnits.some((unit) => unit.bellSide !== apexSide)) {
+    for (const side of EXPERIMENT_5_V2_APPROACH_SIDES) {
+      const sideUnits = blockUnits.filter((unit) => unit.bellSide === side);
+      if (new Set(sideUnits.map((unit) => unit.stateSiteId)).size !== 1) {
+        throw new Error("同一振幅×方向的查询状态未跨光栅共享");
+      }
+    }
+    for (const delta of EXPERIMENT_5_V2_DELTA_H_M) {
+      const matched = blockUnits.filter((unit) => unit.deltaHM === delta);
+      if (matched.length !== PROTOCOL_2_GRATING_ORDER.length * EXPERIMENT_5_V2_APPROACH_SIDES.length) {
+        throw new Error("每个高度偏移在振幅区组内应在每个方向的每档光栅出现一次");
+      }
+    }
+    if (blockUnits.some((unit) => unit.bellSide !== sideFromStateSite(unit.stateSiteId))) {
       throw new Error("实验五V2铃铛必须放在消失时摆球朝向的一侧");
     }
     if (
@@ -436,16 +458,28 @@ export function assertExperiment5V2RuntimeStimulusSet(
       throw new Error("实验五V2可达性必须与高度偏移的符号一致");
     }
   }
+  if (!sidesBalanced(practice, EXPERIMENT_5_V2_PRACTICE_TRIALS / 2)) {
+    throw new Error("实验五V2练习左右试次数必须相同");
+  }
   for (const grating of PROTOCOL_2_GRATING_ORDER) {
     const group = practice.filter((unit) => unit.gratingCondition === grating);
-    if (
-      group.length !== 2 ||
-      new Set(group.map((unit) => unit.correctResponse)).size !== 2
-    ) {
-      throw new Error("实验五V2练习每档光栅应各有一条可达和一条不可达");
+    if (group.length !== EXPERIMENT_5_V2_APPROACH_SIDES.length * 2) {
+      throw new Error("实验五V2练习每档光栅的试次数错误");
+    }
+    for (const side of EXPERIMENT_5_V2_APPROACH_SIDES) {
+      const sideGroup = group.filter((unit) => unit.bellSide === side);
+      if (
+        sideGroup.length !== 2 ||
+        new Set(sideGroup.map((unit) => unit.correctResponse)).size !== 2
+      ) {
+        throw new Error("实验五V2练习每档光栅的每个方向应各有一条可达和一条不可达");
+      }
     }
   }
   for (const unit of [...practice, ...formal]) {
+    if (unit.yesKey !== EXPERIMENT_5_V2_YES_KEY || unit.noKey !== EXPERIMENT_5_V2_NO_KEY) {
+      throw new Error("实验五V2按键必须固定为 F 会到达、J 不会到达");
+    }
     if (!(unit.blankStartSec > 0) || !(unit.blankDurationSec > 0) ||
       unit.queryTimeSec <= unit.blankStartSec) {
       throw new Error("实验五V2空白窗口错误");

@@ -6,8 +6,8 @@ export const EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION = 6 as const;
 export const EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
 /** 实验四协议 2.0 运行时刺激集版本。4：练习 6 条，角度与速度汇报各半。 */
 export const EXPERIMENT_4_V2_STIMULUS_SET_SCHEMA_VERSION = 4 as const;
-/** 实验五协议 2.0 运行时刺激集版本。7：铃铛只放在消失时摆球正朝向的一侧。 */
-export const EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION = 7 as const;
+/** 实验五协议 2.0 运行时刺激集版本。8：每个被试的练习和正式试次都左右等数，区组顺序随机，按键固定为 F/J。 */
+export const EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION = 8 as const;
 /** 训练一运行时刺激集版本。7：色带右端改为 60° 静止释放的最低点速度。 */
 export const EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION = 7 as const;
 

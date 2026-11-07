@@ -72,6 +72,42 @@ function bob(
   ctx.stroke();
 }
 
+/** 遮挡已经合成后，再把整幅淡向背景。半透明遮挡条盖不住先画上的摆球。 */
+function fadeTowardBackground(
+  ctx: CanvasRenderingContext2D,
+  layout: GratingWorldLayout,
+  sceneAlpha: number,
+): void {
+  if (sceneAlpha >= 1) return;
+  ctx.save();
+  ctx.globalAlpha = 1 - sceneAlpha;
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, layout.canvasW, layout.canvasH);
+  ctx.restore();
+}
+
+function paintMotion(
+  ctx: CanvasRenderingContext2D,
+  layout: GratingWorldLayout,
+  geometry: GratingGeometry | null,
+  rodLengthM: number,
+  bobRadiusM: number,
+  amplitudeRad: number,
+  thetaRad: number,
+  showAmplitudeGuide: boolean,
+): void {
+  bob(ctx, layout, rodLengthM, bobRadiusM, thetaRad);
+  if (geometry) drawGratingBars(ctx, layout, geometry);
+  if (showAmplitudeGuide) guide(ctx, layout, rodLengthM, amplitudeRad);
+  else {
+    const pivot = worldToCanvas(layout, 0, 0);
+    ctx.fillStyle = "#0f172a";
+    ctx.beginPath();
+    ctx.arc(pivot.x, pivot.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 export function drawProtocol2MotionFrame(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,
@@ -86,19 +122,17 @@ export function drawProtocol2MotionFrame(
   background(ctx, layout);
   const alpha = Math.max(0, Math.min(1, sceneAlpha));
   if (alpha <= 0) return;
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  bob(ctx, layout, rodLengthM, bobRadiusM, thetaRad);
-  if (geometry) drawGratingBars(ctx, layout, geometry);
-  if (showAmplitudeGuide) guide(ctx, layout, rodLengthM, amplitudeRad);
-  else {
-    const pivot = worldToCanvas(layout, 0, 0);
-    ctx.fillStyle = "#0f172a";
-    ctx.beginPath();
-    ctx.arc(pivot.x, pivot.y, 5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
+  paintMotion(
+    ctx,
+    layout,
+    geometry,
+    rodLengthM,
+    bobRadiusM,
+    amplitudeRad,
+    thetaRad,
+    showAmplitudeGuide,
+  );
+  fadeTowardBackground(ctx, layout, alpha);
 }
 
 function drawBell(
@@ -148,7 +182,10 @@ export function drawProtocol2BellMotionFrame(
   sceneAlpha = 1,
   showAmplitudeGuide = true,
 ): void {
-  drawProtocol2MotionFrame(
+  background(ctx, layout);
+  const alpha = Math.max(0, Math.min(1, sceneAlpha));
+  if (alpha <= 0) return;
+  paintMotion(
     ctx,
     layout,
     geometry,
@@ -156,15 +193,10 @@ export function drawProtocol2BellMotionFrame(
     bobRadiusM,
     amplitudeRad,
     thetaRad,
-    sceneAlpha,
     showAmplitudeGuide,
   );
-  const alpha = Math.max(0, Math.min(1, sceneAlpha));
-  if (alpha <= 0) return;
-  ctx.save();
-  ctx.globalAlpha = alpha;
   drawBell(ctx, layout, rodLengthM, bellThetaRad);
-  ctx.restore();
+  fadeTowardBackground(ctx, layout, alpha);
 }
 
 export function drawProtocol2AngleReport(

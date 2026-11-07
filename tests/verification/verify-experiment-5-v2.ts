@@ -1,6 +1,5 @@
 import { analyzePendulum, pendulumThetaOmegaAt } from "../../src/experiment/physics/pendulum.ts";
 import {
-  experiment5V2ApproachSide,
   experiment5V2EndpointReachesBell,
   experiment5V2VisibleHeightM,
 } from "../../src/experiments/experiment-5-v2/approachPlan.ts";
@@ -14,8 +13,12 @@ import {
   EXPERIMENT_5_V2_FIXATION_TEXT,
   EXPERIMENT_5_V2_FORMAL_TRIALS,
   EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK,
+  EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE,
+  EXPERIMENT_5_V2_NO_KEY,
   EXPERIMENT_5_V2_POST_TURN_SEC,
+  EXPERIMENT_5_V2_PRACTICE_TRIALS,
   EXPERIMENT_5_V2_ROD_LENGTH_M,
+  EXPERIMENT_5_V2_YES_KEY,
 } from "../../src/experiments/experiment-5-v2/protocol.ts";
 import type { BellReachabilityV2StimulusUnit, Trial } from "../../src/shared/experimentTypes.ts";
 import { parseExperiment5V2StimulusSet } from "../../src/shared/storage.ts";
@@ -75,25 +78,33 @@ const formalTrials = blocks.flatMap((block) => block.children);
 formalTrials.forEach(assertTrialOpening);
 const formal = formalTrials.map(bellUnit);
 assert(formal.length === EXPERIMENT_5_V2_FORMAL_TRIALS, "正式试次数错误");
-assert(formal.length === 54, "正式试次应为54条");
+assert(formal.length === 108, "正式试次应为108条");
 assert(new Set(formal.map((unit) => unit.amplitudeDeg)).size === 3, "应覆盖3个振幅");
 assert(EXPERIMENT_5_V2_DELTA_H_M.length === 6, "应为六档高度");
 for (const amplitude of EXPERIMENT_5_V2_AMPLITUDES_DEG) {
   const amplitudeUnits = formal.filter((unit) => unit.amplitudeDeg === amplitude);
   assert(amplitudeUnits.length === EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK, `${amplitude}°试次数错误`);
-  assert(new Set(amplitudeUnits.map((unit) => unit.stateSiteId)).size === 1,
-    "上摆方向应跨光栅共享");
+  assert(amplitudeUnits.filter((unit) => unit.bellSide === "left").length === EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE,
+    `${amplitude}°向左试次数错误`);
+  assert(amplitudeUnits.filter((unit) => unit.bellSide === "right").length === EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE,
+    `${amplitude}°向右试次数错误`);
+  assert(new Set(amplitudeUnits.map((unit) => unit.stateSiteId)).size === 2,
+    "每个振幅应包含两个上摆方向");
   const thetaVisDeg = Math.acos(
     1 - experiment5V2VisibleHeightM(amplitude) / EXPERIMENT_5_V2_ROD_LENGTH_M,
   ) * 180 / Math.PI;
   for (const grating of ["G1", "G2", "G3"] as const) {
     const group = amplitudeUnits.filter((unit) => unit.gratingCondition === grating);
-    assert(group.length === EXPERIMENT_5_V2_DELTA_H_M.length, "每个振幅×光栅的铃铛数量错误");
+    assert(group.length === EXPERIMENT_5_V2_DELTA_H_M.length * 2, "每个振幅×光栅的铃铛数量错误");
     const fingerprint = (unit: BellReachabilityV2StimulusUnit) => JSON.stringify([
       unit.theta0Deg, unit.omega0DegPerSec, unit.queryThetaDeg,
       unit.queryOmegaRadPerSec, unit.queryTimeSec, unit.visibleSegments,
     ]);
-    assert(new Set(group.map(fingerprint)).size === 1, "同一光栅的铃铛条件必须共享运动片段");
+    for (const side of ["left", "right"] as const) {
+      const sideGroup = group.filter((unit) => unit.bellSide === side);
+      assert(sideGroup.length === EXPERIMENT_5_V2_DELTA_H_M.length, "每个方向应覆盖全部高度");
+      assert(new Set(sideGroup.map(fingerprint)).size === 1, "同一光栅×方向必须共享运动片段");
+    }
     assert(new Set(group.map((unit) => `${unit.deltaHM}:${unit.bellSide}`)).size === group.length,
       "应覆盖全部高度和侧别");
   }
@@ -110,8 +121,8 @@ for (const amplitude of EXPERIMENT_5_V2_AMPLITUDES_DEG) {
   assert(sample.blankDurationSec > EXPERIMENT_5_V2_POST_TURN_SEC, "空白应长于端点后的停留");
   for (const delta of EXPERIMENT_5_V2_DELTA_H_M) {
     const deltaUnits = amplitudeUnits.filter((unit) => unit.deltaHM === delta);
-    assert(deltaUnits.length === 3, "每个高度偏移应在区组内每档光栅出现一次");
-    assert(new Set(deltaUnits.map((unit) => unit.bellSide)).size === 1, "同一区组的铃铛应在同一侧");
+    assert(deltaUnits.length === 6, "每个高度偏移应在左右两个方向的每档光栅出现一次");
+    assert(new Set(deltaUnits.map((unit) => unit.bellSide)).size === 2, "同一高度应在左右两侧都出现");
     assert(deltaUnits.every((unit) =>
       (unit.correctResponse === "reachable") === (delta <= 0) &&
       unit.correctResponse === "reachable" === experiment5V2EndpointReachesBell(
@@ -130,6 +141,8 @@ assert(formal.some((unit) => unit.deltaHM < 0 && unit.correctResponse === "reach
   "低于端点的铃铛应为可达");
 assert(formal.every((unit) => unit.bellSide === (unit.stateSiteId.endsWith("-left") ? "left" : "right")),
   "铃铛应放在消失时摆球朝向的一侧");
+assert(formal.every((unit) => unit.yesKey === EXPERIMENT_5_V2_YES_KEY && unit.noKey === EXPERIMENT_5_V2_NO_KEY),
+  "正式试次按键应固定为 F 会到达、J 不会到达");
 assert(formal.every((unit) => !unit.plannedVisibleTurn && !unit.plannedVisibleContact),
   "计划可见窗口不得包含转向或接触");
 
@@ -143,23 +156,52 @@ assert(
   ),
   "实验五V2不得包含无遮挡演示",
 );
-assert(practice.length === 6, "练习应为6条");
+assert(practice.length === EXPERIMENT_5_V2_PRACTICE_TRIALS, "练习应为12条");
+assert(practice.filter((unit) => unit.bellSide === "left").length === practice.length / 2,
+  "练习向左试次数应占一半");
+assert(practice.filter((unit) => unit.bellSide === "right").length === practice.length / 2,
+  "练习向右试次数应占一半");
 for (const grating of ["G1", "G2", "G3"] as const) {
   const group = practice.filter((unit) => unit.gratingCondition === grating);
-  assert(group.length === 2, "练习每档光栅应为两条");
-  assert(new Set(group.map((unit) => unit.correctResponse)).size === 2,
-    "练习每档光栅应同时有可达和不可达");
+  assert(group.length === 4, "练习每档光栅应为四条");
+  for (const side of ["left", "right"] as const) {
+    const sideGroup = group.filter((unit) => unit.bellSide === side);
+    assert(sideGroup.length === 2, "练习每档光栅的每个方向应为两条");
+    assert(new Set(sideGroup.map((unit) => unit.correctResponse)).size === 2,
+      "练习每档光栅的每个方向应同时有可达和不可达");
+  }
 }
 assert(practice.every((unit) =>
   (unit.correctResponse === "reachable") === (unit.deltaHM <= 0),
 ), "练习评分必须使用端点是否够到铃铛");
 assert(practice.every((unit) => unit.bellSide === (unit.stateSiteId.endsWith("-left") ? "left" : "right")),
   "练习铃铛应放在消失时摆球朝向的一侧");
-assert(experiment5V2ApproachSide("E5-0001", 1) !== experiment5V2ApproachSide("E5-0002", 1),
-  "相邻被试应轮换上摆方向");
+assert(practice.every((unit) => unit.yesKey === EXPERIMENT_5_V2_YES_KEY && unit.noKey === EXPERIMENT_5_V2_NO_KEY),
+  "练习按键应固定为 F 会到达、J 不会到达");
+const even = generateExperiment5V2RuntimeStimulusSet(
+  { subject_id: "E5-0002", gender_code: 1, age_years: 21 },
+  { rng: seeded(8) },
+);
+const evenUnits = even.sequence
+  .filter((item) => item.kind === "practice" || item.kind === "block")
+  .flatMap((item) => item.children)
+  .map(bellUnit);
+assert(evenUnits.every((unit) => unit.yesKey === "f" && unit.noKey === "j"),
+  "偶数被试按键也固定为 F 会到达、J 不会到达");
+function blockOrder(stimulus: typeof set): string {
+  return stimulus.sequence
+    .filter((item) => item.kind === "block")
+    .map((item) => bellUnit(item.children[0]!).amplitudeDeg)
+    .join(",");
+}
+const orders = new Set<string>();
+for (let seed = 1; seed <= 24; seed += 1) {
+  orders.add(blockOrder(generateExperiment5V2RuntimeStimulusSet(participant, { rng: seeded(seed) })));
+}
+assert(orders.size > 1, "振幅区组顺序应随机");
 assert(parseExperiment5V2StimulusSet(JSON.parse(JSON.stringify(set))) !== null,
   "实验五V2刺激集应可序列化解析");
-assert(parseExperiment5V2StimulusSet({ ...set, schemaVersion: 6 }) === null,
+assert(parseExperiment5V2StimulusSet({ ...set, schemaVersion: 7 }) === null,
   "实验五V2应拒绝旧schema");
 
 console.log("verify-experiment-5-v2: OK");

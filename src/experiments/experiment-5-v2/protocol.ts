@@ -27,21 +27,20 @@ export const EXPERIMENT_5_V2_FIXATION_MS = 500;
 export const EXPERIMENT_5_V2_MODEL_DT_SEC = PROTOCOL_2_MODEL_DT_SEC;
 export const EXPERIMENT_5_V2_GRATINGS = PROTOCOL_2_GRATING_CONDITIONS;
 export const EXPERIMENT_5_V2_GRATING_ORDER = PROTOCOL_2_GRATING_ORDER;
-export const EXPERIMENT_5_V2_FORMAL_BLOCKS = 3;
-export const EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK =
+export const EXPERIMENT_5_V2_APPROACH_SIDES = ["left", "right"] as const;
+export const EXPERIMENT_5_V2_FORMAL_BLOCKS = EXPERIMENT_5_V2_AMPLITUDES_DEG.length;
+/** 一个方向上的正式试次：3 档光栅 × 6 个高度。 */
+export const EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE =
   EXPERIMENT_5_V2_GRATING_ORDER.length * EXPERIMENT_5_V2_DELTA_H_M.length;
+/** 每个振幅区组包含左右两个方向。 */
+export const EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK =
+  EXPERIMENT_5_V2_APPROACH_SIDES.length * EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE;
 export const EXPERIMENT_5_V2_FORMAL_TRIALS =
   EXPERIMENT_5_V2_FORMAL_BLOCKS * EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK;
-export const EXPERIMENT_5_V2_PRACTICE_TRIALS = 6;
+/** 每档光栅、每个方向各一条可达和一条不可达。 */
+export const EXPERIMENT_5_V2_PRACTICE_TRIALS =
+  EXPERIMENT_5_V2_APPROACH_SIDES.length * EXPERIMENT_5_V2_GRATING_ORDER.length * 2;
 export const EXPERIMENT_5_V2_TOTAL_RUNTIME_TRIALS =
   EXPERIMENT_5_V2_FORMAL_TRIALS + EXPERIMENT_5_V2_PRACTICE_TRIALS;
-
-export function experiment5V2KeyMapping(subjectId: string): {
-  yesKey: "f" | "j";
-  noKey: "f" | "j";
-} {
-  const value = Number(subjectId.slice(3));
-  return value % 2 === 1
-    ? { yesKey: "f", noKey: "j" }
-    : { yesKey: "j", noKey: "f" };
-}
+export const EXPERIMENT_5_V2_YES_KEY = "f" as const;
+export const EXPERIMENT_5_V2_NO_KEY = "j" as const;

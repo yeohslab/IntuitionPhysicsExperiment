@@ -6,10 +6,7 @@ import {
   type PendulumParams,
 } from "../../experiment/physics/pendulum";
 import type { Protocol2VisibleSegment } from "../../shared/experimentTypes";
-import {
-  subjectNumber,
-  type Protocol2GratingGeometry,
-} from "../protocol-2/common";
+import { type Protocol2GratingGeometry } from "../protocol-2/common";
 import {
   EXPERIMENT_5_V2_BOB_RADIUS_M,
   EXPERIMENT_5_V2_DELTA_H_M,
@@ -43,13 +40,6 @@ export function experiment5V2VisibleHeightM(amplitudeDeg: number): number {
   const heightMax = EXPERIMENT_5_V2_ROD_LENGTH_M *
     (1 - Math.cos((amplitudeDeg * Math.PI) / 180));
   return heightMax + LOWEST_BELL_DELTA_M - EXPERIMENT_5_V2_VISIBILITY_MARGIN_M;
-}
-
-export function experiment5V2ApproachSide(
-  subjectId: string,
-  amplitudeIndex: number,
-): Experiment5V2ApproachSide {
-  return (subjectNumber(subjectId) - 1 + amplitudeIndex) % 2 === 0 ? "right" : "left";
 }
 
 /** 端点再加摆球角半径仍盖住铃铛，则这次上摆够得到。 */
