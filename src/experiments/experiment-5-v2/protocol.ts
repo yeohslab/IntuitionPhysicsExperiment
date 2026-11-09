@@ -10,8 +10,10 @@ import {
 export const EXPERIMENT_5_V2_ID = "experiment-5-v2" as const;
 export const EXPERIMENT_5_V2_LOGICAL_ID = "experiment-5" as const;
 export const EXPERIMENT_5_V2_PROTOCOL_VERSION = "2.0.0" as const;
-export const EXPERIMENT_5_V2_AMPLITUDES_DEG = [40, 60, 80] as const;
-export const EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG = 50;
+export const EXPERIMENT_5_V2_AMPLITUDES_DEG = [55, 70, 85] as const;
+/** 练习取最低档与中间档的中点，避免紧贴任一正式区组。 */
+export const EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG =
+  (EXPERIMENT_5_V2_AMPLITUDES_DEG[0] + EXPERIMENT_5_V2_AMPLITUDES_DEG[1]) / 2;
 /** 围绕能量边界对称的六档。负偏移在弧内，正偏移高出端点。 */
 export const EXPERIMENT_5_V2_DELTA_H_M = [-0.5, -0.3, -0.1, 0.1, 0.3, 0.5] as const;
 /** 可见运动停在最低铃铛（-0.50 m）再低 0.20 m。 */

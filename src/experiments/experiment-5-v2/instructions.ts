@@ -1,4 +1,5 @@
 import {
+  EXPERIMENT_5_V2_AMPLITUDES_DEG,
   EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK,
   EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE,
   EXPERIMENT_5_V2_PRACTICE_TRIALS,
@@ -14,7 +15,8 @@ export function experiment5V2WelcomeText(): string {
 
 export function experiment5V2StructureText(): string {
   const practicePerSide = EXPERIMENT_5_V2_PRACTICE_TRIALS / 2;
-  return `<h1>实验结构</h1><p>先完成${EXPERIMENT_5_V2_PRACTICE_TRIALS}个练习试次，左右方向各${practicePerSide}条。</p><p>正式阶段包含40°、60°、80°三个振幅区组，每区组${EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK}个试次，左右方向各${EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE}条。区组顺序随机。</p><p>按空格继续</p>`;
+  const amplitudes = EXPERIMENT_5_V2_AMPLITUDES_DEG.map((deg) => `${deg}°`).join("、");
+  return `<h1>实验结构</h1><p>先完成${EXPERIMENT_5_V2_PRACTICE_TRIALS}个练习试次，左右方向各${practicePerSide}条。</p><p>正式阶段包含${amplitudes}三个振幅区组，每区组${EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK}个试次，左右方向各${EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE}条。区组顺序随机。</p><p>按空格继续</p>`;
 }
 
 export function experiment5V2InitialCueText(

@@ -16,11 +16,13 @@ import {
   EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE,
   EXPERIMENT_5_V2_NO_KEY,
   EXPERIMENT_5_V2_POST_TURN_SEC,
+  EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG,
   EXPERIMENT_5_V2_PRACTICE_TRIALS,
   EXPERIMENT_5_V2_ROD_LENGTH_M,
   EXPERIMENT_5_V2_YES_KEY,
 } from "../../src/experiments/experiment-5-v2/protocol.ts";
 import type { BellReachabilityV2StimulusUnit, Trial } from "../../src/shared/experimentTypes.ts";
+import { experiment5V2StructureText } from "../../src/experiments/experiment-5-v2/instructions.ts";
 import { parseExperiment5V2StimulusSet } from "../../src/shared/storage.ts";
 
 function assert(value: unknown, message: string): asserts value {
@@ -80,6 +82,13 @@ const formal = formalTrials.map(bellUnit);
 assert(formal.length === EXPERIMENT_5_V2_FORMAL_TRIALS, "正式试次数错误");
 assert(formal.length === 108, "正式试次应为108条");
 assert(new Set(formal.map((unit) => unit.amplitudeDeg)).size === 3, "应覆盖3个振幅");
+assert(
+  EXPERIMENT_5_V2_AMPLITUDES_DEG[0] === 55 &&
+    EXPERIMENT_5_V2_AMPLITUDES_DEG[1] === 70 &&
+    EXPERIMENT_5_V2_AMPLITUDES_DEG[2] === 85,
+  "正式振幅应为55°、70°、85°",
+);
+assert(experiment5V2StructureText().includes("55°、70°、85°"), "结构说明应写出三档振幅");
 assert(EXPERIMENT_5_V2_DELTA_H_M.length === 6, "应为六档高度");
 for (const amplitude of EXPERIMENT_5_V2_AMPLITUDES_DEG) {
   const amplitudeUnits = formal.filter((unit) => unit.amplitudeDeg === amplitude);
@@ -133,8 +142,11 @@ for (const amplitude of EXPERIMENT_5_V2_AMPLITUDES_DEG) {
   }
 }
 const toleranceRad = EXPERIMENT_5_V2_BOB_RADIUS_M / EXPERIMENT_5_V2_ROD_LENGTH_M;
-assert(!experiment5V2EndpointReachesBell(80, (80 * Math.PI) / 180 + toleranceRad + 0.02),
-  "+0.10 m 附近超出容差的角度仍应不可达");
+const maxAmplitude = EXPERIMENT_5_V2_AMPLITUDES_DEG[EXPERIMENT_5_V2_AMPLITUDES_DEG.length - 1]!;
+assert(!experiment5V2EndpointReachesBell(
+  maxAmplitude,
+  (maxAmplitude * Math.PI) / 180 + toleranceRad + 0.02,
+), "+0.10 m 附近超出容差的角度仍应不可达");
 assert(formal.some((unit) => unit.deltaHM > 0 && unit.correctResponse === "unreachable"),
   "高出端点的铃铛应为不可达");
 assert(formal.some((unit) => unit.deltaHM < 0 && unit.correctResponse === "reachable"),
@@ -157,6 +169,11 @@ assert(
   "实验五V2不得包含无遮挡演示",
 );
 assert(practice.length === EXPERIMENT_5_V2_PRACTICE_TRIALS, "练习应为12条");
+assert(EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG === 62.5, "练习应为55°与70°的中点");
+assert(practice.every((unit) => unit.amplitudeDeg === EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG),
+  "练习振幅应为62.5°");
+assert([...formal, ...practice].every((unit) => unit.visibleSegments.length > 0),
+  "任何光栅都不得把整段摆球挡住");
 assert(practice.filter((unit) => unit.bellSide === "left").length === practice.length / 2,
   "练习向左试次数应占一半");
 assert(practice.filter((unit) => unit.bellSide === "right").length === practice.length / 2,

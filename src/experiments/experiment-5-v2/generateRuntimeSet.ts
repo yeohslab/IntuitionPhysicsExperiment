@@ -495,6 +495,9 @@ export function assertExperiment5V2RuntimeStimulusSet(
     if (unit.plannedVisibleTurn || unit.plannedVisibleContact) {
       throw new Error("实验五V2可见窗口不得包含端点或铃铛接触");
     }
+    if (unit.visibleSegments.length === 0) {
+      throw new Error("实验五V2可见窗口不得把摆球整段挡住");
+    }
   }
   const demo = set.sequence.flatMap((item) => item.kind === "rest" ? item.units : [])
     .filter((unit) => unit.type === "protocol2PendulumDemo");
