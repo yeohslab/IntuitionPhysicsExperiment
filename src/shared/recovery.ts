@@ -13,6 +13,7 @@ import {
   parseExperiment4V2StimulusSet,
   parseExperiment5StimulusSet,
   parseExperiment5V2StimulusSet,
+  parseExperiment5V3StimulusSet,
   parseTraining1StimulusSet,
 } from "./storage";
 
@@ -88,6 +89,9 @@ function parseParticipant(
   if (experimentId === "experiment-5-v2") {
     return isExperiment5ParticipantInfo(value) ? value : null;
   }
+  if (experimentId === "experiment-5-v3") {
+    return isExperiment5ParticipantInfo(value) ? value : null;
+  }
   if (experimentId === "training-1") {
     return isTraining1ParticipantInfo(value) ? value : null;
   }
@@ -103,6 +107,7 @@ function parseStimulusSet(
   if (experimentId === "experiment-4-v2") return parseExperiment4V2StimulusSet(value);
   if (experimentId === "experiment-5") return parseExperiment5StimulusSet(value);
   if (experimentId === "experiment-5-v2") return parseExperiment5V2StimulusSet(value);
+  if (experimentId === "experiment-5-v3") return parseExperiment5V3StimulusSet(value);
   if (experimentId === "training-1") return parseTraining1StimulusSet(value);
   return null;
 }

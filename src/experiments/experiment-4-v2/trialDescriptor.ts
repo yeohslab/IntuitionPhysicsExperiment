@@ -52,7 +52,6 @@ export function collectExperiment4V2TrialDescriptors(
         formal_trial_index: item.kind === "block" ? formalIndex : null,
         unit_type: unit.type,
         state_site_id: unit.stateSiteId,
-        tracking_condition: unit.trackingCondition,
         report_target: unit.reportTarget,
         amplitude_deg: unit.amplitudeDeg,
         energy_J: unit.energyJ,

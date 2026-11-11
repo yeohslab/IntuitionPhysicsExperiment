@@ -4,11 +4,12 @@ export const EXPERIMENT_2_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
 export const EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION = 6 as const;
 /** 实验五运行时刺激集版本。 */
 export const EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
-/** 实验四协议 2.0 运行时刺激集版本。4：练习 6 条，角度与速度汇报各半。 */
-export const EXPERIMENT_4_V2_STIMULUS_SET_SCHEMA_VERSION = 4 as const;
-/** 实验五协议 2.0 运行时刺激集版本。8：每个被试的练习和正式试次都左右等数，区组顺序随机，按键固定为 F/J。 */
-export const EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION = 8 as const;
-/** 训练一运行时刺激集版本。7：色带右端改为 60° 静止释放的最低点速度。 */
+/** 实验四协议 2.0 运行时刺激集版本。5：终点在 (θ, ω) 能量椭圆上均匀分布，不再按隐藏反向筛选。 */
+export const EXPERIMENT_4_V2_STIMULUS_SET_SCHEMA_VERSION = 5 as const;
+/** 实验五协议 2.0 运行时刺激集版本。11：0.1 秒空白结束在最低铃铛，之后空白延续到最高点。 */
+export const EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION = 11 as const;
+/** 实验五协议 3.0 运行时刺激集版本。1：无光栅，从对侧振幅减 9° 出发。 */
+export const EXPERIMENT_5_V3_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
 export const EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION = 7 as const;
 
 export type StimulusUnitType =
@@ -20,6 +21,7 @@ export type StimulusUnitType =
   | "protocol2PendulumDemo"
   | "trackingPendulumV2Stimulus"
   | "bellReachabilityV2Stimulus"
+  | "bellReachabilityV3Stimulus"
   | "speedColorTrainingStimulus"
   | "training1Summary";
 
@@ -206,7 +208,6 @@ export interface TrackingPendulumV2StimulusUnit
   extends Protocol2OccludedMotionUnit {
   id: string;
   type: "trackingPendulumV2Stimulus";
-  trackingCondition: "no_hidden_reversal" | "hidden_reversal";
   initialSide: "left" | "right";
   initialDirection: "leftward" | "rightward";
   cueDurationMs: number;
@@ -220,7 +221,7 @@ export interface BellReachabilityV2StimulusUnit
   extends Protocol2OccludedMotionUnit {
   id: string;
   type: "bellReachabilityV2Stimulus";
-  deltaHM: number;
+  bellAngleOffsetDeg: number;
   bellContactHeightM: number;
   bellThetaDeg: number;
   bellSide: "left" | "right";
@@ -233,6 +234,22 @@ export interface BellReachabilityV2StimulusUnit
   plannedVisibleContactTimeSec: number | null;
 }
 
+export interface BellReachabilityV3StimulusUnit
+  extends Omit<
+    Protocol2OccludedMotionUnit,
+    "visibleSegments" | "gratingCondition" | "gapM" | "barWidthM" | "gratingPeriodM" | "gratingOffsetM"
+  > {
+  id: string;
+  type: "bellReachabilityV3Stimulus";
+  bellAngleOffsetDeg: number;
+  bellContactHeightM: number;
+  bellThetaDeg: number;
+  bellSide: "left" | "right";
+  correctResponse: ReachabilityRelation;
+  yesKey: "f" | "j";
+  noKey: "f" | "j";
+}
+
 export type StimulusUnit =
   | TextDisplayUnit
   | TextControlUnit
@@ -242,6 +259,7 @@ export type StimulusUnit =
   | Protocol2PendulumDemoUnit
   | TrackingPendulumV2StimulusUnit
   | BellReachabilityV2StimulusUnit
+  | BellReachabilityV3StimulusUnit
   | SpeedColorTrainingStimulusUnit
   | Training1SummaryUnit;
 
@@ -301,6 +319,11 @@ export interface Experiment4V2StimulusSet extends RuntimeStimulusSet {
 /** 实验五协议 2.0 运行时刺激集。 */
 export interface Experiment5V2StimulusSet extends RuntimeStimulusSet {
   schemaVersion: typeof EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION;
+}
+
+/** 实验五协议 3.0 运行时刺激集。 */
+export interface Experiment5V3StimulusSet extends RuntimeStimulusSet {
+  schemaVersion: typeof EXPERIMENT_5_V3_STIMULUS_SET_SCHEMA_VERSION;
 }
 
 /** 训练一运行时刺激集。 */

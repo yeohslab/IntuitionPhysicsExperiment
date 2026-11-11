@@ -15,6 +15,7 @@ import {
   EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION,
   EXPERIMENT_4_V2_STIMULUS_SET_SCHEMA_VERSION,
   EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION,
+  EXPERIMENT_5_V3_STIMULUS_SET_SCHEMA_VERSION,
   EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION,
   type BlockSegment,
   type Experiment2StimulusSet,
@@ -22,6 +23,7 @@ import {
   type Experiment5StimulusSet,
   type Experiment4V2StimulusSet,
   type Experiment5V2StimulusSet,
+  type Experiment5V3StimulusSet,
   type ExperimentTraining1StimulusSet,
   type SpeedColorTrainingStimulusUnit,
   type GratingOcclusionSegmentRecord,
@@ -35,6 +37,7 @@ import {
   type Trial,
   type TrackingPendulumV2StimulusUnit,
   type BellReachabilityV2StimulusUnit,
+  type BellReachabilityV3StimulusUnit,
   type Protocol2PendulumDemoUnit,
 } from "./experimentTypes";
 import type { ExperimentId } from "../experiments/types";
@@ -100,6 +103,42 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       id, type: "protocol2PendulumDemo", amplitudeDeg, rodLengthM, gravity,
       bobRadiusM,
     } satisfies Protocol2PendulumDemoUnit;
+  }
+
+  if (raw.type === "bellReachabilityV3Stimulus") {
+    const numericKeys = [
+      "theta0Deg", "omega0DegPerSec", "rodLengthM", "gravity", "bobRadiusM",
+      "energyJ", "amplitudeDeg", "queryThetaDeg", "queryOmegaRadPerSec",
+      "queryTimeSec", "blankStartSec", "blankDurationSec", "modelDtSec",
+      "bellAngleOffsetDeg", "bellContactHeightM", "bellThetaDeg",
+    ] as const;
+    const n = Object.fromEntries(
+      numericKeys.map((key) => [key, finiteNumber(raw, key)]),
+    ) as Record<(typeof numericKeys)[number], number | null>;
+    if (
+      numericKeys.some((key) => n[key] === null) ||
+      n.rodLengthM! <= 0 || n.gravity! <= 0 || n.bobRadiusM! <= 0 ||
+      n.energyJ! <= 0 || n.amplitudeDeg! <= 0 || n.queryTimeSec! <= 0 ||
+      n.blankStartSec! <= 0 || n.blankDurationSec! <= 0 ||
+      n.queryTimeSec! <= n.blankStartSec! || n.modelDtSec! <= 0 ||
+      typeof raw.stateSiteId !== "string" ||
+      (raw.bellSide !== "left" && raw.bellSide !== "right") ||
+      (raw.correctResponse !== "reachable" && raw.correctResponse !== "unreachable") ||
+      raw.yesKey !== "f" || raw.noKey !== "j"
+    ) return null;
+    return {
+      id, type: "bellReachabilityV3Stimulus",
+      theta0Deg: n.theta0Deg!, omega0DegPerSec: n.omega0DegPerSec!,
+      rodLengthM: n.rodLengthM!, gravity: n.gravity!, bobRadiusM: n.bobRadiusM!,
+      energyJ: n.energyJ!, amplitudeDeg: n.amplitudeDeg!,
+      queryThetaDeg: n.queryThetaDeg!, queryOmegaRadPerSec: n.queryOmegaRadPerSec!,
+      queryTimeSec: n.queryTimeSec!, blankStartSec: n.blankStartSec!,
+      blankDurationSec: n.blankDurationSec!, stateSiteId: raw.stateSiteId,
+      modelDtSec: n.modelDtSec!, bellAngleOffsetDeg: n.bellAngleOffsetDeg!,
+      bellContactHeightM: n.bellContactHeightM!, bellThetaDeg: n.bellThetaDeg!,
+      bellSide: raw.bellSide, correctResponse: raw.correctResponse,
+      yesKey: "f", noKey: "j",
+    } satisfies BellReachabilityV3StimulusUnit;
   }
 
   if (
@@ -172,8 +211,6 @@ function parseUnit(raw: unknown): StimulusUnit | null {
         : finiteNumber(raw, "reversalTimeSec");
       const speedScaleLinearMPerSec = finiteNumber(raw, "speedScaleLinearMPerSec");
       if (
-        (raw.trackingCondition !== "no_hidden_reversal" &&
-          raw.trackingCondition !== "hidden_reversal") ||
         (raw.initialSide !== "left" && raw.initialSide !== "right") ||
         (raw.initialDirection !== "leftward" && raw.initialDirection !== "rightward") ||
         cueDurationMs === null || cueDurationMs <= 0 ||
@@ -183,14 +220,13 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       ) return null;
       return {
         ...base, type: "trackingPendulumV2Stimulus",
-        trackingCondition: raw.trackingCondition,
         initialSide: raw.initialSide, initialDirection: raw.initialDirection,
         cueDurationMs, reversalTimeSec, speedScaleLinearMPerSec,
         reportTarget: raw.reportTarget,
       } satisfies TrackingPendulumV2StimulusUnit;
     }
     const bellNumericKeys = [
-      "deltaHM", "bellContactHeightM", "bellThetaDeg",
+      "bellAngleOffsetDeg", "bellContactHeightM", "bellThetaDeg",
     ] as const;
     const b = Object.fromEntries(
       bellNumericKeys.map((key) => [key, finiteNumber(raw, key)]),
@@ -214,7 +250,7 @@ function parseUnit(raw: unknown): StimulusUnit | null {
     ) return null;
     return {
       ...base, type: "bellReachabilityV2Stimulus",
-      deltaHM: b.deltaHM!, bellContactHeightM: b.bellContactHeightM!,
+      bellAngleOffsetDeg: b.bellAngleOffsetDeg!, bellContactHeightM: b.bellContactHeightM!,
       bellThetaDeg: b.bellThetaDeg!, bellSide: raw.bellSide,
       correctResponse: raw.correctResponse, yesKey: raw.yesKey, noKey: raw.noKey,
       plannedVisibleTurn: raw.plannedVisibleTurn,
@@ -662,6 +698,15 @@ export function parseExperiment5V2StimulusSet(
   ) as Experiment5V2StimulusSet | null;
 }
 
+export function parseExperiment5V3StimulusSet(
+  raw: unknown,
+): Experiment5V3StimulusSet | null {
+  return parseRuntimeStimulusSet(
+    raw,
+    EXPERIMENT_5_V3_STIMULUS_SET_SCHEMA_VERSION,
+  ) as Experiment5V3StimulusSet | null;
+}
+
 export function parseTraining1StimulusSet(
   raw: unknown,
 ): ExperimentTraining1StimulusSet | null {
@@ -680,6 +725,7 @@ function parseSetForExperiment(
   if (experimentId === "experiment-4-v2") return parseExperiment4V2StimulusSet(raw);
   if (experimentId === "experiment-5") return parseExperiment5StimulusSet(raw);
   if (experimentId === "experiment-5-v2") return parseExperiment5V2StimulusSet(raw);
+  if (experimentId === "experiment-5-v3") return parseExperiment5V3StimulusSet(raw);
   if (experimentId === "training-1") return parseTraining1StimulusSet(raw);
   return null;
 }
@@ -701,6 +747,9 @@ function parseParticipantForExperiment(
     return isExperiment5ParticipantInfo(raw) ? raw : null;
   }
   if (experimentId === "experiment-5-v2") {
+    return isExperiment5ParticipantInfo(raw) ? raw : null;
+  }
+  if (experimentId === "experiment-5-v3") {
     return isExperiment5ParticipantInfo(raw) ? raw : null;
   }
   if (experimentId === "training-1") {

@@ -28,11 +28,13 @@ import {
 import {
   EXPERIMENT_5_V2_AMPLITUDES_DEG,
   EXPERIMENT_5_V2_APPROACH_SIDES,
+  EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG,
+  EXPERIMENT_5_V2_BELL_ANGLE_STEP_DEG,
+  EXPERIMENT_5_V2_BLANK_BEFORE_LOWEST_BELL_SEC,
   EXPERIMENT_5_V2_BOB_RADIUS_M,
   EXPERIMENT_5_V2_CUE_MS,
   EXPERIMENT_5_V2_FIXATION_MS,
   EXPERIMENT_5_V2_FIXATION_TEXT,
-  EXPERIMENT_5_V2_DELTA_H_M,
   EXPERIMENT_5_V2_FORMAL_BLOCKS,
   EXPERIMENT_5_V2_FORMAL_TRIALS,
   EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK,
@@ -69,10 +71,10 @@ function rest(text: string): RestSegment {
 
 function bellUnit(
   plan: Experiment5V2ApproachPlan,
-  deltaHM: number,
+  angleOffsetDeg: number,
   side: Experiment5V2ApproachSide,
 ): BellReachabilityV2StimulusUnit {
-  const bell = experiment5V2BellThetaRad(plan.amplitudeDeg, deltaHM, side);
+  const bell = experiment5V2BellThetaRad(plan.amplitudeDeg, angleOffsetDeg, side);
   const contactTime = visibleContactTime(plan, bell.theta);
   return {
     id: newId(),
@@ -97,7 +99,7 @@ function bellUnit(
     gratingOffsetM: plan.geometry.offsetM,
     stateSiteId: plan.stateSiteId,
     modelDtSec: PROTOCOL_2_MODEL_DT_SEC,
-    deltaHM,
+    bellAngleOffsetDeg: angleOffsetDeg,
     bellContactHeightM: bell.height,
     bellThetaDeg: (bell.theta * 180) / Math.PI,
     bellSide: side,
@@ -139,8 +141,8 @@ function cueUnit(unit: BellReachabilityV2StimulusUnit): TextDisplayUnit {
     id: newId(),
     type: "textDisplay",
     text: experiment5V2InitialCueText(
-      unit.theta0Deg < 0 ? "left" : "right",
-      unit.omega0DegPerSec < 0 ? "leftward" : "rightward",
+      unit.bellSide === "left" ? "right" : "left",
+      unit.bellSide === "left" ? "leftward" : "rightward",
     ),
     durationMs: EXPERIMENT_5_V2_CUE_MS,
   };
@@ -259,8 +261,8 @@ function formalBlock(
         apexSide,
         PROTOCOL_2_GRATING_CONDITIONS[gratingId],
       );
-      for (const deltaHM of EXPERIMENT_5_V2_DELTA_H_M) {
-        trials.push(asTrial(bellUnit(plan, deltaHM, apexSide)));
+      for (const angleOffsetDeg of EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG) {
+        trials.push(asTrial(bellUnit(plan, angleOffsetDeg, apexSide)));
       }
     }
   }
@@ -269,11 +271,12 @@ function formalBlock(
   return { kind: "block", id: newId(), children: ordered };
 }
 
-const PRACTICE_DELTAS: Array<{ reachable: number; unreachable: number }> = [
-  { reachable: -0.5, unreachable: 0.5 },
-  { reachable: -0.3, unreachable: 0.3 },
-  { reachable: -0.1, unreachable: 0.1 },
-];
+const PRACTICE_OFFSETS: Array<{ reachable: number; unreachable: number }> = [3, 2, 1].map(
+  (level) => ({
+    reachable: -level * EXPERIMENT_5_V2_BELL_ANGLE_STEP_DEG,
+    unreachable: level * EXPERIMENT_5_V2_BELL_ANGLE_STEP_DEG,
+  }),
+);
 
 function practiceBlock(
   rng: () => number,
@@ -281,7 +284,7 @@ function practiceBlock(
 ): PracticeSegment {
   const children = EXPERIMENT_5_V2_APPROACH_SIDES.flatMap((apexSide) =>
     PROTOCOL_2_GRATING_ORDER.flatMap((grating, index) => {
-      const pair = PRACTICE_DELTAS[index]!;
+      const pair = PRACTICE_OFFSETS[index]!;
       const plan = planExperiment5V2Approach(
         EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG,
         apexSide,
@@ -420,12 +423,12 @@ export function assertExperiment5V2RuntimeStimulusSet(
     }
     for (const grating of PROTOCOL_2_GRATING_ORDER) {
       const group = blockUnits.filter((unit) => unit.gratingCondition === grating);
-      if (group.length !== EXPERIMENT_5_V2_DELTA_H_M.length * EXPERIMENT_5_V2_APPROACH_SIDES.length) {
+      if (group.length !== EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG.length * EXPERIMENT_5_V2_APPROACH_SIDES.length) {
         throw new Error("每个振幅×光栅的铃铛条件数量错误");
       }
       for (const side of EXPERIMENT_5_V2_APPROACH_SIDES) {
         const sideGroup = group.filter((unit) => unit.bellSide === side);
-        if (sideGroup.length !== EXPERIMENT_5_V2_DELTA_H_M.length) {
+        if (sideGroup.length !== EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG.length) {
           throw new Error("每个振幅×光栅×方向的铃铛数量错误");
         }
         if (new Set(sideGroup.map(motionFingerprint)).size !== 1) {
@@ -439,10 +442,10 @@ export function assertExperiment5V2RuntimeStimulusSet(
         throw new Error("同一振幅×方向的查询状态未跨光栅共享");
       }
     }
-    for (const delta of EXPERIMENT_5_V2_DELTA_H_M) {
-      const matched = blockUnits.filter((unit) => unit.deltaHM === delta);
+    for (const offset of EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG) {
+      const matched = blockUnits.filter((unit) => unit.bellAngleOffsetDeg === offset);
       if (matched.length !== PROTOCOL_2_GRATING_ORDER.length * EXPERIMENT_5_V2_APPROACH_SIDES.length) {
-        throw new Error("每个高度偏移在振幅区组内应在每个方向的每档光栅出现一次");
+        throw new Error("每个角度偏移在振幅区组内应在每个方向的每档光栅出现一次");
       }
     }
     if (blockUnits.some((unit) => unit.bellSide !== sideFromStateSite(unit.stateSiteId))) {
@@ -454,8 +457,8 @@ export function assertExperiment5V2RuntimeStimulusSet(
     ) {
       throw new Error("实验五V2区组应同时包含可达和不可达铃铛");
     }
-    if (new Set(blockUnits.map((unit) => unit.correctResponse === "reachable" ? unit.deltaHM <= 0 : unit.deltaHM > 0)).size !== 1) {
-      throw new Error("实验五V2可达性必须与高度偏移的符号一致");
+    if (new Set(blockUnits.map((unit) => unit.correctResponse === "reachable" ? unit.bellAngleOffsetDeg < 0 : unit.bellAngleOffsetDeg > 0)).size !== 1) {
+      throw new Error("实验五V2可达性必须与角度偏移的符号一致");
     }
   }
   if (!sidesBalanced(practice, EXPERIMENT_5_V2_PRACTICE_TRIALS / 2)) {
@@ -489,11 +492,14 @@ export function assertExperiment5V2RuntimeStimulusSet(
       (unit.bellThetaDeg * Math.PI) / 180,
     );
     if (reachable !== (unit.correctResponse === "reachable") ||
-      reachable !== (unit.deltaHM <= 0)) {
+      reachable !== (unit.bellAngleOffsetDeg < 0)) {
       throw new Error("实验五V2可达性评分错误");
     }
-    if (unit.plannedVisibleTurn || unit.plannedVisibleContact) {
-      throw new Error("实验五V2可见窗口不得包含端点或铃铛接触");
+    if (unit.plannedVisibleTurn) {
+      throw new Error("实验五V2可见窗口不得包含端点转向");
+    }
+    if (unit.blankDurationSec <= EXPERIMENT_5_V2_BLANK_BEFORE_LOWEST_BELL_SEC) {
+      throw new Error("实验五V2全空白应在最低铃铛之后延续到最高点");
     }
     if (unit.visibleSegments.length === 0) {
       throw new Error("实验五V2可见窗口不得把摆球整段挡住");

@@ -85,6 +85,8 @@ export type Protocol2StateSite = {
   arcFractionNumerator: 1 | 3 | 5 | 7 | 9 | 11;
   thetaRad: number;
   omegaRadPerSec: number;
+  /** 从静止释放点算起的相位。均匀椭圆取样时直接使用，避免在 ω≈0 处误判象限。 */
+  phaseSec?: number;
 };
 
 const quadrantSiteCache = new Map<string, Array<{ thetaRad: number; omegaRadPerSec: number }>>();
@@ -173,6 +175,44 @@ export function protocol2StateSites(amplitudeDeg: number): Protocol2StateSite[] 
   return result.map((site) => ({ ...site }));
 }
 
+/** 在 (θ 弧度, ω rad/s) 能量曲线上按欧氏弧长均匀取点。 */
+export function protocol2UniformEllipseSites(
+  amplitudeDeg: number,
+  count: number,
+): Protocol2StateSite[] {
+  if (count < 2) throw new Error("能量椭圆至少需要两个终点");
+  const release = protocol2ReleaseParams(amplitudeDeg);
+  const analysis = analyzePendulum(release);
+  const samples = 20_001;
+  const theta = new Float64Array(samples);
+  const omega = new Float64Array(samples);
+  const time = new Float64Array(samples);
+  const arc = new Float64Array(samples);
+  for (let i = 0; i < samples; i += 1) {
+    time[i] = (analysis.T * i) / (samples - 1);
+    const state = pendulumThetaOmegaAt(time[i]!, release, analysis);
+    theta[i] = state.theta;
+    omega[i] = state.omega;
+    if (i > 0) {
+      arc[i] = arc[i - 1]! + Math.hypot(theta[i]! - theta[i - 1]!, omega[i]! - omega[i - 1]!);
+    }
+  }
+  const total = arc[samples - 1]!;
+  const result: Protocol2StateSite[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const target = ((i + 0.5) * total) / count;
+    result.push({
+      id: `a${amplitudeDeg}-e${String(i).padStart(2, "0")}`,
+      magnitudeIndex: i,
+      arcFractionNumerator: 1,
+      thetaRad: interp(target, arc, theta),
+      omegaRadPerSec: interp(target, arc, omega),
+      phaseSec: interp(target, arc, time),
+    });
+  }
+  return result;
+}
+
 export function protocol2ReleaseParams(amplitudeDeg: number): PendulumParams {
   return {
     theta0Rad: (amplitudeDeg * Math.PI) / 180,
@@ -196,6 +236,9 @@ function phaseForState(
 ): { phaseSec: number; periodSec: number } {
   const params = protocol2ReleaseParams(amplitudeDeg);
   const analysis = analyzePendulum(params);
+  if (site.phaseSec !== undefined) {
+    return { phaseSec: site.phaseSec, periodSec: analysis.T };
+  }
   const thetaSign = Math.sign(site.thetaRad);
   const omegaSign = Math.sign(site.omegaRadPerSec);
   let quarter = 0;
@@ -340,14 +383,12 @@ export function planProtocol2Motion(
     absoluteBlankStartSec,
   );
   const visibleCount = protocol2VisibleSegmentCount(geometry.id);
-  const selected = segments.slice(-visibleCount);
+  const longEnough = segments.filter(
+    (segment) => segment.tEndSec - segment.tStartSec >= PROTOCOL_2_MIN_SEGMENT_SEC - 1e-9,
+  );
+  const selected = longEnough.slice(-visibleCount);
   if (selected.length !== visibleCount) {
-    throw new Error(`${site.id}/${geometry.id} 无法回溯到${visibleCount}个可见片段`);
-  }
-  for (const segment of selected) {
-    if (segment.tEndSec - segment.tStartSec < PROTOCOL_2_MIN_SEGMENT_SEC - 1e-9) {
-      throw new Error(`${site.id}/${geometry.id} 存在少于两个60 Hz帧的片段`);
-    }
+    throw new Error(`${site.id}/${geometry.id} 无法回溯到${visibleCount}个足够长的可见片段`);
   }
   const playbackStart = selected[0]!.tStartSec;
   const initial = pendulumThetaOmegaAt(playbackStart, release, analysis);

@@ -1,21 +1,24 @@
 import { analyzePendulum, pendulumThetaOmegaAt } from "../../src/experiment/physics/pendulum.ts";
+import { PROTOCOL_2_FADE_SEC, PROTOCOL_2_GRATING_CONDITIONS } from "../../src/experiments/protocol-2/common.ts";
 import {
+  experiment5V2DepartureState,
   experiment5V2EndpointReachesBell,
-  experiment5V2VisibleHeightM,
+  experiment5V2ResponseOpenSec,
 } from "../../src/experiments/experiment-5-v2/approachPlan.ts";
 import { generateExperiment5V2RuntimeStimulusSet } from "../../src/experiments/experiment-5-v2/generateRuntimeSet.ts";
 import {
   EXPERIMENT_5_V2_AMPLITUDES_DEG,
   EXPERIMENT_5_V2_BOB_RADIUS_M,
   EXPERIMENT_5_V2_CUE_MS,
-  EXPERIMENT_5_V2_DELTA_H_M,
+  EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG,
+  EXPERIMENT_5_V2_BELL_ANGLE_STEP_DEG,
   EXPERIMENT_5_V2_FIXATION_MS,
   EXPERIMENT_5_V2_FIXATION_TEXT,
   EXPERIMENT_5_V2_FORMAL_TRIALS,
   EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK,
   EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE,
   EXPERIMENT_5_V2_NO_KEY,
-  EXPERIMENT_5_V2_POST_TURN_SEC,
+  EXPERIMENT_5_V2_BLANK_BEFORE_LOWEST_BELL_SEC,
   EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG,
   EXPERIMENT_5_V2_PRACTICE_TRIALS,
   EXPERIMENT_5_V2_ROD_LENGTH_M,
@@ -61,7 +64,12 @@ function assertTrialOpening(trial: Trial): void {
   assert(trial.units[2] === bellUnit(trial), "注视点后应立刻是摆球演示");
 }
 
-function maxAbsThetaDeg(unit: BellReachabilityV2StimulusUnit, t0: number, t1: number): number {
+function maxSignedThetaDeg(
+  unit: BellReachabilityV2StimulusUnit,
+  t0: number,
+  t1: number,
+  sign: number,
+): number {
   const params = {
     theta0Rad: (unit.theta0Deg * Math.PI) / 180,
     omega0RadPerSec: (unit.omega0DegPerSec * Math.PI) / 180,
@@ -69,11 +77,12 @@ function maxAbsThetaDeg(unit: BellReachabilityV2StimulusUnit, t0: number, t1: nu
     gravity: unit.gravity,
   };
   const analysis = analyzePendulum(params);
-  let maxAbs = 0;
+  let maxSigned = Number.NEGATIVE_INFINITY;
   for (let time = t0; time <= t1 + 1e-9; time += 0.01) {
-    maxAbs = Math.max(maxAbs, Math.abs(pendulumThetaOmegaAt(Math.min(time, t1), params, analysis).theta));
+    const theta = pendulumThetaOmegaAt(Math.min(time, t1), params, analysis).theta;
+    maxSigned = Math.max(maxSigned, sign * theta);
   }
-  return (maxAbs * 180) / Math.PI;
+  return (maxSigned * 180) / Math.PI;
 }
 
 const formalTrials = blocks.flatMap((block) => block.children);
@@ -83,13 +92,19 @@ assert(formal.length === EXPERIMENT_5_V2_FORMAL_TRIALS, "正式试次数错误")
 assert(formal.length === 108, "正式试次应为108条");
 assert(new Set(formal.map((unit) => unit.amplitudeDeg)).size === 3, "应覆盖3个振幅");
 assert(
-  EXPERIMENT_5_V2_AMPLITUDES_DEG[0] === 55 &&
-    EXPERIMENT_5_V2_AMPLITUDES_DEG[1] === 70 &&
-    EXPERIMENT_5_V2_AMPLITUDES_DEG[2] === 85,
-  "正式振幅应为55°、70°、85°",
+  EXPERIMENT_5_V2_AMPLITUDES_DEG[0] === 75 &&
+    EXPERIMENT_5_V2_AMPLITUDES_DEG[1] === 65 &&
+    EXPERIMENT_5_V2_AMPLITUDES_DEG[2] === 55,
+  "正式振幅应为75°、65°、55°",
 );
-assert(experiment5V2StructureText().includes("55°、70°、85°"), "结构说明应写出三档振幅");
-assert(EXPERIMENT_5_V2_DELTA_H_M.length === 6, "应为六档高度");
+assert(experiment5V2StructureText().includes("75°、65°、55°"), "结构说明应写出三档振幅");
+assert(EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG.length === 6, "应为六档角度");
+assert(
+  EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG.every((offset, index) =>
+    offset === [3, 2, 1, -1, -2, -3][index]! * EXPERIMENT_5_V2_BELL_ANGLE_STEP_DEG,
+  ),
+  "六档应为 ±3°、±6°、±9°",
+);
 for (const amplitude of EXPERIMENT_5_V2_AMPLITUDES_DEG) {
   const amplitudeUnits = formal.filter((unit) => unit.amplitudeDeg === amplitude);
   assert(amplitudeUnits.length === EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK, `${amplitude}°试次数错误`);
@@ -99,64 +114,108 @@ for (const amplitude of EXPERIMENT_5_V2_AMPLITUDES_DEG) {
     `${amplitude}°向右试次数错误`);
   assert(new Set(amplitudeUnits.map((unit) => unit.stateSiteId)).size === 2,
     "每个振幅应包含两个上摆方向");
-  const thetaVisDeg = Math.acos(
-    1 - experiment5V2VisibleHeightM(amplitude) / EXPERIMENT_5_V2_ROD_LENGTH_M,
-  ) * 180 / Math.PI;
   for (const grating of ["G1", "G2", "G3"] as const) {
     const group = amplitudeUnits.filter((unit) => unit.gratingCondition === grating);
-    assert(group.length === EXPERIMENT_5_V2_DELTA_H_M.length * 2, "每个振幅×光栅的铃铛数量错误");
+    assert(group.length === EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG.length * 2, "每个振幅×光栅的铃铛数量错误");
     const fingerprint = (unit: BellReachabilityV2StimulusUnit) => JSON.stringify([
       unit.theta0Deg, unit.omega0DegPerSec, unit.queryThetaDeg,
       unit.queryOmegaRadPerSec, unit.queryTimeSec, unit.visibleSegments,
     ]);
     for (const side of ["left", "right"] as const) {
       const sideGroup = group.filter((unit) => unit.bellSide === side);
-      assert(sideGroup.length === EXPERIMENT_5_V2_DELTA_H_M.length, "每个方向应覆盖全部高度");
+      assert(sideGroup.length === EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG.length, "每个方向应覆盖全部角度");
       assert(new Set(sideGroup.map(fingerprint)).size === 1, "同一光栅×方向必须共享运动片段");
     }
-    assert(new Set(group.map((unit) => `${unit.deltaHM}:${unit.bellSide}`)).size === group.length,
-      "应覆盖全部高度和侧别");
+    assert(new Set(group.map((unit) => `${unit.bellAngleOffsetDeg}:${unit.bellSide}`)).size === group.length,
+      "应覆盖全部角度和侧别");
   }
   const sample = amplitudeUnits[0]!;
-  const visibleMax = maxAbsThetaDeg(sample, 0, sample.blankStartSec);
-  assert(visibleMax < amplitude - 5, "可见运动不得包含端点");
-  assert(visibleMax < thetaVisDeg + 1, "可见运动不得超过可见高度");
-  const hiddenMax = maxAbsThetaDeg(sample, sample.blankStartSec, sample.queryTimeSec);
-  assert(hiddenMax > amplitude - 1, "空白必须盖住端点");
-  assert(
-    Math.abs(sample.blankDurationSec - (sample.queryTimeSec - sample.blankStartSec)) < 1e-9,
-    "空白时长应等于提问时刻减空白开始",
+  const sampleApexSign = sample.bellSide === "left" ? -1 : 1;
+  const fadeStart = sample.blankStartSec - PROTOCOL_2_FADE_SEC;
+  const opaqueApexDeg = maxSignedThetaDeg(sample, 0, fadeStart, sampleApexSign);
+  assert(opaqueApexDeg < amplitude - 5, "完全可见阶段不得接近对侧端点");
+  const hiddenApexDeg = maxSignedThetaDeg(
+    sample, sample.blankStartSec, sample.queryTimeSec, sampleApexSign,
   );
-  assert(sample.blankDurationSec > EXPERIMENT_5_V2_POST_TURN_SEC, "空白应长于端点后的停留");
-  for (const delta of EXPERIMENT_5_V2_DELTA_H_M) {
-    const deltaUnits = amplitudeUnits.filter((unit) => unit.deltaHM === delta);
-    assert(deltaUnits.length === 6, "每个高度偏移应在左右两个方向的每档光栅出现一次");
-    assert(new Set(deltaUnits.map((unit) => unit.bellSide)).size === 2, "同一高度应在左右两侧都出现");
-    assert(deltaUnits.every((unit) =>
-      (unit.correctResponse === "reachable") === (delta <= 0) &&
+  assert(hiddenApexDeg > amplitude - 1, "空白必须盖住端点");
+  const lowestBellDeg = amplitude + Math.min(...EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG);
+  const atLowestBell = maxSignedThetaDeg(
+    sample,
+    sample.blankStartSec + EXPERIMENT_5_V2_BLANK_BEFORE_LOWEST_BELL_SEC,
+    sample.blankStartSec + EXPERIMENT_5_V2_BLANK_BEFORE_LOWEST_BELL_SEC,
+    sampleApexSign,
+  );
+  assert(Math.abs(atLowestBell - lowestBellDeg) < 0.05, "0.1 秒空白结束时应到达最低铃铛");
+  assert(sample.blankDurationSec > EXPERIMENT_5_V2_BLANK_BEFORE_LOWEST_BELL_SEC + 0.05,
+    "空白应在最低铃铛之后延续到最高点");
+  assert(
+    Math.abs(sample.queryTimeSec - (sample.blankStartSec + sample.blankDurationSec)) < 1e-9,
+    "提问时刻应是空白结束，也就是该侧最高点",
+  );
+  const apexSign = sample.bellSide === "left" ? -1 : 1;
+  assert(Math.abs(sample.queryThetaDeg - apexSign * amplitude) < 0.05, "查询角度应为对侧最高点");
+  assert(Math.abs(sample.queryOmegaRadPerSec) < 0.02, "对侧最高点角速度应接近 0");
+  for (const grating of ["G1", "G2", "G3"] as const) {
+    for (const side of ["left", "right"] as const) {
+      const unit = amplitudeUnits.find((item) =>
+        item.gratingCondition === grating && item.bellSide === side);
+      assert(unit, "缺少振幅×光栅×方向");
+      const expected = experiment5V2DepartureState(
+        amplitude, side, PROTOCOL_2_GRATING_CONDITIONS[grating],
+      );
+      assert(Math.abs(unit.theta0Deg - (expected.thetaRad * 180) / Math.PI) < 1e-9,
+        "起点角度应为最外条外沿或该侧最高点");
+      assert(Math.abs(unit.omega0DegPerSec - (expected.omegaRadPerSec * 180) / Math.PI) < 1e-6,
+        "起点角速度应朝向铃铛");
+      const params = {
+        theta0Rad: (unit.theta0Deg * Math.PI) / 180,
+        omega0RadPerSec: (unit.omega0DegPerSec * Math.PI) / 180,
+        rodLengthM: unit.rodLengthM,
+        gravity: unit.gravity,
+      };
+      const openSec = experiment5V2ResponseOpenSec(
+        amplitude, params, analyzePendulum(params),
+        PROTOCOL_2_GRATING_CONDITIONS[grating], side, unit.queryTimeSec,
+      );
+      assert(openSec < unit.blankStartSec - PROTOCOL_2_FADE_SEC, "作答应在淡出开始前打开");
+    }
+  }
+  for (const offset of EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG) {
+    const offsetUnits = amplitudeUnits.filter((unit) => unit.bellAngleOffsetDeg === offset);
+    assert(offsetUnits.length === 6, "每个角度偏移应在左右两个方向的每档光栅出现一次");
+    assert(new Set(offsetUnits.map((unit) => unit.bellSide)).size === 2, "同一角度应在左右两侧都出现");
+    assert(offsetUnits.every((unit) =>
+      Math.abs(Math.abs(unit.bellThetaDeg) - (amplitude + offset)) < 1e-9 &&
+      (unit.correctResponse === "reachable") === (offset < 0) &&
       unit.correctResponse === "reachable" === experiment5V2EndpointReachesBell(
         unit.amplitudeDeg,
         (unit.bellThetaDeg * Math.PI) / 180,
       ),
-    ), "端点容差应与高度偏移符号一致");
+    ), "铃铛应锁在振幅加减步长的圆弧上，且可达性与偏移符号一致");
   }
 }
 const toleranceRad = EXPERIMENT_5_V2_BOB_RADIUS_M / EXPERIMENT_5_V2_ROD_LENGTH_M;
-const maxAmplitude = EXPERIMENT_5_V2_AMPLITUDES_DEG[EXPERIMENT_5_V2_AMPLITUDES_DEG.length - 1]!;
+const maxAmplitude = Math.max(...EXPERIMENT_5_V2_AMPLITUDES_DEG);
+const stepRad = (EXPERIMENT_5_V2_BELL_ANGLE_STEP_DEG * Math.PI) / 180;
+assert(stepRad > toleranceRad, "3°步长应大于摆球角半径");
 assert(!experiment5V2EndpointReachesBell(
   maxAmplitude,
-  (maxAmplitude * Math.PI) / 180 + toleranceRad + 0.02,
-), "+0.10 m 附近超出容差的角度仍应不可达");
-assert(formal.some((unit) => unit.deltaHM > 0 && unit.correctResponse === "unreachable"),
+  (maxAmplitude * Math.PI) / 180 + stepRad,
+), "高出端点 3° 的铃铛应不可达");
+assert(experiment5V2EndpointReachesBell(
+  maxAmplitude,
+  (maxAmplitude * Math.PI) / 180 - stepRad,
+), "低于端点 3° 的铃铛应可达");
+assert(formal.some((unit) => unit.bellAngleOffsetDeg > 0 && unit.correctResponse === "unreachable"),
   "高出端点的铃铛应为不可达");
-assert(formal.some((unit) => unit.deltaHM < 0 && unit.correctResponse === "reachable"),
+assert(formal.some((unit) => unit.bellAngleOffsetDeg < 0 && unit.correctResponse === "reachable"),
   "低于端点的铃铛应为可达");
 assert(formal.every((unit) => unit.bellSide === (unit.stateSiteId.endsWith("-left") ? "left" : "right")),
   "铃铛应放在消失时摆球朝向的一侧");
 assert(formal.every((unit) => unit.yesKey === EXPERIMENT_5_V2_YES_KEY && unit.noKey === EXPERIMENT_5_V2_NO_KEY),
   "正式试次按键应固定为 F 会到达、J 不会到达");
-assert(formal.every((unit) => !unit.plannedVisibleTurn && !unit.plannedVisibleContact),
-  "计划可见窗口不得包含转向或接触");
+assert(formal.every((unit) => !unit.plannedVisibleTurn),
+  "计划可见窗口不得包含转向");
 
 const practiceTrials = set.sequence.filter((item) => item.kind === "practice")
   .flatMap((item) => item.children);
@@ -169,9 +228,9 @@ assert(
   "实验五V2不得包含无遮挡演示",
 );
 assert(practice.length === EXPERIMENT_5_V2_PRACTICE_TRIALS, "练习应为12条");
-assert(EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG === 62.5, "练习应为55°与70°的中点");
+assert(EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG === 60, "练习应为55°与65°的中点");
 assert(practice.every((unit) => unit.amplitudeDeg === EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG),
-  "练习振幅应为62.5°");
+  "练习振幅应为60°");
 assert([...formal, ...practice].every((unit) => unit.visibleSegments.length > 0),
   "任何光栅都不得把整段摆球挡住");
 assert(practice.filter((unit) => unit.bellSide === "left").length === practice.length / 2,
@@ -189,7 +248,7 @@ for (const grating of ["G1", "G2", "G3"] as const) {
   }
 }
 assert(practice.every((unit) =>
-  (unit.correctResponse === "reachable") === (unit.deltaHM <= 0),
+  (unit.correctResponse === "reachable") === (unit.bellAngleOffsetDeg < 0),
 ), "练习评分必须使用端点是否够到铃铛");
 assert(practice.every((unit) => unit.bellSide === (unit.stateSiteId.endsWith("-left") ? "left" : "right")),
   "练习铃铛应放在消失时摆球朝向的一侧");

@@ -7,7 +7,7 @@ export function experiment4V2WelcomeText(): string {
 }
 
 export function experiment4V2StructureText(): string {
-  return `<h1>实验结构</h1><p>先完成6个练习试次，角度和速度汇报各3条。</p><p>正式阶段包含3个光栅区组，每区组26个试次。</p><p>按空格继续</p>`;
+  return `<h1>实验结构</h1><p>先完成6个练习试次，角度和速度汇报各3条。</p><p>正式阶段包含3个光栅区组，每区组32个试次，角度和速度汇报各16条。</p><p>按空格继续</p>`;
 }
 
 export function experiment4V2InitialCueText(

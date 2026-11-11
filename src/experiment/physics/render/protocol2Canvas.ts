@@ -51,6 +51,17 @@ function guide(
   ctx.fill();
 }
 
+/** 只画轨迹虚线和悬挂点。速度汇报时没有摆球，仍保留半圆参照。 */
+export function drawProtocol2TrajectoryGuide(
+  ctx: CanvasRenderingContext2D,
+  layout: GratingWorldLayout,
+  rodLengthM: number,
+  amplitudeRad: number,
+): void {
+  background(ctx, layout);
+  guide(ctx, layout, rodLengthM, amplitudeRad);
+}
+
 function bob(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,
@@ -95,9 +106,10 @@ function paintMotion(
   amplitudeRad: number,
   thetaRad: number,
   showAmplitudeGuide: boolean,
+  barFill?: string,
 ): void {
   bob(ctx, layout, rodLengthM, bobRadiusM, thetaRad);
-  if (geometry) drawGratingBars(ctx, layout, geometry);
+  if (geometry) drawGratingBars(ctx, layout, geometry, barFill);
   if (showAmplitudeGuide) guide(ctx, layout, rodLengthM, amplitudeRad);
   else {
     const pivot = worldToCanvas(layout, 0, 0);
@@ -173,7 +185,7 @@ function drawBell(
 export function drawProtocol2BellMotionFrame(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,
-  geometry: GratingGeometry,
+  geometry: GratingGeometry | null,
   rodLengthM: number,
   bobRadiusM: number,
   amplitudeRad: number,
@@ -181,6 +193,7 @@ export function drawProtocol2BellMotionFrame(
   bellThetaRad: number,
   sceneAlpha = 1,
   showAmplitudeGuide = true,
+  barFill?: string,
 ): void {
   background(ctx, layout);
   const alpha = Math.max(0, Math.min(1, sceneAlpha));
@@ -194,6 +207,7 @@ export function drawProtocol2BellMotionFrame(
     amplitudeRad,
     thetaRad,
     showAmplitudeGuide,
+    barFill,
   );
   drawBell(ctx, layout, rodLengthM, bellThetaRad);
   fadeTowardBackground(ctx, layout, alpha);

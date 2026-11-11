@@ -1,0 +1,280 @@
+import { cryptoRandom, shuffleInPlace } from "../../experiment/stimulus/cryptoRandom";
+import { newId } from "../../shared/ids";
+import type {
+  BellReachabilityV3StimulusUnit,
+  BlockSegment,
+  Experiment5V3StimulusSet,
+  PracticeSegment,
+  RestSegment,
+  TextDisplayUnit,
+  TopLevelSequenceItem,
+  Trial,
+} from "../../shared/experimentTypes";
+import { EXPERIMENT_5_V3_STIMULUS_SET_SCHEMA_VERSION } from "../../shared/experimentTypes";
+import type { Experiment5ParticipantInfo } from "../../shared/participant";
+import { PROTOCOL_2_MODEL_DT_SEC } from "../protocol-2/common";
+import {
+  experiment5V3BellThetaRad,
+  experiment5V3EndpointReachesBell,
+  planExperiment5V3Approach,
+  type Experiment5V3ApproachPlan,
+  type Experiment5V3ApproachSide,
+} from "./approachPlan";
+import {
+  experiment5V3BlockText,
+  experiment5V3InitialCueText,
+  experiment5V3PracticeText,
+  experiment5V3StructureText,
+  experiment5V3WelcomeText,
+} from "./instructions";
+import {
+  EXPERIMENT_5_V3_AMPLITUDES_DEG,
+  EXPERIMENT_5_V3_APPROACH_SIDES,
+  EXPERIMENT_5_V3_BELL_ANGLE_OFFSETS_DEG,
+  EXPERIMENT_5_V3_BLANK_BEFORE_LOWEST_BELL_SEC,
+  EXPERIMENT_5_V3_BOB_RADIUS_M,
+  EXPERIMENT_5_V3_CUE_MS,
+  EXPERIMENT_5_V3_FIXATION_MS,
+  EXPERIMENT_5_V3_FIXATION_TEXT,
+  EXPERIMENT_5_V3_FORMAL_BLOCKS,
+  EXPERIMENT_5_V3_FORMAL_TRIALS,
+  EXPERIMENT_5_V3_FORMAL_TRIALS_PER_BLOCK,
+  EXPERIMENT_5_V3_FORMAL_TRIALS_PER_SIDE,
+  EXPERIMENT_5_V3_GRAVITY,
+  EXPERIMENT_5_V3_LOWEST_BELL_OFFSET_DEG,
+  EXPERIMENT_5_V3_NO_KEY,
+  EXPERIMENT_5_V3_PRACTICE_AMPLITUDE_DEG,
+  EXPERIMENT_5_V3_PRACTICE_TRIALS,
+  EXPERIMENT_5_V3_ROD_LENGTH_M,
+  EXPERIMENT_5_V3_TOTAL_RUNTIME_TRIALS,
+  EXPERIMENT_5_V3_YES_KEY,
+} from "./protocol";
+
+export type GenerateExperiment5V3Options = {
+  rng?: () => number;
+  signal?: AbortSignal;
+  onProgress?: (completed: number, total: number) => void;
+};
+
+function control(text: string) {
+  return { id: newId(), type: "textControl" as const, text, key: " " };
+}
+
+function rest(text: string): RestSegment {
+  return { kind: "rest", id: newId(), units: [control(text)] };
+}
+
+function bellUnit(
+  plan: Experiment5V3ApproachPlan,
+  angleOffsetDeg: number,
+  side: Experiment5V3ApproachSide,
+): BellReachabilityV3StimulusUnit {
+  const bell = experiment5V3BellThetaRad(plan.amplitudeDeg, angleOffsetDeg, side);
+  return {
+    id: newId(),
+    type: "bellReachabilityV3Stimulus",
+    theta0Deg: plan.theta0Deg,
+    omega0DegPerSec: plan.omega0DegPerSec,
+    rodLengthM: EXPERIMENT_5_V3_ROD_LENGTH_M,
+    gravity: EXPERIMENT_5_V3_GRAVITY,
+    bobRadiusM: EXPERIMENT_5_V3_BOB_RADIUS_M,
+    energyJ: plan.energyJ,
+    amplitudeDeg: plan.amplitudeDeg,
+    queryThetaDeg: plan.queryThetaDeg,
+    queryOmegaRadPerSec: plan.queryOmegaRadPerSec,
+    queryTimeSec: plan.queryTimeSec,
+    blankStartSec: plan.blankStartSec,
+    blankDurationSec: plan.blankDurationSec,
+    stateSiteId: plan.stateSiteId,
+    modelDtSec: PROTOCOL_2_MODEL_DT_SEC,
+    bellAngleOffsetDeg: angleOffsetDeg,
+    bellContactHeightM: bell.height,
+    bellThetaDeg: (bell.theta * 180) / Math.PI,
+    bellSide: side,
+    correctResponse: experiment5V3EndpointReachesBell(plan.amplitudeDeg, bell.theta)
+      ? "reachable" : "unreachable",
+    yesKey: EXPERIMENT_5_V3_YES_KEY,
+    noKey: EXPERIMENT_5_V3_NO_KEY,
+  };
+}
+
+function cueUnit(unit: BellReachabilityV3StimulusUnit): TextDisplayUnit {
+  return {
+    id: newId(),
+    type: "textDisplay",
+    text: experiment5V3InitialCueText(
+      unit.bellSide === "left" ? "right" : "left",
+      unit.bellSide === "left" ? "leftward" : "rightward",
+    ),
+    durationMs: EXPERIMENT_5_V3_CUE_MS,
+  };
+}
+
+function fixationUnit(): TextDisplayUnit {
+  return {
+    id: newId(),
+    type: "textDisplay",
+    text: EXPERIMENT_5_V3_FIXATION_TEXT,
+    durationMs: EXPERIMENT_5_V3_FIXATION_MS,
+  };
+}
+
+function asTrial(unit: BellReachabilityV3StimulusUnit): Trial {
+  return { id: newId(), units: [cueUnit(unit), fixationUnit(), unit] };
+}
+
+function formalBlock(
+  amplitudeDeg: number,
+  rng: () => number,
+  onTrial: () => void,
+): BlockSegment {
+  const trials: Trial[] = [];
+  for (const side of EXPERIMENT_5_V3_APPROACH_SIDES) {
+    const plan = planExperiment5V3Approach(amplitudeDeg, side);
+    for (const offset of EXPERIMENT_5_V3_BELL_ANGLE_OFFSETS_DEG) {
+      trials.push(asTrial(bellUnit(plan, offset, side)));
+      onTrial();
+    }
+  }
+  shuffleInPlace(trials, rng);
+  return { kind: "block", id: newId(), children: trials };
+}
+
+function practiceBlock(rng: () => number, onTrial: () => void): PracticeSegment {
+  const children = EXPERIMENT_5_V3_APPROACH_SIDES.flatMap((side) => {
+    const plan = planExperiment5V3Approach(EXPERIMENT_5_V3_PRACTICE_AMPLITUDE_DEG, side);
+    onTrial();
+    onTrial();
+    return [
+      asTrial(bellUnit(plan, EXPERIMENT_5_V3_LOWEST_BELL_OFFSET_DEG, side)),
+      asTrial(bellUnit(plan, -EXPERIMENT_5_V3_LOWEST_BELL_OFFSET_DEG, side)),
+    ];
+  });
+  shuffleInPlace(children, rng);
+  return { kind: "practice", id: newId(), children };
+}
+
+export function generateExperiment5V3RuntimeStimulusSet(
+  _participant: Experiment5ParticipantInfo,
+  options: GenerateExperiment5V3Options = {},
+): Experiment5V3StimulusSet {
+  const rng = options.rng ?? cryptoRandom();
+  let completed = 0;
+  const report = () => {
+    completed += 1;
+    options.onProgress?.(completed, EXPERIMENT_5_V3_TOTAL_RUNTIME_TRIALS);
+  };
+  const blocks = EXPERIMENT_5_V3_AMPLITUDES_DEG.map((amplitude) => ({
+    amplitude,
+    block: formalBlock(amplitude, rng, report),
+  }));
+  shuffleInPlace(blocks, rng);
+  const sequence: TopLevelSequenceItem[] = [
+    rest(experiment5V3WelcomeText()),
+    rest(experiment5V3StructureText()),
+    rest(experiment5V3PracticeText()),
+    practiceBlock(rng, report),
+  ];
+  blocks.forEach(({ amplitude, block }, index) => {
+    sequence.push(
+      rest(experiment5V3BlockText(index + 1, EXPERIMENT_5_V3_FORMAL_BLOCKS, amplitude)),
+      block,
+    );
+  });
+  const set: Experiment5V3StimulusSet = {
+    schemaVersion: EXPERIMENT_5_V3_STIMULUS_SET_SCHEMA_VERSION,
+    sequence,
+  };
+  assertExperiment5V3RuntimeStimulusSet(set);
+  return set;
+}
+
+export async function generateExperiment5V3RuntimeStimulusSetAsync(
+  participant: Experiment5ParticipantInfo,
+  options: GenerateExperiment5V3Options = {},
+): Promise<Experiment5V3StimulusSet> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL("./generateWorker.ts", import.meta.url), { type: "module" });
+    let settled = false;
+    const finish = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      options.signal?.removeEventListener("abort", onAbort);
+      worker.terminate();
+      callback();
+    };
+    const onAbort = () => finish(() => reject(new DOMException("刺激集生成已取消", "AbortError")));
+    worker.addEventListener("message", (event: MessageEvent<
+      | { type: "progress"; completed: number; total: number }
+      | { type: "success"; set: Experiment5V3StimulusSet }
+      | { type: "error"; message: string }
+    >) => {
+      const message = event.data;
+      if (message.type === "progress") options.onProgress?.(message.completed, message.total);
+      else if (message.type === "success") finish(() => resolve(message.set));
+      else finish(() => reject(new Error(message.message)));
+    });
+    worker.addEventListener("error", (event) => finish(() => reject(new Error(event.message))));
+    if (options.signal?.aborted) { onAbort(); return; }
+    options.signal?.addEventListener("abort", onAbort, { once: true });
+    worker.postMessage({ participant });
+  });
+}
+
+function unitsOf(set: Experiment5V3StimulusSet, kind: "block" | "practice") {
+  return set.sequence
+    .filter((item): item is BlockSegment | PracticeSegment => item.kind === kind)
+    .flatMap((item) => item.children)
+    .map((trial) => trial.units.find(
+      (unit): unit is BellReachabilityV3StimulusUnit =>
+        unit.type === "bellReachabilityV3Stimulus",
+    ))
+    .filter((unit): unit is BellReachabilityV3StimulusUnit => Boolean(unit));
+}
+
+export function assertExperiment5V3RuntimeStimulusSet(set: Experiment5V3StimulusSet): void {
+  const practice = unitsOf(set, "practice");
+  const formal = unitsOf(set, "block");
+  const blocks = set.sequence.filter((item) => item.kind === "block");
+  if (practice.length !== EXPERIMENT_5_V3_PRACTICE_TRIALS) throw new Error("实验五V3练习试次数错误");
+  if (formal.length !== EXPERIMENT_5_V3_FORMAL_TRIALS ||
+    blocks.length !== EXPERIMENT_5_V3_FORMAL_BLOCKS ||
+    blocks.some((block) => block.children.length !== EXPERIMENT_5_V3_FORMAL_TRIALS_PER_BLOCK)) {
+    throw new Error("实验五V3正式结构错误");
+  }
+  for (const unit of [...practice, ...formal]) {
+    const startSign = unit.bellSide === "left" ? 1 : -1;
+    const expectedStart = startSign * (unit.amplitudeDeg + EXPERIMENT_5_V3_LOWEST_BELL_OFFSET_DEG);
+    if (Math.abs(unit.theta0Deg - expectedStart) > 1e-6) {
+      throw new Error("实验五V3起点必须是对侧最低询问角");
+    }
+    if (Math.sign(unit.omega0DegPerSec) !== (unit.bellSide === "left" ? -1 : 1)) {
+      throw new Error("实验五V3初速度必须朝向铃铛");
+    }
+    if (unit.blankDurationSec <= EXPERIMENT_5_V3_BLANK_BEFORE_LOWEST_BELL_SEC) {
+      throw new Error("实验五V3空白应延续到最高点");
+    }
+    const reachable = experiment5V3EndpointReachesBell(
+      unit.amplitudeDeg,
+      (unit.bellThetaDeg * Math.PI) / 180,
+    );
+    if (reachable !== (unit.correctResponse === "reachable") ||
+      reachable !== (unit.bellAngleOffsetDeg < 0)) {
+      throw new Error("实验五V3可达性评分错误");
+    }
+  }
+  for (const block of blocks) {
+    const blockUnits = block.children.map((trial) => trial.units.find(
+      (unit): unit is BellReachabilityV3StimulusUnit => unit.type === "bellReachabilityV3Stimulus",
+    )).filter((unit): unit is BellReachabilityV3StimulusUnit => Boolean(unit));
+    if (new Set(blockUnits.map((unit) => unit.amplitudeDeg)).size !== 1) {
+      throw new Error("实验五V3区组内振幅不一致");
+    }
+    for (const side of EXPERIMENT_5_V3_APPROACH_SIDES) {
+      if (blockUnits.filter((unit) => unit.bellSide === side).length !==
+        EXPERIMENT_5_V3_FORMAL_TRIALS_PER_SIDE) {
+        throw new Error("实验五V3每个方向的铃铛数量错误");
+      }
+    }
+  }
+}

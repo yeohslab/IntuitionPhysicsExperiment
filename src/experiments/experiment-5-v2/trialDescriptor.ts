@@ -66,7 +66,7 @@ export function collectExperiment5V2TrialDescriptors(
         grating_offset_m: unit.gratingOffsetM,
         visible_segments_json: JSON.stringify(unit.visibleSegments),
         ...visibleSegmentColumns(unit.visibleSegments),
-        delta_h_m: unit.deltaHM,
+        bell_angle_offset_deg: unit.bellAngleOffsetDeg,
         bell_contact_height_m: unit.bellContactHeightM,
         bell_theta_deg: unit.bellThetaDeg,
         bell_side: unit.bellSide,

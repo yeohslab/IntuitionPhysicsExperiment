@@ -7,7 +7,7 @@ export function mountExperimentPicker(container: HTMLElement): void {
     [experimentDefinitions["training-1"]],
     [experimentDefinitions["experiment-2"]],
     [experimentDefinitions["experiment-4"], experimentDefinitions["experiment-4-v2"]],
-    [experimentDefinitions["experiment-5"], experimentDefinitions["experiment-5-v2"]],
+    [experimentDefinitions["experiment-5"], experimentDefinitions["experiment-5-v2"], experimentDefinitions["experiment-5-v3"]],
   ] as const;
   const cards = groups.map((definitions) => {
     const first = definitions[0];

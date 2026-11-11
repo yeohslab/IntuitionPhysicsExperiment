@@ -1,5 +1,6 @@
 import type { JsPsych } from "jspsych";
 import { ParameterType } from "jspsych";
+import { EXPERIMENT_4_V2_TRAJECTORY_GUIDE_SPAN_DEG } from "../../experiments/experiment-4-v2/protocol";
 import { protocol2SceneAlpha } from "../../experiments/protocol-2/common";
 import { analyzePendulum, pendulumThetaOmegaAt } from "../../experiment/physics/pendulum";
 import { pointerToLogical, setupHiDpiCanvas } from "../../experiment/physics/render/canvasCoords";
@@ -74,6 +75,8 @@ export default class TrackingPendulumV2Plugin {
     const actions = display.querySelector('[data-role="actions"]') as HTMLElement;
     const { ctx } = setupHiDpiCanvas(canvas, GRATING_CANVAS_LOGICAL_W, GRATING_CANVAS_LOGICAL_H);
     const layout = gratingWorldLayout(GRATING_CANVAS_LOGICAL_W, GRATING_CANVAS_LOGICAL_H, u.rodLengthM);
+    const guideHalfDeg = EXPERIMENT_4_V2_TRAJECTORY_GUIDE_SPAN_DEG / 2;
+    const guideHalfRad = (guideHalfDeg * Math.PI) / 180;
     const geometry = {
       gapM: u.gapM, barWidthM: u.barWidthM,
       periodM: u.gratingPeriodM, offsetM: u.gratingOffsetM,
@@ -189,7 +192,7 @@ export default class TrackingPendulumV2Plugin {
       actions.innerHTML = "";
       if (u.reportTarget === "angle") {
         drawProtocol2TrackingFeedback(
-          ctx, layout, u.rodLengthM, u.amplitudeDeg,
+          ctx, layout, u.rodLengthM, guideHalfDeg,
           thetaEstimateRad, (u.queryThetaDeg * Math.PI) / 180,
         );
         hint.innerHTML =
@@ -227,6 +230,7 @@ export default class TrackingPendulumV2Plugin {
       canvas.removeEventListener("pointermove", onAnglePointerMove);
       canvas.removeEventListener("pointerup", onAnglePointerUp);
       hint.textContent = "请在色带上报告空白结束瞬间的速度大小，然后确认。";
+      fillBlank();
       speedStrip = mountSpeedReportStrip(stripHost);
       speedStrip.onChange((value) => {
         if (speedPosition === null) rtSpeedSec = (performance.now() - promptMs) / 1000;
@@ -251,7 +255,7 @@ export default class TrackingPendulumV2Plugin {
       setCursor("estimate");
       showResponseCursor(true);
       fillBlank();
-      drawProtocol2AngleReport(ctx, layout, u.rodLengthM, u.amplitudeDeg, thetaEstimateRad, false);
+      drawProtocol2AngleReport(ctx, layout, u.rodLengthM, guideHalfDeg, thetaEstimateRad, false);
       hint.textContent = "请在橙色圆弧上报告空白结束瞬间的摆杆角度。";
       const confirm = document.createElement("button");
       confirm.className = "physics-btn physics-btn--primary";
@@ -270,12 +274,12 @@ export default class TrackingPendulumV2Plugin {
     function updateAngle(event: PointerEvent) {
       const point = pointerToLogical(event.clientX, event.clientY, canvas, GRATING_CANVAS_LOGICAL_W, GRATING_CANVAS_LOGICAL_H);
       thetaEstimateRad = protocol2AngleFromPointer(
-        layout, u.rodLengthM, u.amplitudeDeg, point.x, point.y,
+        layout, u.rodLengthM, guideHalfDeg, point.x, point.y,
       );
       if (!angleInteracted) rtAngleSec = (performance.now() - promptMs) / 1000;
       angleInteracted = true;
       if (angleConfirmButton) angleConfirmButton.disabled = false;
-      drawProtocol2AngleReport(ctx, layout, u.rodLengthM, u.amplitudeDeg, thetaEstimateRad, true);
+      drawProtocol2AngleReport(ctx, layout, u.rodLengthM, guideHalfDeg, thetaEstimateRad, true);
     }
     function onAnglePointer(event: PointerEvent) {
       if (phase !== "angle") return;
@@ -320,7 +324,7 @@ export default class TrackingPendulumV2Plugin {
       const state = pendulumThetaOmegaAt(elapsed, params, analysis);
       drawProtocol2MotionFrame(
         ctx, layout, geometry, u.rodLengthM, u.bobRadiusM,
-        (u.amplitudeDeg * Math.PI) / 180, state.theta, sceneAlpha,
+        guideHalfRad, state.theta, sceneAlpha,
       );
       u.visibleSegments.forEach((segment, index) => {
         if (elapsed >= segment.tStartSec && elapsed <= segment.tEndSec) {

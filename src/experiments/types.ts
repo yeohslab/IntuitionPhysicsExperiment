@@ -6,6 +6,7 @@ import type {
   Experiment4V2StimulusSet,
   Experiment5StimulusSet,
   Experiment5V2StimulusSet,
+  Experiment5V3StimulusSet,
   ExperimentTraining1StimulusSet,
 } from "../shared/experimentTypes";
 import type {
@@ -24,7 +25,8 @@ export type LogicalExperimentId =
 export type ExperimentVariantId =
   | LogicalExperimentId
   | "experiment-4-v2"
-  | "experiment-5-v2";
+  | "experiment-5-v2"
+  | "experiment-5-v3";
 /** Backward-compatible name used by runtime/storage code. */
 export type ExperimentId = ExperimentVariantId;
 export type AnyRuntimeStimulusSet =
@@ -33,6 +35,7 @@ export type AnyRuntimeStimulusSet =
   | Experiment4V2StimulusSet
   | Experiment5StimulusSet
   | Experiment5V2StimulusSet
+  | Experiment5V3StimulusSet
   | ExperimentTraining1StimulusSet;
 
 export type SpeedCueConfig =
@@ -116,6 +119,11 @@ export type Experiment4V2Definition = ExperimentDefinition<
 export type Experiment5V2Definition = ExperimentDefinition<
   Experiment5ParticipantInfo,
   Experiment5V2StimulusSet
+>;
+
+export type Experiment5V3Definition = ExperimentDefinition<
+  Experiment5ParticipantInfo,
+  Experiment5V3StimulusSet
 >;
 
 export type Training1Definition = ExperimentDefinition<

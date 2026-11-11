@@ -3,13 +3,13 @@ import { ParameterType } from "jspsych";
 import { analyzePendulum, pendulumThetaOmegaAt } from "../../experiment/physics/pendulum";
 import { setupHiDpiCanvas } from "../../experiment/physics/render/canvasCoords";
 import {
+  GRATING_BAR_ORANGE,
   GRATING_CANVAS_LOGICAL_H,
   GRATING_CANVAS_LOGICAL_W,
   gratingWorldLayout,
 } from "../../experiment/physics/render/gratingCanvas";
 import { protocol2SceneAlpha } from "../../experiments/protocol-2/common";
-
-const PRACTICE_REVEAL_ALPHA = 0.4;
+import { experiment5V2ResponseOpenSec } from "../../experiments/experiment-5-v2/approachPlan";
 import { drawProtocol2BellMotionFrame } from "../../experiment/physics/render/protocol2Canvas";
 import {
   prepareMaskedAmbientForTrial,
@@ -38,6 +38,7 @@ type Unit = {
   queryThetaDeg: number; queryOmegaRadPerSec: number;
   visibleSegments: Array<{ tStartSec: number; tEndSec: number; truncatedByBlank: boolean }>;
   gapM: number; barWidthM: number; gratingPeriodM: number; gratingOffsetM: number;
+  bellSide: "left" | "right";
   bellThetaDeg: number; correctResponse: "reachable" | "unreachable";
   yesKey: "f" | "j"; noKey: "f" | "j";
 };
@@ -69,11 +70,14 @@ export default class BellReachabilityV2Plugin {
     };
     const analysis = analyzePendulum(params);
     const bellThetaRad = (u.bellThetaDeg * Math.PI) / 180;
+    const responseOpenSec = experiment5V2ResponseOpenSec(
+      u.amplitudeDeg, params, analysis, geometry, u.bellSide, u.queryTimeSec,
+    );
+    const answerHint = `铃铛是否可能到达？<strong>${u.yesKey.toUpperCase()} = 会到达</strong>，<strong>${u.noKey.toUpperCase()} = 不会到达</strong>`;
     const variantId = (trial.unitMeta.runtime_experiment_id ?? "experiment-5-v2") as ExperimentId;
     const startedMs = performance.now();
-    let phase: "motion" | "blank" | "response" | "replay" | "feedback" = "motion";
-    let replayStartMs = 0;
-    let replayPausedMs = 0;
+    let phase: "motion" | "blank" | "response" | "feedback" = "motion";
+    let responseArmed = false;
     let raf = 0;
     let previousFrameMs = startedMs;
     let frameCount = 0;
@@ -111,7 +115,7 @@ export default class BellReachabilityV2Plugin {
     };
     const blank = () => {
       ctx.fillStyle = "#f8fafc";
-      ctx.fillRect(0, 0, GRATING_CANVAS_LOGICAL_W, GRATING_CANVAS_LOGICAL_H);
+      ctx.fillRect(0, 0, layout.canvasW, layout.canvasH);
     };
     const cleanup = () => {
       stopMaskedAmbientSound();
@@ -152,70 +156,41 @@ export default class BellReachabilityV2Plugin {
       cleanup();
       this.jsPsych.finishTrial(payload());
     };
-    const revealAlpha = (elapsedSec: number) =>
-      Math.max(PRACTICE_REVEAL_ALPHA, protocol2SceneAlpha(elapsedSec, u.blankStartSec));
     const showVerdict = () => {
       phase = "feedback";
+      cancelAnimationFrame(raf);
+      stopMaskedAmbientSound();
+      blank();
       cursor("feedback");
       const correct = response === u.correctResponse;
       feedback.innerHTML = `<p class="physics-feedback ${correct ? "is-correct" : "is-error"}"><strong>${correct ? "正确" : "错误"}</strong>。这个铃铛${u.correctResponse === "reachable" ? "可以" : "不可以"}到达。按空格继续。</p>`;
       hint.textContent = "练习反馈";
     };
-    const replayTick = (now: number) => {
-      if (phase !== "replay") return;
-      const elapsed = Math.max(0, (now - replayStartMs - replayPausedMs) / 1000);
-      if (elapsed >= u.queryTimeSec) {
-        transitionMaskedAmbientToEstimateCue();
-        showVerdict();
-        return;
-      }
-      const alpha = revealAlpha(elapsed);
-      if (elapsed >= u.blankStartSec) {
-        syncMaskedAmbientFromVisibility({ kind: "hide", alpha });
-      } else {
-        syncMaskedAmbientFromVisibility({
-          kind: alpha < 1 ? "fadeOut" : "show",
-          alpha,
-        });
-      }
-      const state = pendulumThetaOmegaAt(elapsed, params, analysis);
-      drawProtocol2BellMotionFrame(
-        ctx, layout, geometry, u.rodLengthM, u.bobRadiusM,
-        (u.amplitudeDeg * Math.PI) / 180, state.theta, bellThetaRad, alpha, true,
-      );
-      raf = requestAnimationFrame(replayTick);
-    };
-    const startReplay = () => {
-      phase = "replay";
-      cursor("hide");
-      hint.textContent = "练习反馈：观察摆球如何继续运动";
-      feedback.innerHTML = "";
-      replayStartMs = performance.now();
-      replayPausedMs = 0;
-      stopMaskedAmbientSound();
-      prepareMaskedAmbientForTrial();
-      raf = requestAnimationFrame(replayTick);
+    const armResponse = (now: number) => {
+      if (responseArmed) return;
+      responseArmed = true;
+      promptMs = now;
+      hint.innerHTML = answerHint;
+      root.focus({ preventScroll: true });
     };
     function onKey(event: KeyboardEvent) {
       if (event.repeat) return;
       if (phase === "feedback" && event.code === "Space") { finish(); return; }
-      if (phase !== "response") return;
+      if (!responseArmed || phase === "feedback") return;
       const key = event.key.toLowerCase();
       if (key !== u.yesKey && key !== u.noKey) return;
       responseKey = key;
       response = key === u.yesKey ? "reachable" : "unreachable";
       responseRtSec = (performance.now() - promptMs) / 1000;
-      if (trial.practice) startReplay();
+      if (trial.practice) showVerdict();
       else finish();
     }
     const startResponse = () => {
       phase = "response";
-      promptMs = performance.now();
       audioAnchor = transitionMaskedAmbientToEstimateCue();
       blank();
-      hint.innerHTML = `铃铛是否可能到达？<strong>${u.yesKey.toUpperCase()} = 会到达</strong>，<strong>${u.noKey.toUpperCase()} = 不会到达</strong>`;
+      armResponse(performance.now());
       cursor("estimate");
-      root.focus({ preventScroll: true });
     };
     const tick = (now: number) => {
       if (phase !== "motion" && phase !== "blank") return;
@@ -223,6 +198,7 @@ export default class BellReachabilityV2Plugin {
       maxFrameGapMs = Math.max(maxFrameGapMs, now - previousFrameMs);
       previousFrameMs = now;
       const elapsed = Math.max(0, (now - startedMs - pausedTotalMs) / 1000);
+      if (elapsed >= responseOpenSec) armResponse(now);
       if (elapsed >= u.queryTimeSec) { startResponse(); return; }
       if (elapsed >= u.blankStartSec) {
         if (phase !== "blank") {
@@ -244,6 +220,7 @@ export default class BellReachabilityV2Plugin {
       drawProtocol2BellMotionFrame(
         ctx, layout, geometry, u.rodLengthM, u.bobRadiusM,
         (u.amplitudeDeg * Math.PI) / 180, state.theta, bellThetaRad, sceneAlpha, false,
+        elapsed >= responseOpenSec ? GRATING_BAR_ORANGE : undefined,
       );
       u.visibleSegments.forEach((segment, index) => {
         if (elapsed < segment.tStartSec || elapsed > segment.tEndSec) return;
@@ -269,25 +246,19 @@ export default class BellReachabilityV2Plugin {
       const now = performance.now();
       if (document.hidden) {
         hiddenAt = now;
-        if (phase !== "replay") visibilityPauseCount += 1;
+        visibilityPauseCount += 1;
         cancelAnimationFrame(raf);
         return;
       }
       if (hiddenAt === null) return;
       const pause = now - hiddenAt;
       hiddenAt = null;
-      if (phase === "replay") {
-        replayPausedMs += pause;
-        raf = requestAnimationFrame(replayTick);
-        return;
-      }
       visibilityPauseMs += pause;
+      if (responseArmed) promptMs += pause;
       if (phase === "motion" || phase === "blank") {
         pausedTotalMs += pause;
         previousFrameMs = now;
         raf = requestAnimationFrame(tick);
-      } else if (phase === "response" || phase === "feedback") {
-        promptMs += pause;
       }
     }
     window.addEventListener("keydown", onKey);

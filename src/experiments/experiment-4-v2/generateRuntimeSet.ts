@@ -19,11 +19,10 @@ import {
   THREE_CONDITION_PERMUTATIONS,
   planProtocol2Motion,
   protocol2EnergyJ,
-  protocol2StateSites,
+  protocol2UniformEllipseSites,
   protocol2VisibleSegmentCount,
   subjectNumber,
   type Protocol2MotionPlan,
-  type Protocol2StateSite,
 } from "../protocol-2/common";
 import {
   EXPERIMENT_4_V2_AMPLITUDE_DEG,
@@ -67,15 +66,8 @@ function rest(text: string): RestSegment {
 
 function trackingUnit(
   plan: Protocol2MotionPlan,
-  condition: "no_hidden_reversal" | "hidden_reversal",
   reportTarget: Experiment4V2ReportTarget,
 ): TrackingPendulumV2StimulusUnit {
-  if (condition === "no_hidden_reversal" && plan.reversalTimeSec !== null) {
-    throw new Error(`${plan.stateSiteId}/${plan.geometry.id} 不满足无隐藏反向`);
-  }
-  if (condition === "hidden_reversal" && plan.reversalTimeSec === null) {
-    throw new Error(`${plan.stateSiteId}/${plan.geometry.id} 不满足隐藏反向`);
-  }
   return {
     id: newId(),
     type: "trackingPendulumV2Stimulus",
@@ -99,7 +91,6 @@ function trackingUnit(
     gratingOffsetM: plan.geometry.offsetM,
     stateSiteId: plan.stateSiteId,
     modelDtSec: PROTOCOL_2_MODEL_DT_SEC,
-    trackingCondition: condition,
     initialSide: plan.theta0Deg < 0 ? "left" : "right",
     initialDirection: plan.omega0DegPerSec < 0 ? "leftward" : "rightward",
     cueDurationMs: EXPERIMENT_4_V2_CUE_MS,
@@ -107,43 +98,6 @@ function trackingUnit(
     speedScaleLinearMPerSec: EXPERIMENT_4_V2_SPEED_SCALE_LINEAR_M_PER_SEC,
     reportTarget,
   };
-}
-
-function assignBalancedReports(
-  units: TrackingPendulumV2StimulusUnit[],
-  rng: () => number,
-): void {
-  const hidden = units.filter((unit) => unit.trackingCondition === "hidden_reversal");
-  const open = units.filter((unit) => unit.trackingCondition === "no_hidden_reversal");
-  shuffleInPlace(hidden, rng);
-  hidden.forEach((unit, index) => {
-    unit.reportTarget = index === 0 ? "angle" : "speed";
-  });
-  const strata = new Map<string, TrackingPendulumV2StimulusUnit[]>();
-  for (const unit of open) {
-    const key = `${unit.initialSide}|${unit.initialDirection}`;
-    const group = strata.get(key) ?? [];
-    group.push(unit);
-    strata.set(key, group);
-  }
-  const leftovers: TrackingPendulumV2StimulusUnit[] = [];
-  for (const group of strata.values()) {
-    shuffleInPlace(group, rng);
-    const pairs = Math.floor(group.length / 2);
-    group.forEach((unit, index) => {
-      if (index < pairs) unit.reportTarget = "angle";
-      else if (index < pairs * 2) unit.reportTarget = "speed";
-      else leftovers.push(unit);
-    });
-  }
-  shuffleInPlace(leftovers, rng);
-  const pending = new Set(leftovers);
-  const angleSoFar = open.filter((unit) =>
-    !pending.has(unit) && unit.reportTarget === "angle").length;
-  const angleNeeded = open.length / 2 - angleSoFar;
-  leftovers.forEach((unit, index) => {
-    unit.reportTarget = index < angleNeeded ? "angle" : "speed";
-  });
 }
 
 function cueUnit(unit: TrackingPendulumV2StimulusUnit): TextDisplayUnit {
@@ -168,55 +122,23 @@ function asTrial(unit: TrackingPendulumV2StimulusUnit): Trial {
   return { id: newId(), units: [cueUnit(unit), fixationUnit(), unit] };
 }
 
-function feasiblePlans(
-  amplitudeDeg: number,
-  gratingId: (typeof PROTOCOL_2_GRATING_ORDER)[number],
-): Array<{ site: Protocol2StateSite; plan: Protocol2MotionPlan }> {
-  const result: Array<{ site: Protocol2StateSite; plan: Protocol2MotionPlan }> = [];
-  for (const site of protocol2StateSites(amplitudeDeg)) {
-    try {
-      result.push({
-        site,
-        plan: planProtocol2Motion(
-          amplitudeDeg,
-          site,
-          PROTOCOL_2_GRATING_CONDITIONS[gratingId],
-        ),
-      });
-    } catch {
-      // The protocol explicitly rejects settings with a sub-two-frame segment.
-    }
-  }
-  return result;
-}
-
 function formalBlock(
   gratingId: (typeof PROTOCOL_2_GRATING_ORDER)[number],
   rng: () => number,
   onTrial: () => void,
 ): BlockSegment {
-  const plans = feasiblePlans(EXPERIMENT_4_V2_AMPLITUDE_DEG, gratingId);
-  const noHidden = plans.filter(({ plan }) => plan.reversalTimeSec === null);
-  if (noHidden.length === 0) throw new Error(`${gratingId} 没有无反向可行状态`);
-  const hiddenSites = plans.filter(
-    ({ site, plan }) =>
-      site.arcFractionNumerator === 11 &&
-      Math.sign(site.thetaRad) !== Math.sign(site.omegaRadPerSec) &&
-      plan.reversalTimeSec !== null,
+  const sites = protocol2UniformEllipseSites(
+    EXPERIMENT_4_V2_AMPLITUDE_DEG,
+    EXPERIMENT_4_V2_FORMAL_TRIALS_PER_BLOCK,
   );
-  if (hiddenSites.length !== 2) {
-    throw new Error(`${gratingId} 应有两个11/12隐藏反向返回状态，实际${hiddenSites.length}`);
-  }
-  // Fixed phase/blank geometry makes some return states intrinsically hidden-reversal.
-  // Fill the 24 truthfully-labelled no-reversal slots by cycling the feasible bank.
-  const noHiddenUnits = Array.from({ length: 24 }, (_, index) =>
-    trackingUnit(noHidden[index % noHidden.length]!.plan, "no_hidden_reversal", "angle"),
-  );
-  const hiddenUnits = hiddenSites.map(({ plan }) =>
-    trackingUnit(plan, "hidden_reversal", "angle"),
-  );
-  const units = [...noHiddenUnits, ...hiddenUnits];
-  assignBalancedReports(units, rng);
+  const units = sites.map((site, index) => trackingUnit(
+    planProtocol2Motion(
+      EXPERIMENT_4_V2_AMPLITUDE_DEG,
+      site,
+      PROTOCOL_2_GRATING_CONDITIONS[gratingId],
+    ),
+    index % 2 === 0 ? "angle" : "speed",
+  ));
   const trials = units.map(asTrial);
   shuffleInPlace(trials, rng);
   trials.forEach(onTrial);
@@ -229,22 +151,25 @@ function practiceBlock(
   onTrial: () => void,
 ): PracticeSegment {
   const parity = (subjectNumber(participant.subject_id) - 1) % 2;
+  const sites = protocol2UniformEllipseSites(EXPERIMENT_4_V2_PRACTICE_AMPLITUDE_DEG, 32);
   const children = PROTOCOL_2_GRATING_ORDER.flatMap((gratingId, index) => {
-    const plans = feasiblePlans(EXPERIMENT_4_V2_PRACTICE_AMPLITUDE_DEG, gratingId);
-    const hidden = plans.find(({ site, plan }) =>
-      site.arcFractionNumerator === 11 &&
-      Math.sign(site.thetaRad) !== Math.sign(site.omegaRadPerSec) &&
-      plan.reversalTimeSec !== null);
-    const open = plans.find(({ plan }) => plan.reversalTimeSec === null);
-    if (!hidden || !open) throw new Error(`${gratingId} 缺少练习所需状态`);
-    const hiddenReport: Experiment4V2ReportTarget =
-      (index + parity) % 2 === 0 ? "angle" : "speed";
-    const openReport: Experiment4V2ReportTarget = hiddenReport === "angle" ? "speed" : "angle";
+    const geometry = PROTOCOL_2_GRATING_CONDITIONS[gratingId];
+    const feasible = sites.flatMap((site) => {
+      try {
+        return [planProtocol2Motion(EXPERIMENT_4_V2_PRACTICE_AMPLITUDE_DEG, site, geometry)];
+      } catch {
+        return [];
+      }
+    });
+    if (feasible.length < 2) throw new Error(`${gratingId} 练习缺少两个可播放终点`);
+    const first = feasible[0]!;
+    const second = feasible[Math.floor(feasible.length / 2)] ?? feasible[1]!;
+    const angleFirst = (index + parity) % 2 === 0;
     onTrial();
     onTrial();
     return [
-      asTrial(trackingUnit(hidden.plan, "hidden_reversal", hiddenReport)),
-      asTrial(trackingUnit(open.plan, "no_hidden_reversal", openReport)),
+      asTrial(trackingUnit(first, angleFirst ? "angle" : "speed")),
+      asTrial(trackingUnit(second, angleFirst ? "speed" : "angle")),
     ];
   });
   shuffleInPlace(children, rng);
@@ -368,8 +293,9 @@ export function assertExperiment4V2RuntimeStimulusSet(
     blocks.some((block) => block.children.length !== EXPERIMENT_4_V2_FORMAL_TRIALS_PER_BLOCK) ||
     formal.length !== EXPERIMENT_4_V2_FORMAL_TRIALS
   ) throw new Error("实验四V2正式结构错误");
-  if (protocol2StateSites(EXPERIMENT_4_V2_AMPLITUDE_DEG).length !== 24) {
-    throw new Error("实验四V2状态点库不是24个");
+  if (protocol2UniformEllipseSites(EXPERIMENT_4_V2_AMPLITUDE_DEG, EXPERIMENT_4_V2_FORMAL_TRIALS_PER_BLOCK).length !==
+    EXPERIMENT_4_V2_FORMAL_TRIALS_PER_BLOCK) {
+    throw new Error("实验四V2能量椭圆终点数量错误");
   }
   for (const unit of [...practices, ...formal]) {
     if (unit.visibleSegments.length !== protocol2VisibleSegmentCount(unit.gratingCondition)) {
@@ -377,12 +303,6 @@ export function assertExperiment4V2RuntimeStimulusSet(
     }
     if (Math.abs(unit.blankDurationSec - EXPERIMENT_4_V2_BLANK_DURATION_SEC) > 1e-12) {
       throw new Error("空白时长错误");
-    }
-    if (unit.trackingCondition === "hidden_reversal" && unit.reversalTimeSec === null) {
-      throw new Error("隐藏反向试次缺少反向时刻");
-    }
-    if (unit.trackingCondition === "no_hidden_reversal" && unit.reversalTimeSec !== null) {
-      throw new Error("无反向试次包含反向");
     }
   }
   if (practices.filter((unit) => unit.reportTarget === "angle").length !== 3 ||
@@ -394,30 +314,33 @@ export function assertExperiment4V2RuntimeStimulusSet(
     if (group.length !== 2 || new Set(group.map((unit) => unit.reportTarget)).size !== 2) {
       throw new Error(`${grating} 练习未同时包含两种汇报`);
     }
-    if (new Set(group.map((unit) => unit.trackingCondition)).size !== 2) {
-      throw new Error(`${grating} 练习未覆盖两种反向设置`);
+    if (new Set(group.map((unit) => unit.stateSiteId)).size !== 2) {
+      throw new Error(`${grating} 练习终点必须不同`);
     }
   }
+  const formalSites = protocol2UniformEllipseSites(
+    EXPERIMENT_4_V2_AMPLITUDE_DEG,
+    EXPERIMENT_4_V2_FORMAL_TRIALS_PER_BLOCK,
+  );
   for (const grating of PROTOCOL_2_GRATING_ORDER) {
     const units = formal.filter((unit) => unit.gratingCondition === grating);
     const angleCount = units.filter((unit) => unit.reportTarget === "angle").length;
     if (angleCount !== units.length / 2) {
       throw new Error(`${grating} 角度与速度汇报未平分`);
     }
-    const hiddenReports = new Set(units
-      .filter((unit) => unit.trackingCondition === "hidden_reversal")
-      .map((unit) => unit.reportTarget));
-    if (hiddenReports.size !== 2) throw new Error(`${grating} 隐藏反向未覆盖两种汇报`);
-    for (const side of ["left", "right"] as const) {
-      for (const direction of ["leftward", "rightward"] as const) {
-        const cell = units.filter((unit) =>
-          unit.trackingCondition === "no_hidden_reversal" &&
-          unit.initialSide === side &&
-          unit.initialDirection === direction);
-        const cellAngle = cell.filter((unit) => unit.reportTarget === "angle").length;
-        if (Math.abs(cellAngle * 2 - cell.length) > 1) {
-          throw new Error(`${grating} ${side}/${direction} 汇报未配平`);
-        }
+    if (new Set(units.map((unit) => unit.stateSiteId)).size !== formalSites.length) {
+      throw new Error(`${grating} 未覆盖全部能量椭圆终点`);
+    }
+    for (const site of formalSites) {
+      const unit = units.find((item) => item.stateSiteId === site.id);
+      if (!unit) throw new Error(`${grating} 缺少终点 ${site.id}`);
+      const expected = site.magnitudeIndex % 2 === 0 ? "angle" : "speed";
+      if (unit.reportTarget !== expected) {
+        throw new Error(`${grating} ${site.id} 的汇报类型不是相间分配`);
+      }
+      if (Math.abs((unit.queryThetaDeg * Math.PI) / 180 - site.thetaRad) > 1e-6 ||
+        Math.abs(unit.queryOmegaRadPerSec - site.omegaRadPerSec) > 1e-6) {
+        throw new Error(`${grating} ${site.id} 的查询状态偏离能量椭圆终点`);
       }
     }
   }

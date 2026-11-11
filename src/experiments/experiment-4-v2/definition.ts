@@ -22,7 +22,7 @@ export const experiment4V2Definition: Experiment4V2Definition = {
   id: "experiment-4-v2",
   experimentId: "experiment-4",
   title: "实验四",
-  summary: "协议 2.0.0：固定60°轨道、光栅编号加3个可见片段与隐藏反向追踪。",
+  summary: "协议 2.0.0：固定振幅为 60度，轨迹虚线为半圆；查询终点在能量椭圆上均匀分布。",
   protocolVersion: EXPERIMENT_4_V2_PROTOCOL_VERSION,
   internalStimulusSchemaVersion: EXPERIMENT_4_V2_STIMULUS_SET_SCHEMA_VERSION,
   dataSchemaVersion: EXPERIMENT_4_V2_DATA_SCHEMA_VERSION,

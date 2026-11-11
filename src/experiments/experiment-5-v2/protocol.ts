@@ -10,16 +10,20 @@ import {
 export const EXPERIMENT_5_V2_ID = "experiment-5-v2" as const;
 export const EXPERIMENT_5_V2_LOGICAL_ID = "experiment-5" as const;
 export const EXPERIMENT_5_V2_PROTOCOL_VERSION = "2.0.0" as const;
-export const EXPERIMENT_5_V2_AMPLITUDES_DEG = [55, 70, 85] as const;
+export const EXPERIMENT_5_V2_AMPLITUDES_DEG = [75, 65, 55] as const;
 /** 练习取最低档与中间档的中点，避免紧贴任一正式区组。 */
+const EXPERIMENT_5_V2_LOWER_AMPLITUDES_DEG = [...EXPERIMENT_5_V2_AMPLITUDES_DEG]
+  .sort((a, b) => a - b);
 export const EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG =
-  (EXPERIMENT_5_V2_AMPLITUDES_DEG[0] + EXPERIMENT_5_V2_AMPLITUDES_DEG[1]) / 2;
-/** 围绕能量边界对称的六档。负偏移在弧内，正偏移高出端点。 */
-export const EXPERIMENT_5_V2_DELTA_H_M = [-0.5, -0.3, -0.1, 0.1, 0.3, 0.5] as const;
-/** 可见运动停在最低铃铛（-0.50 m）再低 0.20 m。 */
-export const EXPERIMENT_5_V2_VISIBILITY_MARGIN_M = 0.2;
-/** 全屏空白维持到这次上摆端点之后的时间。 */
-export const EXPERIMENT_5_V2_POST_TURN_SEC = 0.3;
+  (EXPERIMENT_5_V2_LOWER_AMPLITUDES_DEG[0]! + EXPERIMENT_5_V2_LOWER_AMPLITUDES_DEG[1]!) / 2;
+/** 相对振幅的角度步长。六档为 ±1、±2、±3 步，不含端点本身。 */
+export const EXPERIMENT_5_V2_BELL_ANGLE_STEP_DEG = 3;
+export const EXPERIMENT_5_V2_BELL_ANGLE_LEVELS = [3, 2, 1, -1, -2, -3] as const;
+export const EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG = EXPERIMENT_5_V2_BELL_ANGLE_LEVELS.map(
+  (level) => level * EXPERIMENT_5_V2_BELL_ANGLE_STEP_DEG,
+);
+/** 0.1 秒全空白结束于最低铃铛（振幅 − 9°）。淡出是这段空白之前的 0.3 s。空白此后延续到该侧最高点。 */
+export const EXPERIMENT_5_V2_BLANK_BEFORE_LOWEST_BELL_SEC = 0.1;
 export const EXPERIMENT_5_V2_ROD_LENGTH_M = PROTOCOL_2_ROD_LENGTH_M;
 export const EXPERIMENT_5_V2_GRAVITY = PROTOCOL_2_GRAVITY;
 export const EXPERIMENT_5_V2_BOB_RADIUS_M = PROTOCOL_2_BOB_RADIUS_M;
@@ -31,9 +35,9 @@ export const EXPERIMENT_5_V2_GRATINGS = PROTOCOL_2_GRATING_CONDITIONS;
 export const EXPERIMENT_5_V2_GRATING_ORDER = PROTOCOL_2_GRATING_ORDER;
 export const EXPERIMENT_5_V2_APPROACH_SIDES = ["left", "right"] as const;
 export const EXPERIMENT_5_V2_FORMAL_BLOCKS = EXPERIMENT_5_V2_AMPLITUDES_DEG.length;
-/** 一个方向上的正式试次：3 档光栅 × 6 个高度。 */
+/** 一个方向上的正式试次：3 档光栅 × 6 个角度。 */
 export const EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE =
-  EXPERIMENT_5_V2_GRATING_ORDER.length * EXPERIMENT_5_V2_DELTA_H_M.length;
+  EXPERIMENT_5_V2_GRATING_ORDER.length * EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG.length;
 /** 每个振幅区组包含左右两个方向。 */
 export const EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK =
   EXPERIMENT_5_V2_APPROACH_SIDES.length * EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE;

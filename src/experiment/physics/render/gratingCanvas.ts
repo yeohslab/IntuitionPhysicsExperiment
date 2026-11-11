@@ -27,6 +27,7 @@ export const GRATING_EDGE_MARGIN_PX = 24;
 
 /** 必须完全不透明，否则被遮挡的摆球会透出来。 */
 const GRATING_BAR_FILL = "#64748b";
+export const GRATING_BAR_ORANGE = "#f97316";
 const GRATING_BG = "#f8fafc";
 const GRATING_GUIDE_STROKE = "#94a3b8";
 
@@ -89,10 +90,11 @@ export function drawGratingBars(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,
   geometry: GratingGeometry,
+  fill = GRATING_BAR_FILL,
 ): void {
   const halfBarPx = (geometry.barWidthM / 2) * layout.pxPerM;
   const visibleHalfWidthM = layout.canvasW / 2 / layout.pxPerM;
-  ctx.fillStyle = GRATING_BAR_FILL;
+  ctx.fillStyle = fill;
   for (const centerM of gratingBarCentersM(geometry, visibleHalfWidthM)) {
     const centerPx = worldToCanvas(layout, centerM, 0).x;
     ctx.fillRect(centerPx - halfBarPx, 0, halfBarPx * 2, layout.canvasH);

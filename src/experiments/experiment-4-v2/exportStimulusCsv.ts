@@ -7,12 +7,12 @@ import {
   EXPERIMENT_4_V2_PROTOCOL_VERSION,
 } from "./protocol";
 
-export const EXPERIMENT_4_V2_DATA_SCHEMA_VERSION = 3 as const;
+export const EXPERIMENT_4_V2_DATA_SCHEMA_VERSION = 4 as const;
 export const EXPERIMENT_4_V2_CSV_COLUMNS = [
   "experiment_id", "protocol_version", "data_schema_version", "subject_id",
   "gender_code", "age_years", "experiment_status", "trial_id", "unit_id",
   "segment_kind", "block_index", "trial_index_in_block", "formal_trial_index",
-  "state_site_id", "tracking_condition", "report_target", "amplitude_deg", "energy_J",
+  "state_site_id", "report_target", "amplitude_deg", "energy_J",
   "theta_0_deg", "omega_0_deg_per_sec", "initial_side", "initial_direction",
   "cue_duration_ms", "query_theta_deg", "query_omega_rad_per_sec",
   "query_time_sec", "blank_start_sec", "blank_duration_sec", "reversal_time_sec",

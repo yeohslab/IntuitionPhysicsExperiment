@@ -21,12 +21,14 @@ import type {
   Protocol2PendulumDemoUnit,
   TrackingPendulumV2StimulusUnit,
   BellReachabilityV2StimulusUnit,
+  BellReachabilityV3StimulusUnit,
 } from "../shared/experimentTypes";
 import SpeedColorTrainingPlugin from "./plugins/speedColorTrainingPlugin";
 import Training1SummaryPlugin from "./plugins/training1SummaryPlugin";
 import Protocol2PendulumDemoPlugin from "./plugins/protocol2PendulumDemoPlugin";
 import TrackingPendulumV2Plugin from "./plugins/trackingPendulumV2Plugin";
 import BellReachabilityV2Plugin from "./plugins/bellReachabilityV2Plugin";
+import BellReachabilityV3Plugin from "./plugins/bellReachabilityV3Plugin";
 
 export type BuildTimelineOptions = {
   wrapPracticeSegment?: (
@@ -107,6 +109,19 @@ function unitToTrial(
         practice: ctx.segmentKind === "practice",
         unitMeta: meta,
         data: { ...meta, unit_type: "bellReachabilityV2Stimulus" },
+      };
+    }
+    case "bellReachabilityV3Stimulus": {
+      const v3Unit = unit as BellReachabilityV3StimulusUnit;
+      const meta = descriptor
+        ? { ...descriptor, runtime_experiment_id: experimentId }
+        : { ...data, runtime_experiment_id: experimentId };
+      return {
+        type: BellReachabilityV3Plugin,
+        unit: v3Unit,
+        practice: ctx.segmentKind === "practice",
+        unitMeta: meta,
+        data: { ...meta, unit_type: "bellReachabilityV3Stimulus" },
       };
     }
     case "reachabilityPendulumStimulus": {

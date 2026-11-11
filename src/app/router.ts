@@ -11,6 +11,7 @@ import { mountExperimentPicker } from "./ExperimentPickerView";
 import { disposeExperiment5Start, mountExperiment5Start } from "./Experiment5StartView";
 import { disposeExperiment4V2Start, mountExperiment4V2Start } from "./Experiment4V2StartView";
 import { disposeExperiment5V2Start, mountExperiment5V2Start } from "./Experiment5V2StartView";
+import { disposeExperiment5V3Start, mountExperiment5V3Start } from "./Experiment5V3StartView";
 import { disposeTraining1Start, mountTraining1Start } from "./Training1StartView";
 import type { ExperimentId } from "../experiments/types";
 import { hasActiveExperimentRunSession } from "../shared/storage";
@@ -31,6 +32,7 @@ function runnerExperiment(path: string): ExperimentId | null {
   if (path === "/experiment-4/v2/runner") return "experiment-4-v2";
   if (path === "/experiment-5/runner") return "experiment-5";
   if (path === "/experiment-5/v2/runner") return "experiment-5-v2";
+  if (path === "/experiment-5/v3/runner") return "experiment-5-v3";
   if (path === "/training-1/runner") return "training-1";
   return null;
 }
@@ -42,6 +44,7 @@ function route(): void {
   disposeExperiment5Start();
   disposeExperiment4V2Start();
   disposeExperiment5V2Start();
+  disposeExperiment5V3Start();
   disposeTraining1Start();
   const app = document.getElementById("app");
   if (!app) return;
@@ -83,6 +86,10 @@ function route(): void {
   }
   if (path === "/experiment-5/v2/start") {
     mountExperiment5V2Start(app);
+    return;
+  }
+  if (path === "/experiment-5/v3/start") {
+    mountExperiment5V3Start(app);
     return;
   }
   if (path === "/training-1/start") {
