@@ -248,27 +248,54 @@ function constrainedShuffle(trials: Trial[], rng: () => number): Trial[] {
   return interleaveByGratingAndSide(fallback);
 }
 
-function formalBlock(
-  amplitudeDeg: number,
-  rng: () => number,
-  onTrial: () => void,
-): BlockSegment {
+function buildFormalTrials(onTrial: () => void): Trial[] {
   const trials: Trial[] = [];
-  for (const apexSide of EXPERIMENT_5_V2_APPROACH_SIDES) {
-    for (const gratingId of PROTOCOL_2_GRATING_ORDER) {
-      const plan = planExperiment5V2Approach(
-        amplitudeDeg,
-        apexSide,
-        PROTOCOL_2_GRATING_CONDITIONS[gratingId],
-      );
-      for (const angleOffsetDeg of EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG) {
-        trials.push(asTrial(bellUnit(plan, angleOffsetDeg, apexSide)));
+  for (const amplitudeDeg of EXPERIMENT_5_V2_AMPLITUDES_DEG) {
+    for (const apexSide of EXPERIMENT_5_V2_APPROACH_SIDES) {
+      for (const gratingId of PROTOCOL_2_GRATING_ORDER) {
+        const plan = planExperiment5V2Approach(
+          amplitudeDeg,
+          apexSide,
+          PROTOCOL_2_GRATING_CONDITIONS[gratingId],
+        );
+        for (const angleOffsetDeg of EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG) {
+          trials.push(asTrial(bellUnit(plan, angleOffsetDeg, apexSide)));
+          onTrial();
+        }
       }
     }
   }
-  const ordered = constrainedShuffle(trials, rng);
-  ordered.forEach(onTrial);
-  return { kind: "block", id: newId(), children: ordered };
+  return trials;
+}
+
+function splitIntoRestBlocks(trials: Trial[], rng: () => number): BlockSegment[] {
+  const buckets: Trial[][] = Array.from(
+    { length: EXPERIMENT_5_V2_FORMAL_BLOCKS },
+    () => [],
+  );
+  for (const amplitudeDeg of EXPERIMENT_5_V2_AMPLITUDES_DEG) {
+    for (const apexSide of EXPERIMENT_5_V2_APPROACH_SIDES) {
+      for (const gratingId of PROTOCOL_2_GRATING_ORDER) {
+        const group = trials.filter((trial) => {
+          const unit = bellUnitOf(trial);
+          return unit.amplitudeDeg === amplitudeDeg &&
+            unit.bellSide === apexSide &&
+            unit.gratingCondition === gratingId;
+        });
+        shuffleInPlace(group, rng);
+        const perBlock = group.length / buckets.length;
+        if (!Number.isInteger(perBlock)) throw new Error("实验五V2无法把条件均分到休息区组");
+        buckets.forEach((bucket, index) => {
+          bucket.push(...group.slice(index * perBlock, (index + 1) * perBlock));
+        });
+      }
+    }
+  }
+  return buckets.map((children) => ({
+    kind: "block",
+    id: newId(),
+    children: constrainedShuffle(children, rng),
+  }));
 }
 
 const PRACTICE_OFFSETS: Array<{ reachable: number; unreachable: number }> = [3, 2, 1].map(
@@ -312,20 +339,16 @@ export function generateExperiment5V2RuntimeStimulusSet(
     completed += 1;
     options.onProgress?.(completed, EXPERIMENT_5_V2_TOTAL_RUNTIME_TRIALS);
   };
-  const blocksByAmplitude = EXPERIMENT_5_V2_AMPLITUDES_DEG.map((amplitude) => ({
-    amplitude,
-    block: formalBlock(amplitude, rng, report),
-  }));
-  shuffleInPlace(blocksByAmplitude, rng);
+  const formalBlocks = splitIntoRestBlocks(buildFormalTrials(report), rng);
   const sequence: TopLevelSequenceItem[] = [
     rest(experiment5V2WelcomeText()),
     rest(experiment5V2StructureText()),
     rest(experiment5V2PracticeText()),
     practiceBlock(rng, report),
   ];
-  blocksByAmplitude.forEach(({ amplitude, block }, displayIndex) => {
+  formalBlocks.forEach((block, displayIndex) => {
     sequence.push(
-      rest(experiment5V2BlockText(displayIndex + 1, EXPERIMENT_5_V2_FORMAL_BLOCKS, amplitude)),
+      rest(experiment5V2BlockText(displayIndex + 1, EXPERIMENT_5_V2_FORMAL_BLOCKS)),
       block,
     );
   });
@@ -414,15 +437,17 @@ export function assertExperiment5V2RuntimeStimulusSet(
     blocks.length !== EXPERIMENT_5_V2_FORMAL_BLOCKS ||
     blocks.some((block) => block.children.length !== EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK)
   ) throw new Error("实验五V2正式结构错误");
-  for (const block of blocks) {
-    const blockUnits = block.children.map(bellUnitOf);
-    const amplitudes = new Set(blockUnits.map((unit) => unit.amplitudeDeg));
-    if (amplitudes.size !== 1) throw new Error("实验五V2区组内振幅不一致");
-    if (!sidesBalanced(blockUnits, EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE)) {
-      throw new Error("实验五V2每个振幅区组左右试次数必须相同");
+  for (const amplitude of EXPERIMENT_5_V2_AMPLITUDES_DEG) {
+    const amplitudeUnits = formal.filter((unit) => unit.amplitudeDeg === amplitude);
+    if (amplitudeUnits.length !==
+      EXPERIMENT_5_V2_APPROACH_SIDES.length * EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE) {
+      throw new Error("实验五V2每种振幅的试次数错误");
+    }
+    if (!sidesBalanced(amplitudeUnits, EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE)) {
+      throw new Error("实验五V2每种振幅的左右试次数必须相同");
     }
     for (const grating of PROTOCOL_2_GRATING_ORDER) {
-      const group = blockUnits.filter((unit) => unit.gratingCondition === grating);
+      const group = amplitudeUnits.filter((unit) => unit.gratingCondition === grating);
       if (group.length !== EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG.length * EXPERIMENT_5_V2_APPROACH_SIDES.length) {
         throw new Error("每个振幅×光栅的铃铛条件数量错误");
       }
@@ -437,28 +462,58 @@ export function assertExperiment5V2RuntimeStimulusSet(
       }
     }
     for (const side of EXPERIMENT_5_V2_APPROACH_SIDES) {
-      const sideUnits = blockUnits.filter((unit) => unit.bellSide === side);
+      const sideUnits = amplitudeUnits.filter((unit) => unit.bellSide === side);
       if (new Set(sideUnits.map((unit) => unit.stateSiteId)).size !== 1) {
         throw new Error("同一振幅×方向的查询状态未跨光栅共享");
       }
     }
     for (const offset of EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG) {
-      const matched = blockUnits.filter((unit) => unit.bellAngleOffsetDeg === offset);
+      const matched = amplitudeUnits.filter((unit) => unit.bellAngleOffsetDeg === offset);
       if (matched.length !== PROTOCOL_2_GRATING_ORDER.length * EXPERIMENT_5_V2_APPROACH_SIDES.length) {
-        throw new Error("每个角度偏移在振幅区组内应在每个方向的每档光栅出现一次");
+        throw new Error("每个角度偏移应在每个振幅的每个方向的每档光栅出现一次");
       }
     }
-    if (blockUnits.some((unit) => unit.bellSide !== sideFromStateSite(unit.stateSiteId))) {
-      throw new Error("实验五V2铃铛必须放在消失时摆球朝向的一侧");
+  }
+  if (formal.some((unit) => unit.bellSide !== sideFromStateSite(unit.stateSiteId))) {
+    throw new Error("实验五V2铃铛必须放在消失时摆球朝向的一侧");
+  }
+  if (new Set(formal.map((unit) => unit.correctResponse === "reachable"
+    ? unit.bellAngleOffsetDeg < 0
+    : unit.bellAngleOffsetDeg > 0)).size !== 1) {
+    throw new Error("实验五V2可达性必须与角度偏移的符号一致");
+  }
+  const trialsPerAmplitude =
+    EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK / EXPERIMENT_5_V2_AMPLITUDES_DEG.length;
+  for (const block of blocks) {
+    const blockUnits = block.children.map(bellUnitOf);
+    if (new Set(blockUnits.map((unit) => unit.energyJ)).size !==
+      EXPERIMENT_5_V2_AMPLITUDES_DEG.length) {
+      throw new Error("实验五V2每个区组都应混合全部能量");
+    }
+    for (const amplitude of EXPERIMENT_5_V2_AMPLITUDES_DEG) {
+      if (blockUnits.filter((unit) => unit.amplitudeDeg === amplitude).length !== trialsPerAmplitude) {
+        throw new Error("实验五V2区组内各振幅数量应相同");
+      }
+    }
+    if (!sidesBalanced(blockUnits, EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE)) {
+      throw new Error("实验五V2每个区组左右试次数必须相同");
+    }
+    for (const grating of PROTOCOL_2_GRATING_ORDER) {
+      const group = blockUnits.filter((unit) => unit.gratingCondition === grating);
+      if (group.length !== EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK / PROTOCOL_2_GRATING_ORDER.length) {
+        throw new Error("实验五V2每个区组的光栅数量应相同");
+      }
+      for (const side of EXPERIMENT_5_V2_APPROACH_SIDES) {
+        if (group.filter((unit) => unit.bellSide === side).length !== group.length / EXPERIMENT_5_V2_APPROACH_SIDES.length) {
+          throw new Error("实验五V2每个区组的光栅左右数量应相同");
+        }
+      }
     }
     if (
       !blockUnits.some((unit) => unit.correctResponse === "reachable") ||
       !blockUnits.some((unit) => unit.correctResponse === "unreachable")
     ) {
       throw new Error("实验五V2区组应同时包含可达和不可达铃铛");
-    }
-    if (new Set(blockUnits.map((unit) => unit.correctResponse === "reachable" ? unit.bellAngleOffsetDeg < 0 : unit.bellAngleOffsetDeg > 0)).size !== 1) {
-      throw new Error("实验五V2可达性必须与角度偏移的符号一致");
     }
   }
   if (!sidesBalanced(practice, EXPERIMENT_5_V2_PRACTICE_TRIALS / 2)) {

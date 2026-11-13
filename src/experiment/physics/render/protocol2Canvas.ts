@@ -32,17 +32,16 @@ function guide(
   amplitudeRad: number,
 ): void {
   const pivot = worldToCanvas(layout, 0, 0);
+  const radius = rodLengthM * layout.pxPerM;
+  const start = Math.PI / 2 - amplitudeRad;
+  const end = Math.PI / 2 + amplitudeRad;
   ctx.strokeStyle = GUIDE;
   ctx.lineWidth = 2;
   ctx.setLineDash([8, 6]);
   ctx.beginPath();
-  ctx.arc(
-    pivot.x,
-    pivot.y,
-    rodLengthM * layout.pxPerM,
-    Math.PI / 2 - amplitudeRad,
-    Math.PI / 2 + amplitudeRad,
-  );
+  ctx.arc(pivot.x, pivot.y, radius, start, end);
+  // 下半圆两端等高。补上这条直径，运动阶段才有上方横线。
+  if (Math.abs(amplitudeRad - Math.PI / 2) < 1e-9) ctx.closePath();
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = "#0f172a";
@@ -51,7 +50,7 @@ function guide(
   ctx.fill();
 }
 
-/** 只画轨迹虚线和悬挂点。速度汇报时没有摆球，仍保留半圆参照。 */
+/** 只画轨迹虚线和悬挂点。半圆时包含上方直径。速度汇报时没有摆球，仍保留半圆参照。 */
 export function drawProtocol2TrajectoryGuide(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,

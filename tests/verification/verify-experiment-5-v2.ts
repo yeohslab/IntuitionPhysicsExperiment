@@ -25,7 +25,11 @@ import {
   EXPERIMENT_5_V2_YES_KEY,
 } from "../../src/experiments/experiment-5-v2/protocol.ts";
 import type { BellReachabilityV2StimulusUnit, Trial } from "../../src/shared/experimentTypes.ts";
-import { experiment5V2StructureText } from "../../src/experiments/experiment-5-v2/instructions.ts";
+import {
+  experiment5V2BlockText,
+  experiment5V2StructureText,
+  experiment5V2WelcomeText,
+} from "../../src/experiments/experiment-5-v2/instructions.ts";
 import { parseExperiment5V2StimulusSet } from "../../src/shared/storage.ts";
 
 function assert(value: unknown, message: string): asserts value {
@@ -43,7 +47,18 @@ function seeded(seed: number) {
 const participant = { subject_id: "E5-0001", gender_code: 1 as const, age_years: 21 };
 const set = generateExperiment5V2RuntimeStimulusSet(participant, { rng: seeded(5) });
 const blocks = set.sequence.filter((item) => item.kind === "block");
-assert(blocks.length === 3, "实验五V2应有3个振幅区组");
+assert(blocks.length === 3, "实验五V2应有3个休息区组");
+for (const block of blocks) {
+  const units = block.children.map(bellUnit);
+  assert(new Set(units.map((unit) => unit.energyJ)).size === 3, "每个区组都应混合三种能量");
+  for (const amplitude of EXPERIMENT_5_V2_AMPLITUDES_DEG) {
+    assert(
+      units.filter((unit) => unit.amplitudeDeg === amplitude).length ===
+        EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK / EXPERIMENT_5_V2_AMPLITUDES_DEG.length,
+      "每个区组每种振幅应为12条",
+    );
+  }
+}
 function bellUnit(trial: Trial): BellReachabilityV2StimulusUnit {
   const unit = trial.units.find((item) => item.type === "bellReachabilityV2Stimulus");
   assert(unit?.type === "bellReachabilityV2Stimulus", "试次缺少铃铛刺激");
@@ -97,7 +112,17 @@ assert(
     EXPERIMENT_5_V2_AMPLITUDES_DEG[2] === 55,
   "正式振幅应为75°、65°、55°",
 );
-assert(experiment5V2StructureText().includes("75°、65°、55°"), "结构说明应写出三档振幅");
+const participantInstructions = [
+  experiment5V2WelcomeText(),
+  experiment5V2StructureText(),
+  experiment5V2BlockText(1, 3),
+  ...set.sequence.flatMap((item) => item.kind === "rest" ? item.units : [])
+    .map((unit) => unit.type === "textControl" ? unit.text : ""),
+].join("\n");
+assert(!participantInstructions.includes("°"), "指导语不应写出角度");
+assert(!participantInstructions.includes("振幅"), "指导语不应说明振幅设计");
+assert(!participantInstructions.includes("最高点") && !participantInstructions.includes("最低"),
+  "指导语不应说明空白对应的摆球位置");
 assert(EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG.length === 6, "应为六档角度");
 assert(
   EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG.every((offset, index) =>
@@ -264,17 +289,22 @@ const evenUnits = even.sequence
   .map(bellUnit);
 assert(evenUnits.every((unit) => unit.yesKey === "f" && unit.noKey === "j"),
   "偶数被试按键也固定为 F 会到达、J 不会到达");
-function blockOrder(stimulus: typeof set): string {
+function blockSignature(stimulus: typeof set): string {
   return stimulus.sequence
     .filter((item) => item.kind === "block")
-    .map((item) => bellUnit(item.children[0]!).amplitudeDeg)
-    .join(",");
+    .map((item) => item.children.map((trial) => bellUnit(trial).amplitudeDeg).join("-"))
+    .join("|");
 }
 const orders = new Set<string>();
-for (let seed = 1; seed <= 24; seed += 1) {
-  orders.add(blockOrder(generateExperiment5V2RuntimeStimulusSet(participant, { rng: seeded(seed) })));
+for (let seed = 1; seed <= 8; seed += 1) {
+  const generated = generateExperiment5V2RuntimeStimulusSet(participant, { rng: seeded(seed) });
+  for (const block of generated.sequence.filter((item) => item.kind === "block")) {
+    const amplitudes = new Set(block.children.map((trial) => bellUnit(trial).amplitudeDeg));
+    assert(amplitudes.size === EXPERIMENT_5_V2_AMPLITUDES_DEG.length, "每个区组都应混合全部振幅");
+  }
+  orders.add(blockSignature(generated));
 }
-assert(orders.size > 1, "振幅区组顺序应随机");
+assert(orders.size > 1, "区组内振幅顺序应随机");
 assert(parseExperiment5V2StimulusSet(JSON.parse(JSON.stringify(set))) !== null,
   "实验五V2刺激集应可序列化解析");
 assert(parseExperiment5V2StimulusSet({ ...set, schemaVersion: 7 }) === null,

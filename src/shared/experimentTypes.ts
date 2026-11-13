@@ -6,10 +6,10 @@ export const EXPERIMENT_4_STIMULUS_SET_SCHEMA_VERSION = 6 as const;
 export const EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
 /** 实验四协议 2.0 运行时刺激集版本。5：终点在 (θ, ω) 能量椭圆上均匀分布，不再按隐藏反向筛选。 */
 export const EXPERIMENT_4_V2_STIMULUS_SET_SCHEMA_VERSION = 5 as const;
-/** 实验五协议 2.0 运行时刺激集版本。11：0.1 秒空白结束在最低铃铛，之后空白延续到最高点。 */
-export const EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION = 11 as const;
-/** 实验五协议 3.0 运行时刺激集版本。1：无光栅，从对侧振幅减 9° 出发。 */
-export const EXPERIMENT_5_V3_STIMULUS_SET_SCHEMA_VERSION = 1 as const;
+/** 实验五协议 2.0 运行时刺激集版本。13：三个区组只分段休息，每个区组混合全部振幅。 */
+export const EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION = 13 as const;
+/** 实验五协议 3.0 运行时刺激集版本。4：三个区组只分段休息，每个区组混合全部振幅。 */
+export const EXPERIMENT_5_V3_STIMULUS_SET_SCHEMA_VERSION = 4 as const;
 export const EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION = 7 as const;
 
 export type StimulusUnitType =

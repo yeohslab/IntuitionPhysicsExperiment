@@ -123,21 +123,52 @@ function asTrial(unit: BellReachabilityV3StimulusUnit): Trial {
   return { id: newId(), units: [cueUnit(unit), fixationUnit(), unit] };
 }
 
-function formalBlock(
-  amplitudeDeg: number,
-  rng: () => number,
-  onTrial: () => void,
-): BlockSegment {
+function bellOf(trial: Trial): BellReachabilityV3StimulusUnit {
+  const unit = trial.units.find(
+    (item): item is BellReachabilityV3StimulusUnit =>
+      item.type === "bellReachabilityV3Stimulus",
+  );
+  if (!unit) throw new Error("试次缺少铃铛刺激");
+  return unit;
+}
+
+function formalTrials(onTrial: () => void): Trial[] {
   const trials: Trial[] = [];
-  for (const side of EXPERIMENT_5_V3_APPROACH_SIDES) {
-    const plan = planExperiment5V3Approach(amplitudeDeg, side);
-    for (const offset of EXPERIMENT_5_V3_BELL_ANGLE_OFFSETS_DEG) {
-      trials.push(asTrial(bellUnit(plan, offset, side)));
-      onTrial();
+  for (const amplitudeDeg of EXPERIMENT_5_V3_AMPLITUDES_DEG) {
+    for (const side of EXPERIMENT_5_V3_APPROACH_SIDES) {
+      const plan = planExperiment5V3Approach(amplitudeDeg, side);
+      for (const offset of EXPERIMENT_5_V3_BELL_ANGLE_OFFSETS_DEG) {
+        trials.push(asTrial(bellUnit(plan, offset, side)));
+        onTrial();
+      }
     }
   }
-  shuffleInPlace(trials, rng);
-  return { kind: "block", id: newId(), children: trials };
+  return trials;
+}
+
+function splitIntoRestBlocks(trials: Trial[], rng: () => number): BlockSegment[] {
+  const buckets: Trial[][] = Array.from(
+    { length: EXPERIMENT_5_V3_FORMAL_BLOCKS },
+    () => [],
+  );
+  for (const amplitudeDeg of EXPERIMENT_5_V3_AMPLITUDES_DEG) {
+    for (const side of EXPERIMENT_5_V3_APPROACH_SIDES) {
+      const group = trials.filter((trial) => {
+        const unit = bellOf(trial);
+        return unit.amplitudeDeg === amplitudeDeg && unit.bellSide === side;
+      });
+      shuffleInPlace(group, rng);
+      const perBlock = group.length / buckets.length;
+      if (!Number.isInteger(perBlock)) throw new Error("实验五V3无法把条件均分到休息区组");
+      buckets.forEach((bucket, index) => {
+        bucket.push(...group.slice(index * perBlock, (index + 1) * perBlock));
+      });
+    }
+  }
+  return buckets.map((children) => {
+    shuffleInPlace(children, rng);
+    return { kind: "block", id: newId(), children };
+  });
 }
 
 function practiceBlock(rng: () => number, onTrial: () => void): PracticeSegment {
@@ -164,20 +195,16 @@ export function generateExperiment5V3RuntimeStimulusSet(
     completed += 1;
     options.onProgress?.(completed, EXPERIMENT_5_V3_TOTAL_RUNTIME_TRIALS);
   };
-  const blocks = EXPERIMENT_5_V3_AMPLITUDES_DEG.map((amplitude) => ({
-    amplitude,
-    block: formalBlock(amplitude, rng, report),
-  }));
-  shuffleInPlace(blocks, rng);
+  const blocks = splitIntoRestBlocks(formalTrials(report), rng);
   const sequence: TopLevelSequenceItem[] = [
     rest(experiment5V3WelcomeText()),
     rest(experiment5V3StructureText()),
     rest(experiment5V3PracticeText()),
     practiceBlock(rng, report),
   ];
-  blocks.forEach(({ amplitude, block }, index) => {
+  blocks.forEach((block, index) => {
     sequence.push(
-      rest(experiment5V3BlockText(index + 1, EXPERIMENT_5_V3_FORMAL_BLOCKS, amplitude)),
+      rest(experiment5V3BlockText(index + 1, EXPERIMENT_5_V3_FORMAL_BLOCKS)),
       block,
     );
   });
@@ -263,17 +290,35 @@ export function assertExperiment5V3RuntimeStimulusSet(set: Experiment5V3Stimulus
       throw new Error("实验五V3可达性评分错误");
     }
   }
+  for (const amplitude of EXPERIMENT_5_V3_AMPLITUDES_DEG) {
+    for (const side of EXPERIMENT_5_V3_APPROACH_SIDES) {
+      for (const offset of EXPERIMENT_5_V3_BELL_ANGLE_OFFSETS_DEG) {
+        const matched = formal.filter((unit) =>
+          unit.amplitudeDeg === amplitude &&
+          unit.bellSide === side &&
+          unit.bellAngleOffsetDeg === offset);
+        if (matched.length !== 1) throw new Error("实验五V3正式条件未完整覆盖");
+      }
+    }
+  }
+  const trialsPerAmplitude =
+    EXPERIMENT_5_V3_FORMAL_TRIALS_PER_BLOCK / EXPERIMENT_5_V3_AMPLITUDES_DEG.length;
   for (const block of blocks) {
-    const blockUnits = block.children.map((trial) => trial.units.find(
-      (unit): unit is BellReachabilityV3StimulusUnit => unit.type === "bellReachabilityV3Stimulus",
-    )).filter((unit): unit is BellReachabilityV3StimulusUnit => Boolean(unit));
-    if (new Set(blockUnits.map((unit) => unit.amplitudeDeg)).size !== 1) {
-      throw new Error("实验五V3区组内振幅不一致");
+    const blockUnits = block.children.map(bellOf);
+    if (new Set(blockUnits.map((unit) => unit.energyJ)).size !==
+      EXPERIMENT_5_V3_AMPLITUDES_DEG.length) {
+      throw new Error("实验五V3每个区组都应混合全部能量");
+    }
+    for (const amplitude of EXPERIMENT_5_V3_AMPLITUDES_DEG) {
+      if (blockUnits.filter((unit) => unit.amplitudeDeg === amplitude).length !==
+        trialsPerAmplitude) {
+        throw new Error("实验五V3区组内各振幅数量应相同");
+      }
     }
     for (const side of EXPERIMENT_5_V3_APPROACH_SIDES) {
       if (blockUnits.filter((unit) => unit.bellSide === side).length !==
         EXPERIMENT_5_V3_FORMAL_TRIALS_PER_SIDE) {
-        throw new Error("实验五V3每个方向的铃铛数量错误");
+        throw new Error("实验五V3每个区组左右试次数必须相同");
       }
     }
   }

@@ -11,7 +11,7 @@ export const EXPERIMENT_5_V2_ID = "experiment-5-v2" as const;
 export const EXPERIMENT_5_V2_LOGICAL_ID = "experiment-5" as const;
 export const EXPERIMENT_5_V2_PROTOCOL_VERSION = "2.0.0" as const;
 export const EXPERIMENT_5_V2_AMPLITUDES_DEG = [75, 65, 55] as const;
-/** 练习取最低档与中间档的中点，避免紧贴任一正式区组。 */
+/** 练习取最低档与中间档的中点，避免紧贴任一正式振幅。 */
 const EXPERIMENT_5_V2_LOWER_AMPLITUDES_DEG = [...EXPERIMENT_5_V2_AMPLITUDES_DEG]
   .sort((a, b) => a - b);
 export const EXPERIMENT_5_V2_PRACTICE_AMPLITUDE_DEG =
@@ -34,11 +34,15 @@ export const EXPERIMENT_5_V2_MODEL_DT_SEC = PROTOCOL_2_MODEL_DT_SEC;
 export const EXPERIMENT_5_V2_GRATINGS = PROTOCOL_2_GRATING_CONDITIONS;
 export const EXPERIMENT_5_V2_GRATING_ORDER = PROTOCOL_2_GRATING_ORDER;
 export const EXPERIMENT_5_V2_APPROACH_SIDES = ["left", "right"] as const;
+/**
+ * 正式阶段分成三段，只用来控制连续任务量并让被试休息。
+ * 段数与振幅档数相同，因此每种振幅可以均分到每一段；段本身不是振幅条件。
+ */
 export const EXPERIMENT_5_V2_FORMAL_BLOCKS = EXPERIMENT_5_V2_AMPLITUDES_DEG.length;
-/** 一个方向上的正式试次：3 档光栅 × 6 个角度。 */
+/** 每种振幅、每个方向的正式试次：3 档光栅 × 6 个角度。段数等于振幅档数时，每个休息段的单侧试次数也是这个数。 */
 export const EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE =
   EXPERIMENT_5_V2_GRATING_ORDER.length * EXPERIMENT_5_V2_BELL_ANGLE_OFFSETS_DEG.length;
-/** 每个振幅区组包含左右两个方向。 */
+/** 每个休息段包含左右两个方向，以及全部振幅。 */
 export const EXPERIMENT_5_V2_FORMAL_TRIALS_PER_BLOCK =
   EXPERIMENT_5_V2_APPROACH_SIDES.length * EXPERIMENT_5_V2_FORMAL_TRIALS_PER_SIDE;
 export const EXPERIMENT_5_V2_FORMAL_TRIALS =

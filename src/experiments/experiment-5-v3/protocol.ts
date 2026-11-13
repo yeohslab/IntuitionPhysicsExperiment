@@ -20,8 +20,12 @@ export const EXPERIMENT_5_V3_BELL_ANGLE_OFFSETS_DEG = EXPERIMENT_5_V3_BELL_ANGLE
 export const EXPERIMENT_5_V3_LOWEST_BELL_OFFSET_DEG = Math.min(
   ...EXPERIMENT_5_V3_BELL_ANGLE_OFFSETS_DEG,
 );
-/** 0.1 秒全空白结束于铃铛侧最低询问角。淡出是这之前的 0.3 s。空白此后延续到该侧最高点。 */
-export const EXPERIMENT_5_V3_BLANK_BEFORE_LOWEST_BELL_SEC = 0.1;
+/**
+ * 0.2 秒全空白结束于铃铛侧最低询问角。淡出仍是这之前的 0.3 s。
+ * 比原来的 0.1 秒空白多出的 0.1 s 从可见阶段末尾倒退，不缩短淡出。
+ * 空白此后延续到该侧最高点。
+ */
+export const EXPERIMENT_5_V3_BLANK_BEFORE_LOWEST_BELL_SEC = 0.2;
 export const EXPERIMENT_5_V3_ROD_LENGTH_M = PROTOCOL_2_ROD_LENGTH_M;
 export const EXPERIMENT_5_V3_GRAVITY = PROTOCOL_2_GRAVITY;
 export const EXPERIMENT_5_V3_BOB_RADIUS_M = PROTOCOL_2_BOB_RADIUS_M;
@@ -30,7 +34,12 @@ export const EXPERIMENT_5_V3_CUE_MS = 1000;
 export const EXPERIMENT_5_V3_FIXATION_TEXT = "+";
 export const EXPERIMENT_5_V3_FIXATION_MS = 500;
 export const EXPERIMENT_5_V3_APPROACH_SIDES = ["left", "right"] as const;
+/**
+ * 正式阶段分成三段，只用来控制连续任务量并让被试休息。
+ * 段数与振幅档数相同，因此每种振幅可以均分到每一段；段本身不是振幅条件。
+ */
 export const EXPERIMENT_5_V3_FORMAL_BLOCKS = EXPERIMENT_5_V3_AMPLITUDES_DEG.length;
+/** 每种振幅的单侧试次数。段数等于振幅档数时，每个休息段的单侧试次数也是这个数。 */
 export const EXPERIMENT_5_V3_FORMAL_TRIALS_PER_SIDE =
   EXPERIMENT_5_V3_BELL_ANGLE_OFFSETS_DEG.length;
 export const EXPERIMENT_5_V3_FORMAL_TRIALS_PER_BLOCK =
