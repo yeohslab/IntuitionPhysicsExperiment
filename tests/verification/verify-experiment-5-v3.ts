@@ -3,6 +3,7 @@ import { PROTOCOL_2_FADE_SEC } from "../../src/experiments/protocol-2/common.ts"
 import { generateExperiment5V3RuntimeStimulusSet } from "../../src/experiments/experiment-5-v3/generateRuntimeSet.ts";
 import {
   EXPERIMENT_5_V3_AMPLITUDES_DEG,
+  EXPERIMENT_5_V3_APPROACH_SIDES,
   EXPERIMENT_5_V3_BELL_ANGLE_OFFSETS_DEG,
   EXPERIMENT_5_V3_BLANK_BEFORE_LOWEST_BELL_SEC,
   EXPERIMENT_5_V3_CUE_MS,
@@ -13,9 +14,12 @@ import {
   EXPERIMENT_5_V3_LOWEST_BELL_OFFSET_DEG,
   EXPERIMENT_5_V3_PRACTICE_AMPLITUDE_DEG,
   EXPERIMENT_5_V3_PRACTICE_TRIALS,
+  EXPERIMENT_5_V3_ROD_LENGTH_M,
+  EXPERIMENT_5_V3_SLIT_WIDTH_M,
   EXPERIMENT_5_V3_YES_KEY,
   EXPERIMENT_5_V3_NO_KEY,
 } from "../../src/experiments/experiment-5-v3/protocol.ts";
+import { experiment5V3SlitEdgeLimitM } from "../../src/experiments/experiment-5-v3/slitGrid.ts";
 import {
   experiment5V3BlockText,
   experiment5V3StructureText,
@@ -82,7 +86,33 @@ assert(
   !participantInstructions.includes("最高点") && !participantInstructions.includes("最低"),
   "指导语不应说明出发点和空白对应的摆球位置",
 );
-assert(!JSON.stringify(set).includes("gratingCondition"), "协议3.0不得包含光栅");
+const serialized = JSON.stringify(set);
+assert(!serialized.includes("gratingCondition"), "协议3.0不使用周期光栅条件");
+assert(!serialized.includes("\"G1\"") && !serialized.includes("\"G2\"") && !serialized.includes("\"G3\""),
+  "协议3.0不得包含G1/G2/G3");
+function assertSlitGrid(
+  units: BellReachabilityV3StimulusUnit[],
+  amplitude: number,
+  side: "left" | "right",
+): void {
+  const limit = experiment5V3SlitEdgeLimitM(amplitude);
+  const half = EXPERIMENT_5_V3_SLIT_WIDTH_M / 2;
+  const sign = side === "left" ? 1 : -1;
+  const centers = units.map((unit) => sign * unit.slitCenterM).sort((left, right) => left - right);
+  centers.forEach((center, index) => {
+    const expected = ((index + 0.5) / centers.length) * limit;
+    assert(Math.abs(center - expected) < 1e-8, "缝中心应落在出发侧区间的等份中点");
+  });
+  for (const unit of units) {
+    assert(Math.abs(unit.slitWidthM - EXPERIMENT_5_V3_SLIT_WIDTH_M) < 1e-12, "缝宽应为0.45 m");
+    assert(Math.abs(unit.slitRightM - unit.slitLeftM - unit.slitWidthM) < 1e-9, "缝宽应等于左右边之差");
+    const innerEdge = side === "left" ? unit.slitLeftM : -unit.slitRightM;
+    const outerEdge = side === "left" ? unit.slitRightM : -unit.slitLeftM;
+    assert(innerEdge > 1e-4 && outerEdge < limit - 1e-4, "整条缝应落在区间内部，不取两端");
+    assert(Math.sign(unit.slitCenterM) === sign, "缝中心应在出发侧");
+  }
+  assert(Math.abs(centers[0]! - half) > 1e-4, "最内侧缝的中心不应贴在半缝宽上");
+}
 for (const amplitude of EXPERIMENT_5_V3_AMPLITUDES_DEG) {
   const units = formal.filter((unit) => unit.amplitudeDeg === amplitude);
   assert(units.length === EXPERIMENT_5_V3_FORMAL_TRIALS_PER_BLOCK, `${amplitude}°试次数错误`);
@@ -114,6 +144,9 @@ for (const amplitude of EXPERIMENT_5_V3_AMPLITUDES_DEG) {
     assert(matched.every((unit) => (unit.correctResponse === "reachable") === (offset < 0)),
       "可达性应与偏移符号一致");
   }
+  for (const side of EXPERIMENT_5_V3_APPROACH_SIDES) {
+    assertSlitGrid(units.filter((unit) => unit.bellSide === side), amplitude, side);
+  }
 }
 const practice = set.sequence.filter((item) => item.kind === "practice")
   .flatMap((item) => item.children).map(bellUnit);
@@ -122,19 +155,34 @@ assert(practice.every((unit) => unit.amplitudeDeg === EXPERIMENT_5_V3_PRACTICE_A
   "练习振幅应为60°");
 assert(practice.filter((unit) => unit.correctResponse === "reachable").length === 2, "练习应有两条可达");
 assert(practice.filter((unit) => unit.bellSide === "left").length === 2, "练习左右应各半");
+for (const side of EXPERIMENT_5_V3_APPROACH_SIDES) {
+  assertSlitGrid(
+    practice.filter((unit) => unit.bellSide === side),
+    EXPERIMENT_5_V3_PRACTICE_AMPLITUDE_DEG,
+    side,
+  );
+}
 const fixation = set.sequence.flatMap((item) => item.kind === "practice" ? item.children : [])
   .flatMap((trial) => trial.units)
   .find((unit) => unit.type === "textDisplay" && unit.text === EXPERIMENT_5_V3_FIXATION_TEXT);
 assert(fixation?.type === "textDisplay" && fixation.durationMs === EXPERIMENT_5_V3_FIXATION_MS,
   "应有注视点");
 assert(parseExperiment5V3StimulusSet(JSON.parse(JSON.stringify(set))) !== null, "刺激集应可解析");
-assert(parseExperiment5V3StimulusSet({ ...set, schemaVersion: 3 }) === null, "实验五V3应拒绝旧schema");
+assert(parseExperiment5V3StimulusSet({ ...set, schemaVersion: 4 }) === null, "实验五V3应拒绝旧schema");
 const orders = new Set<string>();
+const pairings = new Set<string>();
 for (let seed = 1; seed <= 8; seed += 1) {
   const generated = generateExperiment5V3RuntimeStimulusSet(participant, { rng: seeded(seed) });
+  const generatedFormal = generated.sequence.filter((item) => item.kind === "block")
+    .flatMap((block) => block.children).map(bellUnit);
   orders.add(generated.sequence.filter((item) => item.kind === "block")
     .map((block) => block.children.map((trial) => bellUnit(trial).amplitudeDeg).join("-"))
     .join("|"));
+  pairings.add(generatedFormal
+    .map((unit) => `${unit.amplitudeDeg}:${unit.bellSide}:${unit.bellAngleOffsetDeg}:${unit.slitCenterM.toFixed(6)}`)
+    .sort()
+    .join("|"));
 }
 assert(orders.size > 1, "区组内振幅顺序应随机");
+assert(pairings.size > 1, "缝位置与铃铛偏移的配对应随种子变化");
 console.log("verify-experiment-5-v3: OK");

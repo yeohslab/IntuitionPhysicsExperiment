@@ -8,8 +8,8 @@ export const EXPERIMENT_5_STIMULUS_SET_SCHEMA_VERSION = 3 as const;
 export const EXPERIMENT_4_V2_STIMULUS_SET_SCHEMA_VERSION = 5 as const;
 /** 实验五协议 2.0 运行时刺激集版本。13：三个区组只分段休息，每个区组混合全部振幅。 */
 export const EXPERIMENT_5_V2_STIMULUS_SET_SCHEMA_VERSION = 13 as const;
-/** 实验五协议 3.0 运行时刺激集版本。4：三个区组只分段休息，每个区组混合全部振幅。 */
-export const EXPERIMENT_5_V3_STIMULUS_SET_SCHEMA_VERSION = 4 as const;
+/** 实验五协议 3.0 运行时刺激集版本。5：出发侧单缝，左右边落在最低点到振幅减 9°。 */
+export const EXPERIMENT_5_V3_STIMULUS_SET_SCHEMA_VERSION = 5 as const;
 export const EXPERIMENT_TRAINING_1_STIMULUS_SET_SCHEMA_VERSION = 7 as const;
 
 export type StimulusUnitType =
@@ -248,6 +248,13 @@ export interface BellReachabilityV3StimulusUnit
   correctResponse: ReachabilityRelation;
   yesKey: "f" | "j";
   noKey: "f" | "j";
+  slitWidthM: number;
+  slitCenterM: number;
+  slitLeftM: number;
+  slitRightM: number;
+  slitCenterDeg: number;
+  slitLeftDeg: number;
+  slitRightDeg: number;
 }
 
 export type StimulusUnit =

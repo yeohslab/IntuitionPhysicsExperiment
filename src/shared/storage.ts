@@ -1,4 +1,6 @@
 import { analyzePendulum } from "../experiment/physics/pendulum";
+import { experiment5V3SlitFitsDepartureSide } from "../experiments/experiment-5-v3/slitGrid";
+import { EXPERIMENT_5_V3_SLIT_WIDTH_M } from "../experiments/experiment-5-v3/protocol";
 import { TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC } from "../experiments/training-1/protocol";
 import { withSyncedTotalTimeT } from "../experiment/physics/timePhases";
 import {
@@ -111,6 +113,8 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       "energyJ", "amplitudeDeg", "queryThetaDeg", "queryOmegaRadPerSec",
       "queryTimeSec", "blankStartSec", "blankDurationSec", "modelDtSec",
       "bellAngleOffsetDeg", "bellContactHeightM", "bellThetaDeg",
+      "slitWidthM", "slitCenterM", "slitLeftM", "slitRightM",
+      "slitCenterDeg", "slitLeftDeg", "slitRightDeg",
     ] as const;
     const n = Object.fromEntries(
       numericKeys.map((key) => [key, finiteNumber(raw, key)]),
@@ -124,7 +128,17 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       typeof raw.stateSiteId !== "string" ||
       (raw.bellSide !== "left" && raw.bellSide !== "right") ||
       (raw.correctResponse !== "reachable" && raw.correctResponse !== "unreachable") ||
-      raw.yesKey !== "f" || raw.noKey !== "j"
+      raw.yesKey !== "f" || raw.noKey !== "j" ||
+      Math.abs(n.slitWidthM! - EXPERIMENT_5_V3_SLIT_WIDTH_M) > 1e-9 ||
+      !experiment5V3SlitFitsDepartureSide(n.amplitudeDeg!, raw.bellSide, {
+        slitWidthM: n.slitWidthM!,
+        slitCenterM: n.slitCenterM!,
+        slitLeftM: n.slitLeftM!,
+        slitRightM: n.slitRightM!,
+      }, n.rodLengthM!) ||
+      Math.abs(n.slitCenterDeg! - (Math.asin(n.slitCenterM! / n.rodLengthM!) * 180) / Math.PI) > 1e-6 ||
+      Math.abs(n.slitLeftDeg! - (Math.asin(n.slitLeftM! / n.rodLengthM!) * 180) / Math.PI) > 1e-6 ||
+      Math.abs(n.slitRightDeg! - (Math.asin(n.slitRightM! / n.rodLengthM!) * 180) / Math.PI) > 1e-6
     ) return null;
     return {
       id, type: "bellReachabilityV3Stimulus",
@@ -138,6 +152,10 @@ function parseUnit(raw: unknown): StimulusUnit | null {
       bellContactHeightM: n.bellContactHeightM!, bellThetaDeg: n.bellThetaDeg!,
       bellSide: raw.bellSide, correctResponse: raw.correctResponse,
       yesKey: "f", noKey: "j",
+      slitWidthM: n.slitWidthM!, slitCenterM: n.slitCenterM!,
+      slitLeftM: n.slitLeftM!, slitRightM: n.slitRightM!,
+      slitCenterDeg: n.slitCenterDeg!, slitLeftDeg: n.slitLeftDeg!,
+      slitRightDeg: n.slitRightDeg!,
     } satisfies BellReachabilityV3StimulusUnit;
   }
 

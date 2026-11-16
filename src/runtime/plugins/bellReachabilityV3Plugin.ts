@@ -35,6 +35,7 @@ type Unit = {
   bobRadiusM: number; amplitudeDeg: number; queryTimeSec: number; blankStartSec: number;
   bellThetaDeg: number; correctResponse: "reachable" | "unreachable";
   yesKey: "f" | "j"; noKey: "f" | "j";
+  slitLeftM: number; slitRightM: number;
 };
 
 type Trial = { unit: Unit; practice: boolean; unitMeta: Record<string, unknown> };
@@ -193,6 +194,8 @@ export default class BellReachabilityV3Plugin {
       drawProtocol2BellMotionFrame(
         ctx, layout, null, u.rodLengthM, u.bobRadiusM,
         (u.amplitudeDeg * Math.PI) / 180, state.theta, bellThetaRad, sceneAlpha, false,
+        undefined,
+        { leftM: u.slitLeftM, rightM: u.slitRightM },
       );
       lastVisibleFrameSec = elapsed;
       raf = requestAnimationFrame(tick);

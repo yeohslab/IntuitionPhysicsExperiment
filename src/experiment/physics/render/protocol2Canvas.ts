@@ -1,9 +1,11 @@
 import type { GratingGeometry } from "../gratingGeometry";
 import {
   drawGratingBars,
+  drawVerticalSlitOccluder,
   pendulumLayoutFromGratingLayout,
   worldToCanvas,
   type GratingWorldLayout,
+  type VerticalSlit,
 } from "./gratingCanvas";
 import {
   drawPendulumEstimate,
@@ -106,9 +108,11 @@ function paintMotion(
   thetaRad: number,
   showAmplitudeGuide: boolean,
   barFill?: string,
+  slit?: VerticalSlit | null,
 ): void {
   bob(ctx, layout, rodLengthM, bobRadiusM, thetaRad);
-  if (geometry) drawGratingBars(ctx, layout, geometry, barFill);
+  if (slit) drawVerticalSlitOccluder(ctx, layout, slit, barFill);
+  else if (geometry) drawGratingBars(ctx, layout, geometry, barFill);
   if (showAmplitudeGuide) guide(ctx, layout, rodLengthM, amplitudeRad);
   else {
     const pivot = worldToCanvas(layout, 0, 0);
@@ -193,6 +197,7 @@ export function drawProtocol2BellMotionFrame(
   sceneAlpha = 1,
   showAmplitudeGuide = true,
   barFill?: string,
+  slit?: VerticalSlit | null,
 ): void {
   background(ctx, layout);
   const alpha = Math.max(0, Math.min(1, sceneAlpha));
@@ -207,6 +212,7 @@ export function drawProtocol2BellMotionFrame(
     thetaRad,
     showAmplitudeGuide,
     barFill,
+    slit,
   );
   drawBell(ctx, layout, rodLengthM, bellThetaRad);
   fadeTowardBackground(ctx, layout, alpha);

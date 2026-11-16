@@ -86,6 +86,25 @@ export function worldToCanvas(
   };
 }
 
+export type VerticalSlit = {
+  leftM: number;
+  rightM: number;
+};
+
+/** 整幅不透明，只留一条竖直缝。画在摆球之后，缝外的摆球被盖住。 */
+export function drawVerticalSlitOccluder(
+  ctx: CanvasRenderingContext2D,
+  layout: GratingWorldLayout,
+  slit: VerticalSlit,
+  fill = GRATING_BAR_FILL,
+): void {
+  const leftPx = worldToCanvas(layout, slit.leftM, 0).x;
+  const rightPx = worldToCanvas(layout, slit.rightM, 0).x;
+  ctx.fillStyle = fill;
+  ctx.fillRect(0, 0, leftPx, layout.canvasH);
+  ctx.fillRect(rightPx, 0, layout.canvasW - rightPx, layout.canvasH);
+}
+
 export function drawGratingBars(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,

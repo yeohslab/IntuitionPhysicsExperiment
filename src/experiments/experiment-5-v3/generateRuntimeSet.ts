@@ -46,9 +46,15 @@ import {
   EXPERIMENT_5_V3_PRACTICE_AMPLITUDE_DEG,
   EXPERIMENT_5_V3_PRACTICE_TRIALS,
   EXPERIMENT_5_V3_ROD_LENGTH_M,
+  EXPERIMENT_5_V3_SLIT_WIDTH_M,
   EXPERIMENT_5_V3_TOTAL_RUNTIME_TRIALS,
   EXPERIMENT_5_V3_YES_KEY,
 } from "./protocol";
+import {
+  experiment5V3SlitFitsDepartureSide,
+  experiment5V3SlitGrid,
+  type Experiment5V3Slit,
+} from "./slitGrid";
 
 export type GenerateExperiment5V3Options = {
   rng?: () => number;
@@ -68,6 +74,7 @@ function bellUnit(
   plan: Experiment5V3ApproachPlan,
   angleOffsetDeg: number,
   side: Experiment5V3ApproachSide,
+  slit: Experiment5V3Slit,
 ): BellReachabilityV3StimulusUnit {
   const bell = experiment5V3BellThetaRad(plan.amplitudeDeg, angleOffsetDeg, side);
   return {
@@ -95,6 +102,7 @@ function bellUnit(
       ? "reachable" : "unreachable",
     yesKey: EXPERIMENT_5_V3_YES_KEY,
     noKey: EXPERIMENT_5_V3_NO_KEY,
+    ...slit,
   };
 }
 
@@ -132,15 +140,21 @@ function bellOf(trial: Trial): BellReachabilityV3StimulusUnit {
   return unit;
 }
 
-function formalTrials(onTrial: () => void): Trial[] {
+function formalTrials(rng: () => number, onTrial: () => void): Trial[] {
   const trials: Trial[] = [];
   for (const amplitudeDeg of EXPERIMENT_5_V3_AMPLITUDES_DEG) {
     for (const side of EXPERIMENT_5_V3_APPROACH_SIDES) {
       const plan = planExperiment5V3Approach(amplitudeDeg, side);
-      for (const offset of EXPERIMENT_5_V3_BELL_ANGLE_OFFSETS_DEG) {
-        trials.push(asTrial(bellUnit(plan, offset, side)));
+      const slits = experiment5V3SlitGrid(
+        amplitudeDeg,
+        side,
+        EXPERIMENT_5_V3_BELL_ANGLE_OFFSETS_DEG.length,
+      );
+      shuffleInPlace(slits, rng);
+      EXPERIMENT_5_V3_BELL_ANGLE_OFFSETS_DEG.forEach((offset, index) => {
+        trials.push(asTrial(bellUnit(plan, offset, side, slits[index]!)));
         onTrial();
-      }
+      });
     }
   }
   return trials;
@@ -174,12 +188,15 @@ function splitIntoRestBlocks(trials: Trial[], rng: () => number): BlockSegment[]
 function practiceBlock(rng: () => number, onTrial: () => void): PracticeSegment {
   const children = EXPERIMENT_5_V3_APPROACH_SIDES.flatMap((side) => {
     const plan = planExperiment5V3Approach(EXPERIMENT_5_V3_PRACTICE_AMPLITUDE_DEG, side);
-    onTrial();
-    onTrial();
-    return [
-      asTrial(bellUnit(plan, EXPERIMENT_5_V3_LOWEST_BELL_OFFSET_DEG, side)),
-      asTrial(bellUnit(plan, -EXPERIMENT_5_V3_LOWEST_BELL_OFFSET_DEG, side)),
+    const slits = experiment5V3SlitGrid(EXPERIMENT_5_V3_PRACTICE_AMPLITUDE_DEG, side, 2);
+    shuffleInPlace(slits, rng);
+    const offsets = [
+      EXPERIMENT_5_V3_LOWEST_BELL_OFFSET_DEG,
+      -EXPERIMENT_5_V3_LOWEST_BELL_OFFSET_DEG,
     ];
+    onTrial();
+    onTrial();
+    return offsets.map((offset, index) => asTrial(bellUnit(plan, offset, side, slits[index]!)));
   });
   shuffleInPlace(children, rng);
   return { kind: "practice", id: newId(), children };
@@ -195,7 +212,7 @@ export function generateExperiment5V3RuntimeStimulusSet(
     completed += 1;
     options.onProgress?.(completed, EXPERIMENT_5_V3_TOTAL_RUNTIME_TRIALS);
   };
-  const blocks = splitIntoRestBlocks(formalTrials(report), rng);
+  const blocks = splitIntoRestBlocks(formalTrials(rng, report), rng);
   const sequence: TopLevelSequenceItem[] = [
     rest(experiment5V3WelcomeText()),
     rest(experiment5V3StructureText()),
@@ -288,6 +305,42 @@ export function assertExperiment5V3RuntimeStimulusSet(set: Experiment5V3Stimulus
     if (reachable !== (unit.correctResponse === "reachable") ||
       reachable !== (unit.bellAngleOffsetDeg < 0)) {
       throw new Error("实验五V3可达性评分错误");
+    }
+    if (Math.abs(unit.slitWidthM - EXPERIMENT_5_V3_SLIT_WIDTH_M) > 1e-9 ||
+      !experiment5V3SlitFitsDepartureSide(
+        unit.amplitudeDeg,
+        unit.bellSide,
+        unit,
+        unit.rodLengthM,
+      )) {
+      throw new Error("实验五V3单缝越出出发侧");
+    }
+  }
+  const slitCentersMatch = (
+    amplitudeDeg: number,
+    side: (typeof EXPERIMENT_5_V3_APPROACH_SIDES)[number],
+    group: BellReachabilityV3StimulusUnit[],
+  ) => {
+    const expected = experiment5V3SlitGrid(amplitudeDeg, side, group.length, group[0]!.rodLengthM)
+      .map((slit) => slit.slitCenterM.toFixed(8))
+      .sort();
+    const actual = group.map((unit) => unit.slitCenterM.toFixed(8)).sort();
+    return expected.join("|") === actual.join("|");
+  };
+  for (const amplitude of EXPERIMENT_5_V3_AMPLITUDES_DEG) {
+    for (const side of EXPERIMENT_5_V3_APPROACH_SIDES) {
+      const group = formal.filter((unit) => unit.amplitudeDeg === amplitude && unit.bellSide === side);
+      if (group.length !== EXPERIMENT_5_V3_BELL_ANGLE_OFFSETS_DEG.length ||
+        !slitCentersMatch(amplitude, side, group)) {
+        throw new Error("实验五V3正式单缝位置不是出发侧均匀网格");
+      }
+    }
+  }
+  for (const side of EXPERIMENT_5_V3_APPROACH_SIDES) {
+    const group = practice.filter((unit) => unit.bellSide === side);
+    if (group.length !== 2 ||
+      !slitCentersMatch(EXPERIMENT_5_V3_PRACTICE_AMPLITUDE_DEG, side, group)) {
+      throw new Error("实验五V3练习单缝位置不是出发侧的均匀内点");
     }
   }
   for (const amplitude of EXPERIMENT_5_V3_AMPLITUDES_DEG) {

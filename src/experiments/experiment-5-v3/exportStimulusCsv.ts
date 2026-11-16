@@ -4,7 +4,7 @@ import type { Experiment5ParticipantInfo } from "../../shared/participant";
 import type { ExperimentStatus } from "../../runtime/export/exportStimulusCsv";
 import { EXPERIMENT_5_V3_FORMAL_TRIALS, EXPERIMENT_5_V3_PROTOCOL_VERSION } from "./protocol";
 
-export const EXPERIMENT_5_V3_DATA_SCHEMA_VERSION = 1 as const;
+export const EXPERIMENT_5_V3_DATA_SCHEMA_VERSION = 2 as const;
 export const EXPERIMENT_5_V3_CSV_COLUMNS = [
   "experiment_id", "protocol_version", "data_schema_version", "subject_id",
   "gender_code", "age_years", "experiment_status", "trial_id", "unit_id",
@@ -13,6 +13,8 @@ export const EXPERIMENT_5_V3_CSV_COLUMNS = [
   "omega_0_deg_per_sec", "query_theta_deg", "query_omega_rad_per_sec",
   "query_time_sec", "blank_start_sec", "blank_duration_sec",
   "bell_angle_offset_deg", "bell_contact_height_m", "bell_theta_deg", "bell_side",
+  "slit_width_m", "slit_center_m", "slit_left_m", "slit_right_m",
+  "slit_center_deg", "slit_left_deg", "slit_right_deg",
   "correct_response", "yes_key", "no_key", "response_judgment", "response_key",
   "correct", "rt_sec", "timed_out", "actual_last_visible_frame_sec",
   "blank_started_performance_ms", "prompt_performance_ms", "audio_context_boundary_sec",

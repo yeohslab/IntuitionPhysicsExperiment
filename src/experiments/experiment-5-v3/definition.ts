@@ -21,7 +21,7 @@ export const experiment5V3Definition: Experiment5V3Definition = {
   id: "experiment-5-v3",
   experimentId: "experiment-5",
   title: "实验五",
-  summary: "协议 3.0.0：无光栅，从对侧最低询问角出发的铃铛可达性判断。",
+  summary: "协议 3.0.0：整幅遮挡，只留一条位置会变的缝。",
   protocolVersion: EXPERIMENT_5_V3_PROTOCOL_VERSION,
   internalStimulusSchemaVersion: EXPERIMENT_5_V3_STIMULUS_SET_SCHEMA_VERSION,
   dataSchemaVersion: EXPERIMENT_5_V3_DATA_SCHEMA_VERSION,
