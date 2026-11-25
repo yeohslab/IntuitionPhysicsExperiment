@@ -27,7 +27,7 @@ class TraceDisplay(HeadlessDisplay):
 
 
 class TimingTests(unittest.TestCase):
-    def trace(self, scene, *, e5_rt=2.0, practice=False, feedback=False, blank=.7):
+    def trace(self, scene, *, e5_rt=2.0, practice=False, feedback=False, blank=.7, report='angle'):
         cfg = {'window': {'size': [1000, 760]}, 'log_frames': False,
                'headless': {'refresh_hz': 60, 'response_delay_sec': .1, 'e5_rt_sec': e5_rt},
                'timing': {'drop_frame_multiplier': 1.5}}
@@ -45,7 +45,8 @@ class TimingTests(unittest.TestCase):
              'reportDelaySec': 4., 'targetStripPosition': .4, 'feedbackShown': feedback,
              'loopMode': 'ping_pong', 'linearSpeedMPerSec': 2., 'trackLeftXM': -4.,
              'trackRightXM': 4., 'initialXM': -4., 'mode': 'assessment'}
-        d = {'report_target': 'angle', 'segment_kind': 'practice' if practice else 'block'}
+        d = {'report_target': report, 'segment_kind': 'practice' if practice else 'block',
+             'speed_scale_linear_m_per_sec': 6.260990336999411}
         p = SimpleNamespace(analysis={'T': 2., 'regime': 'oscillation'},
                             params={'rodLengthM': 4}, at=lambda t: (math.sin(t), math.cos(t)))
         r.stimulus(u, d, p)
@@ -115,6 +116,14 @@ class TimingTests(unittest.TestCase):
         self.assertEqual(replay[0]['theta_rad'], 0.)
         self.assertTrue(all(s['alpha'] == 1 for s in replay))
         self.assertLess(replay[-1]['theta_rad'], math.sin(.2))  # Auto Space may end feedback before replay finishes.
+        r, events = self.trace('E4', practice=True, report='speed')
+        feedback = self.event_time(events, 'FEEDBACK_ONSET')
+        self.assertGreaterEqual(self.event_time(events, 'TRIAL_END') - feedback, 1.4 - 1 / 60)
+        frames = [s for _, s in r.display.states if s.get('phase') == 'feedback']
+        self.assertTrue(frames[0]['replay'] and frames[0]['hide_choice'])
+        self.assertIsNone(frames[0]['selected'])
+        self.assertFalse(frames[-1]['hide_choice'])
+        self.assertIsNotNone(frames[-1]['selected'])
 
     def test_short_fade_starts_fully_visible_and_finishes_at_blank(self):
         self.assertEqual(scene_alpha(0, .1), 1.)

@@ -500,7 +500,8 @@ class SceneRenderer:
             self._draw_e2(state, d, layout, theta, alpha, phase)
         else:
             self._draw_e4e5(state, d, layout, theta, alpha, phase, scene == "e5")
-        if phase in ("estimate", "feedback") and not state.get("replay") and scene != "e5":
+        speed_replay = scene == "e4" and phase == "feedback" and state.get("replay") and state.get("response_mode") == "speed"
+        if (phase in ("estimate", "feedback") and not state.get("replay") and scene != "e5") or speed_replay:
             if state.get("response_mode") == "speed":
                 self._draw_speed_report(state, phase)
             if phase == "estimate":
@@ -556,6 +557,8 @@ class SceneRenderer:
         for key, color in (("selected", ORANGE), ("truth", BLUE)):
             value = state.get(key)
             if value is None or (key == "truth" and phase != "feedback"):
+                continue
+            if key == "selected" and state.get("hide_choice"):
                 continue
             x = 150 + 700 * max(0.0, min(1.0, float(value)))
             self.marker.lineColor = color
@@ -732,7 +735,9 @@ class SceneRenderer:
             return
         if is_e5 and phase == "estimate":
             return  # The keyboard judgment page has a blank canvas.
-        if phase in ("estimate", "feedback") and not (is_e5 and state.get("replay")):
+        replay = bool(state.get("replay", False)) or phase == "replay"
+        speed_replay = replay and not is_e5 and state.get("response_mode") == "speed"
+        if phase in ("estimate", "feedback") and not (is_e5 and replay) and not speed_replay:
             if state.get("response_mode") == "speed":
                 return
             self._draw_guide(layout["origin_x"], layout["origin_y"], layout["rod_px"], "oscillation",
@@ -749,14 +754,13 @@ class SceneRenderer:
                 self._set_line(self.truth, (cx, cy), (cx + r * math.sin(truth), cy + r * math.cos(truth)))
                 self.truth.draw()
             return
-        if alpha <= 0:
+        if alpha <= 0 and not speed_replay:
             return
         cx, cy, r, ppm = layout["origin_x"], layout["origin_y"], layout["rod_px"], layout["px_per_m"]
         bx, by = cx + r * math.sin(theta), cy + r * math.cos(theta)
         self.bob.pos = self._pix(bx, by); self.bob.radius = layout["bob_radius_px"] * self.scale
         self.bob.opacity = 1.0; self.bob.draw()
         self.anchor.pos = self._pix(cx, cy); self.anchor.draw()
-        replay = bool(state.get("replay", False)) or phase == "replay"
         if is_e5:
             slit_l = _float(d, ("slit_left_m", "slitLeftM"), -0.1)
             slit_r = _float(d, ("slit_right_m", "slitRightM"), 0.1)
@@ -799,7 +803,7 @@ class SceneRenderer:
                     # These Rects also draw the speed-report gradient between trials.
                     stim.fillColor = BAR_FILL
                     stim.lineColor = None
-                    stim.opacity = 1.0
+                    stim.opacity = 0.42 if speed_replay else 1.0
                     stim.draw()
         if not is_e5:
             self._draw_guide(cx, cy, r, "oscillation", 90, GREY, protocol=True)
@@ -809,7 +813,14 @@ class SceneRenderer:
             bell_rad = _float(state, ("bell_theta_rad",), math.radians(
                 _float(state, ("bell_theta_deg",), _float(d, ("bell_theta_deg",), 0.0))))
             self._draw_bell(cx, cy, r, ppm, bell_rad)
-        if alpha < 1.0:
+        if speed_replay:
+            # Match the browser: disappearance becomes a translucent veil, not a blank.
+            veil = (1.0 - alpha) * 0.45
+            if veil > 0:
+                self.fade_overlay.opacity = veil
+                self.fade_overlay.draw()
+                self.fade_overlay.opacity = 1.0
+        elif alpha < 1.0:
             # Fade the composed canvas after the occluder so all scene layers fade together.
             self.fade_overlay.opacity = 1.0 - alpha
             self.fade_overlay.draw()

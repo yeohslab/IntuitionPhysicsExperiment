@@ -13,6 +13,8 @@ export type SpeedReportStrip = {
   setPreviewLevel: (level: number) => void;
   /** 反馈：在被试标记之外另画真值标记。 */
   showTruth: (level: number) => void;
+  /** 回放期间先藏起被试的橙色标记。 */
+  hideResponse: () => void;
   /** 停止响应点击和拖动。 */
   lock: () => void;
 };
@@ -101,6 +103,9 @@ export function mountSpeedReportStrip(
     onChange: (handler) => handlers.push(handler),
     setPreviewLevel: (level) => placeMarker(responseMarker, level),
     showTruth: (level) => placeMarker(truthMarker, level),
+    hideResponse: () => {
+      responseMarker.hidden = true;
+    },
     lock: () => {
       locked = true;
       dragging = false;

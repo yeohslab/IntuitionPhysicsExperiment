@@ -50,6 +50,20 @@ class BrowserParityTests(unittest.TestCase):
                             for (x, y), (width, height) in
                             zip(renderer.guide_dashes.xys, renderer.guide_dashes.sizes)))
 
+    def test_e4_speed_replay_keeps_bob_behind_translucent_grating(self):
+        renderer = self.renderer()
+        renderer.draw({'unit': 'E4', 'phase': 'feedback', 'replay': True, 'hide_choice': True,
+                       'response_mode': 'speed', 'alpha': 0, 'theta_rad': .2,
+                       'selected': .4, 'truth': .8,
+                       'descriptor': {'grating_period_m': .4, 'bar_width_m': .1, 'bob_radius_m': .08}})
+        self.assertTrue(renderer.bob.drawn)
+        grating = [bar.drawn[0] for bar in renderer.bars if bar.drawn and bar.drawn[0]['opacity'] == 0.42]
+        self.assertTrue(grating)
+        self.assertEqual(grating[0]['fillColor'], BAR_FILL)
+        self.assertAlmostEqual(renderer.fade_overlay.drawn[-1]['opacity'], 0.45)
+        self.assertFalse(any(draw['lineColor'] == ORANGE for draw in renderer.marker.drawn))
+        self.assertTrue(renderer.marker.drawn)
+
     def test_e4_grating_recovers_after_speed_report(self):
         renderer = self.renderer()
         renderer.draw({'unit': 'E4', 'phase': 'feedback', 'response_mode': 'speed',

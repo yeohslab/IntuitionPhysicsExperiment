@@ -12,7 +12,7 @@ export const EXPERIMENT_4_V2_ID = "experiment-4-v2" as const;
 export const EXPERIMENT_4_V2_LOGICAL_ID = "experiment-4" as const;
 export const EXPERIMENT_4_V2_PROTOCOL_VERSION = "2.0.0" as const;
 export const EXPERIMENT_4_V2_AMPLITUDE_DEG = 60;
-export const EXPERIMENT_4_V2_PRACTICE_AMPLITUDE_DEG = 50;
+export const EXPERIMENT_4_V2_PRACTICE_AMPLITUDE_DEG = 60;
 /**
  * 画面轨迹虚线的固定张角（下半圆，−90° 到 +90°）。
  * 正式能量仍按 60° 静止释放计算，虚线不再标出振幅。

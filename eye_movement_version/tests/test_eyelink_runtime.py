@@ -220,7 +220,8 @@ class ScriptedDisplay:
                 self.sent_response = True
                 return [(self.key, self.time)]
         feedback_delay = 0.40 if self.scene == "E2" else 0.10
-        if self.feedback_at is not None and not self.sent_feedback and self.time >= self.feedback_at + feedback_delay:
+        # Speed replay ignores Space until the motion finishes, so keep offering it.
+        if self.feedback_at is not None and self.time >= self.feedback_at + feedback_delay:
             self.sent_feedback = True
             return [("space", self.time)]
         return []

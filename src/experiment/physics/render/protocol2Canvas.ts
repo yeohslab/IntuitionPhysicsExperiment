@@ -123,6 +123,42 @@ function paintMotion(
   }
 }
 
+const REPLAY_BAR_FILL = "rgba(100, 116, 139, 0.42)";
+/** 原先完全消失的时段，回放时只盖上一层半透明白幕。 */
+const REPLAY_VEIL_MAX = 0.45;
+
+/** 速度练习回放：遮挡条半透明，淡出和空白也不再把摆球完全盖住。 */
+export function drawProtocol2SpeedReplayFrame(
+  ctx: CanvasRenderingContext2D,
+  layout: GratingWorldLayout,
+  geometry: GratingGeometry | null,
+  rodLengthM: number,
+  bobRadiusM: number,
+  amplitudeRad: number,
+  thetaRad: number,
+  sceneAlpha = 1,
+): void {
+  background(ctx, layout);
+  paintMotion(
+    ctx,
+    layout,
+    geometry,
+    rodLengthM,
+    bobRadiusM,
+    amplitudeRad,
+    thetaRad,
+    true,
+    REPLAY_BAR_FILL,
+  );
+  const veil = (1 - Math.max(0, Math.min(1, sceneAlpha))) * REPLAY_VEIL_MAX;
+  if (veil <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = veil;
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, layout.canvasW, layout.canvasH);
+  ctx.restore();
+}
+
 export function drawProtocol2MotionFrame(
   ctx: CanvasRenderingContext2D,
   layout: GratingWorldLayout,

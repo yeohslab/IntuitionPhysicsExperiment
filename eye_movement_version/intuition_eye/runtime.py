@@ -739,18 +739,37 @@ class ExperimentRuntime:
         # is a separate visual phase; formal trials go straight to a blank frame.
         self.audio.set(False)
         if feedback:
+            e4_speed_replay = self.scene == 'E4' and report == 'speed'
             state = {**base, 'phase': 'feedback', 'selected': selected, 'alpha': 1.0}
             if not training and not e5:
-                feedback_footer = f'练习反馈：橙色为您的选择，蓝色为真实{"速度" if report == "speed" else "角度"}。'
-                state['footer'] = feedback_footer + ('' if e2 else '按空格继续。')
+                if e4_speed_replay:
+                    feedback_footer = (
+                        '练习反馈：蓝色跟着摆球的真实速度移动。遮挡和消失都是半透明的，摆球一直看得到。'
+                        '运动结束后蓝色停住，再出现橙色，那是您的选择。'
+                        '色带只表示快慢，不表示方向。左端是静止，右端是最高速，越靠右越快。'
+                        '右端是这套实验里摆球能达到的最快速度，经过下方时也不一定顶到最右端。'
+                        '蓝线靠近左端，表示当时几乎停住，多在较高处、快要转向；越靠右表示越快。'
+                        '蓝线在橙线右边，说明当时比您判断的更快；在左边，说明更慢。看完后按空格继续。'
+                    )
+                else:
+                    feedback_footer = f'练习反馈：橙色为您的选择，蓝色为真实{"速度" if report == "speed" else "角度"}。'
+                state['footer'] = feedback_footer + ('' if e2 or e4_speed_replay else '按空格继续。')
             if training:
                 state['linear_x_m'], state['direction'] = training_motion(u, self.display.next_flip() - onset)
-            else:
+            elif not e4_speed_replay:
                 state['theta_rad'], state['omega_rad_sec'] = p.at(end)
             if e5:
                 state.update(replay=True, motion_elapsed=None,
                              footer=f'{"正确" if row["correct"] else "错误"}。这个铃铛{"可以" if u["correctResponse"] == "reachable" else "不可以"}到达。下面再看一次遮挡后面的运动。按空格继续。')
                 state['theta_rad'], state['omega_rad_sec'] = p.at(0)
+            if e4_speed_replay:
+                scale = float(d.get('speed_scale_linear_m_per_sec') or row.get('speed_scale_linear_m_per_sec') or 1)
+                rod = float(p.params['rodLengthM'])
+                theta0, omega0 = p.at(0)
+                state.update(replay=True, hide_choice=True, selected=None, motion_elapsed=None,
+                             theta_rad=theta0, omega_rad_sec=omega0,
+                             alpha=scene_alpha(0, blank, fade),
+                             truth=min(1.0, max(0.0, rod * abs(omega0) / scale)) if scale > 0 else 0.0)
             feedback_onset = self.flip(state, ['FEEDBACK_ONSET'])
             row['feedback_presented'] = True
             self.display.clear()
@@ -758,6 +777,7 @@ class ExperimentRuntime:
             while True:
                 keys = self.keys()
                 now = self.display.now()
+                replay_done = True
                 if training:
                     if self.display.next_flip() - feedback_onset + 1e-9 >= hold:
                         break
@@ -766,7 +786,19 @@ class ExperimentRuntime:
                     feedback_delay = 0.3 if e2 else 0.0
                     if e2 and self.display.next_flip() - feedback_onset + 1e-9 >= feedback_delay:
                         state['footer'] = feedback_footer + '按空格继续。'
-                    if (any(k == 'space' and stamp >= feedback_onset + feedback_delay
+                    if e4_speed_replay:
+                        replay_t = min(end, max(0., self.display.next_flip() - feedback_onset))
+                        theta_now, omega_now = p.at(replay_t)
+                        state['theta_rad'], state['omega_rad_sec'] = theta_now, omega_now
+                        state['alpha'] = scene_alpha(replay_t, blank, fade)
+                        state['truth'] = min(1.0, max(0.0, rod * abs(omega_now) / scale)) if scale > 0 else 0.0
+                        replay_done = replay_t + 1e-9 >= end
+                        if replay_done:
+                            state.update(hide_choice=False, selected=selected, truth=truth)
+                        else:
+                            replay_done = False
+                    choice_visible = (not e4_speed_replay) or state.get('choice_flipped')
+                    if choice_visible and replay_done and (any(k == 'space' and stamp >= feedback_onset + feedback_delay
                             for k, stamp in keys)
                             or self.auto and now - feedback_onset >= (feedback_delay if feedback_delay else 0.1)):
                         break
@@ -780,6 +812,8 @@ class ExperimentRuntime:
                     replay_t = min(end, max(0., self.display.next_flip() - feedback_onset))
                     state['theta_rad'], state['omega_rad_sec'] = p.at(replay_t)
                 self.flip(state)
+                if e4_speed_replay and not state.get('hide_choice'):
+                    state['choice_flipped'] = True
         self.flip({'text': '', 'phase': 'trial_end'}, ['TRIAL_END'])
 
     def score(self, report, selected, truth, p, confirmed, response_onset):

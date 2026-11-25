@@ -152,6 +152,10 @@ const speedPractice = speedSegment.children.map(trackingUnit);
 assert(anglePractice.length === EXPERIMENT_4_V2_PRACTICE_ANGLE_TRIALS, "位置练习应为3条");
 assert(speedPractice.length === EXPERIMENT_4_V2_PRACTICE_SPEED_TRIALS, "速度练习应为9条");
 assert(anglePractice.every((unit) => unit.reportTarget === "angle"), "位置练习只能汇报角度");
+assert(
+  [...anglePractice, ...speedPractice].every((unit) => unit.amplitudeDeg === 60),
+  "练习振幅应为60°",
+);
 assert(speedPractice.every((unit) => unit.reportTarget === "speed"), "速度练习只能汇报速度");
 function restTextBefore(index: number): string {
   const previous = set.sequence[index - 1];
@@ -206,8 +210,9 @@ for (const grating of PROTOCOL_2_GRATING_ORDER) {
   });
   assert(Math.abs(speedOf(chosen[0]!.queryOmegaRadPerSec) - Math.min(...speeds)) < 1e-6,
     `${grating}速度练习应包含最慢终点`);
-  assert(Math.abs(speedOf(chosen[2]!.queryOmegaRadPerSec) - Math.max(...speeds)) < 1e-6,
-    `${grating}速度练习应包含最快终点`);
+  assert(Math.abs(chosen[2]!.queryThetaDeg) < 1e-4 &&
+    Math.abs(speedOf(chosen[2]!.queryOmegaRadPerSec) - EXPERIMENT_4_V2_SPEED_SCALE_LINEAR_M_PER_SEC) < 1e-4,
+    `${grating}速度练习的最快终点应在最低点并到达色带右端`);
   const target = median(speeds);
   const mediumPool = feasible.filter((plan) =>
     plan.stateSiteId !== chosen[0]!.stateSiteId && plan.stateSiteId !== chosen[2]!.stateSiteId);
@@ -225,7 +230,7 @@ for (const grating of PROTOCOL_2_GRATING_ORDER) {
       Math.abs(Math.abs(angleUnits[0]!.queryThetaDeg) - EXPERIMENT_4_V2_PRACTICE_AMPLITUDE_DEG / 2)
       - bestAngle,
     ) < 1e-6,
-    `${grating}角度练习终点应最接近25°`,
+    `${grating}角度练习终点应最接近30°`,
   );
 }
 assert(

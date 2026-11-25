@@ -12,6 +12,7 @@ import {
 import {
   drawProtocol2AngleReport,
   drawProtocol2MotionFrame,
+  drawProtocol2SpeedReplayFrame,
   drawProtocol2TrackingFeedback,
   protocol2AngleFromPointer,
 } from "../../experiment/physics/render/protocol2Canvas";
@@ -110,6 +111,9 @@ export default class TrackingPendulumV2Plugin {
     let rtAngleSec: number | null = null;
     let rtSpeedSec: number | null = null;
     let speedStrip: SpeedReportStrip | null = null;
+    let replayOriginMs: number | null = null;
+    let replaySettled = false;
+    let feedbackKey: ((event: KeyboardEvent) => void) | null = null;
     let audioAnchor: number | null = null;
     let cueStartedMs = performance.now();
     let cueEndedMs = 0;
@@ -124,6 +128,7 @@ export default class TrackingPendulumV2Plugin {
       canvas.removeEventListener("pointerdown", onAnglePointer);
       canvas.removeEventListener("pointermove", onAnglePointerMove);
       canvas.removeEventListener("pointerup", onAnglePointerUp);
+      if (feedbackKey) window.removeEventListener("keydown", feedbackKey);
     };
     const setCursor = (value: "show" | "hide" | "estimate" | "response" | "feedback") => {
       updateRecoveryCursor({
@@ -199,22 +204,45 @@ export default class TrackingPendulumV2Plugin {
           "练习反馈：<strong>橙色</strong>为您的选择，<strong>蓝色</strong>为真实角度。按空格继续。";
       } else {
         root.classList.add("physics-trial--speed-feedback");
-        fillBlank();
-        const scale = u.speedScaleLinearMPerSec;
-        const truthLevel = scale > 0
-          ? Math.min(1, Math.max(0, (u.rodLengthM * Math.abs(u.queryOmegaRadPerSec)) / scale))
-          : 0;
         speedStrip?.lock();
-        speedStrip?.showTruth(truthLevel);
+        speedStrip?.hideResponse();
         hint.innerHTML =
-          "练习反馈：<strong>橙色</strong>是您的选择，<strong>蓝色</strong>是空白结束瞬间的真实速度。<br>色带只表示快慢，不表示方向。左端是<strong>静止</strong>，右端是<strong>最高速</strong>，越靠右越快。右端是这套实验里摆球能达到的最快速度，经过下方时也不一定顶到最右端。<br>蓝线靠近左端，表示当时几乎停住，多在较高处、快要转向；越靠右表示越快。蓝线在橙线右边，说明当时比您判断的更快；在左边，说明更慢。<br>按空格继续。";
+          "练习反馈：蓝色跟着摆球的真实速度移动。遮挡和消失都是半透明的，摆球一直看得到。运动结束后蓝色停住，再出现<strong>橙色</strong>，那是您的选择。<br>色带只表示快慢，不表示方向。左端是<strong>静止</strong>，右端是<strong>最高速</strong>，越靠右越快。右端是这套实验里摆球能达到的最快速度，经过下方时也不一定顶到最右端。<br>蓝线靠近左端，表示当时几乎停住，多在较高处、快要转向；越靠右表示越快。蓝线在橙线右边，说明当时比您判断的更快；在左边，说明更慢。<br>看完后按空格继续。";
+        replayOriginMs = performance.now();
+        replaySettled = false;
+        raf = requestAnimationFrame(replayTick);
       }
-      const onKey = (event: KeyboardEvent) => {
+      feedbackKey = (event: KeyboardEvent) => {
         if (event.code !== "Space" || event.repeat) return;
-        window.removeEventListener("keydown", onKey);
+        if (u.reportTarget === "speed" && !replaySettled) return;
+        if (feedbackKey) window.removeEventListener("keydown", feedbackKey);
+        feedbackKey = null;
         finish();
       };
-      window.addEventListener("keydown", onKey);
+      window.addEventListener("keydown", feedbackKey);
+    };
+    const speedLevel = (omegaRadPerSec: number) => {
+      const scale = u.speedScaleLinearMPerSec;
+      if (!(scale > 0)) return 0;
+      return Math.min(1, Math.max(0, (u.rodLengthM * Math.abs(omegaRadPerSec)) / scale));
+    };
+    const replayTick = (now: number) => {
+      if (phase !== "feedback" || replayOriginMs === null || replaySettled) return;
+      const elapsed = Math.max(0, (now - replayOriginMs) / 1000);
+      const clamped = Math.min(elapsed, u.queryTimeSec);
+      const state = pendulumThetaOmegaAt(clamped, params, analysis);
+      drawProtocol2SpeedReplayFrame(
+        ctx, layout, geometry, u.rodLengthM, u.bobRadiusM,
+        guideHalfRad, state.theta, protocol2SceneAlpha(clamped, u.blankStartSec),
+      );
+      speedStrip?.showTruth(speedLevel(state.omega));
+      if (elapsed < u.queryTimeSec) {
+        raf = requestAnimationFrame(replayTick);
+        return;
+      }
+      replaySettled = true;
+      speedStrip?.showTruth(speedLevel(u.queryOmegaRadPerSec));
+      if (speedPosition !== null) speedStrip?.setPreviewLevel(speedPosition);
     };
     const confirmSpeed = () => {
       if (speedPosition === null) return;
@@ -365,6 +393,9 @@ export default class TrackingPendulumV2Plugin {
         pausedTotalMs += pause;
         previousFrameMs = now;
         raf = requestAnimationFrame(tick);
+      } else if (phase === "feedback" && replayOriginMs !== null) {
+        replayOriginMs += pause;
+        if (!replaySettled) raf = requestAnimationFrame(replayTick);
       }
     }
     fillBlank();

@@ -1,3 +1,4 @@
+import { analyzePendulum } from "../../experiment/physics/pendulum";
 import { cryptoRandom, shuffleInPlace } from "../../experiment/stimulus/cryptoRandom";
 import { newId } from "../../shared/ids";
 import type {
@@ -19,10 +20,12 @@ import {
   THREE_CONDITION_PERMUTATIONS,
   planProtocol2Motion,
   protocol2EnergyJ,
+  protocol2ReleaseParams,
   protocol2UniformEllipseSites,
   protocol2VisibleSegmentCount,
   subjectNumber,
   type Protocol2MotionPlan,
+  type Protocol2StateSite,
 } from "../protocol-2/common";
 import {
   EXPERIMENT_4_V2_AMPLITUDE_DEG,
@@ -193,6 +196,38 @@ function closestBy(
   });
 }
 
+function maximumSpeedPracticePlan(
+  gratingId: (typeof PROTOCOL_2_GRATING_ORDER)[number],
+): Protocol2MotionPlan {
+  const amplitude = EXPERIMENT_4_V2_PRACTICE_AMPLITUDE_DEG;
+  const release = protocol2ReleaseParams(amplitude);
+  const period = analyzePendulum(release).T;
+  const geometry = PROTOCOL_2_GRATING_CONDITIONS[gratingId];
+  const failures: string[] = [];
+  for (const [index, phaseSec] of [period / 4, (3 * period) / 4].entries()) {
+    const site: Protocol2StateSite = {
+      id: `a${amplitude}-vmax-${index}`,
+      magnitudeIndex: 0,
+      arcFractionNumerator: 1,
+      thetaRad: 0,
+      omegaRadPerSec: 0,
+      phaseSec,
+    };
+    try {
+      const plan = planProtocol2Motion(amplitude, site, geometry);
+      if (Math.abs(plan.queryThetaDeg) > 1e-4 ||
+        Math.abs(linearSpeed(plan) - EXPERIMENT_4_V2_SPEED_SCALE_LINEAR_M_PER_SEC) > 1e-4) {
+        failures.push(`${site.id} 未落在最低点`);
+        continue;
+      }
+      return plan;
+    } catch (error) {
+      failures.push(error instanceof Error ? error.message : String(error));
+    }
+  }
+  throw new Error(`${gratingId} 练习无法在最低点查询最高速：${failures.join("；")}`);
+}
+
 function practiceChoice(gratingId: (typeof PROTOCOL_2_GRATING_ORDER)[number]) {
   const feasible = feasiblePracticePlans(gratingId);
   if (feasible.length < 4) throw new Error(`${gratingId} 练习缺少四个可播放终点`);
@@ -202,7 +237,7 @@ function practiceChoice(gratingId: (typeof PROTOCOL_2_GRATING_ORDER)[number]) {
     return a.stateSiteId < b.stateSiteId ? -1 : 1;
   });
   const slow = bySpeed[0]!;
-  const fast = bySpeed[bySpeed.length - 1]!;
+  const fast = maximumSpeedPracticePlan(gratingId);
   if (slow.stateSiteId === fast.stateSiteId) {
     throw new Error(`${gratingId} 练习速度终点无法分开`);
   }
@@ -426,7 +461,6 @@ export function assertExperiment4V2RuntimeStimulusSet(
     const feasible = feasiblePracticePlans(grating);
     const speeds = feasible.map(linearSpeed);
     const minSpeed = Math.min(...speeds);
-    const maxSpeed = Math.max(...speeds);
     const byChosenSpeed = [...speedUnits].sort((a, b) => {
       const delta = unitLinearSpeed(a) - unitLinearSpeed(b);
       if (Math.abs(delta) > 1e-9) return delta;
@@ -438,8 +472,9 @@ export function assertExperiment4V2RuntimeStimulusSet(
     if (Math.abs(unitLinearSpeed(slow) - minSpeed) > 1e-6) {
       throw new Error(`${grating} 速度练习未包含最慢终点`);
     }
-    if (Math.abs(unitLinearSpeed(fast) - maxSpeed) > 1e-6) {
-      throw new Error(`${grating} 速度练习未包含最快终点`);
+    if (Math.abs(fast.queryThetaDeg) > 1e-4 ||
+      Math.abs(unitLinearSpeed(fast) - EXPERIMENT_4_V2_SPEED_SCALE_LINEAR_M_PER_SEC) > 1e-4) {
+      throw new Error(`${grating} 速度练习的最快终点不在最低点`);
     }
     const speedTarget = median(speeds);
     const mediumPool = feasible.filter((plan) =>
@@ -455,7 +490,7 @@ export function assertExperiment4V2RuntimeStimulusSet(
       Math.abs(Math.abs(plan.queryThetaDeg) - PRACTICE_ANGLE_TARGET_DEG)));
     const angleDistance = Math.abs(Math.abs(angle.queryThetaDeg) - PRACTICE_ANGLE_TARGET_DEG);
     if (Math.abs(angleDistance - bestAngle) > 1e-6) {
-      throw new Error(`${grating} 角度练习终点不是最接近25°的剩余终点`);
+      throw new Error(`${grating} 角度练习终点不是最接近${PRACTICE_ANGLE_TARGET_DEG}°的剩余终点`);
     }
   }
   const formalSites = protocol2UniformEllipseSites(
