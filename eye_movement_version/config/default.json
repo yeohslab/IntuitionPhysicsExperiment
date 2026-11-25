@@ -1,0 +1,40 @@
+{
+  "output_dir": "data",
+  "window": {
+    "size": [1000, 700],
+    "fullscreen": false,
+    "screen": 0
+  },
+  "render": {
+    "font": "Microsoft YaHei"
+  },
+  "keyboard_backend": "event",
+  "timing": {
+    "expected_refresh_hz": 60,
+    "drop_frame_multiplier": 1.5,
+    "max_frame_gap_ms": 100
+  },
+  "audio": {
+    "enabled": true,
+    "libraries": ["ptb", "sounddevice"],
+    "mask_file": "assets/masked-hum.wav",
+    "mask_volume": 1.5,
+    "cue_volume": 1.0
+  },
+  "tracker": {
+    "ip": "100.1.1.1",
+    "sample_rate": null,
+    "calibration_type": "HV13",
+    "drift_check": true
+  },
+  "log_frames": true,
+  "flush_every_frames": 120,
+  "headless": {
+    "refresh_hz": 60,
+    "response_delay_sec": 0.1,
+    "e5_rt_sec": 0.05,
+    "assessment_failures": 0,
+    "skip_guided": false,
+    "abort_after_frames": null
+  }
+}

@@ -82,6 +82,7 @@ export default class BellReachabilityV3Plugin {
     let visibilityPauseCount = 0;
     let visibilityPauseMs = 0;
     let finished = false;
+    let replayOriginMs: number | null = null;
     let response: "reachable" | "unreachable" | null = null;
     let responseKey: string | null = null;
     let responseRtSec: number | null = null;
@@ -130,15 +131,35 @@ export default class BellReachabilityV3Plugin {
       cleanup();
       this.jsPsych.finishTrial(payload());
     };
+    const drawRevealedMotion = (elapsedSec: number) => {
+      const state = pendulumThetaOmegaAt(
+        Math.min(Math.max(0, elapsedSec), u.queryTimeSec),
+        params,
+        analysis,
+      );
+      drawProtocol2BellMotionFrame(
+        ctx, layout, null, u.rodLengthM, u.bobRadiusM,
+        (u.amplitudeDeg * Math.PI) / 180, state.theta, bellThetaRad, 1, false,
+        "rgba(100, 116, 139, 0.42)",
+        { leftM: u.slitLeftM, rightM: u.slitRightM },
+      );
+    };
+    const replayTick = (now: number) => {
+      if (phase !== "feedback" || replayOriginMs === null) return;
+      const elapsed = (now - replayOriginMs) / 1000;
+      drawRevealedMotion(elapsed);
+      if (elapsed < u.queryTimeSec) raf = requestAnimationFrame(replayTick);
+    };
     const showVerdict = () => {
       phase = "feedback";
       cancelAnimationFrame(raf);
       stopMaskedAmbientSound();
-      blank();
       cursor("feedback");
       const correct = response === u.correctResponse;
-      feedback.innerHTML = `<p class="physics-feedback ${correct ? "is-correct" : "is-error"}"><strong>${correct ? "正确" : "错误"}</strong>。这个铃铛${u.correctResponse === "reachable" ? "可以" : "不可以"}到达。按空格继续。</p>`;
+      feedback.innerHTML = `<p class="physics-feedback ${correct ? "is-correct" : "is-error"}"><strong>${correct ? "正确" : "错误"}</strong>。这个铃铛${u.correctResponse === "reachable" ? "可以" : "不可以"}到达。下面再看一次遮挡后面的运动。按空格继续。</p>`;
       hint.textContent = "练习反馈";
+      replayOriginMs = performance.now();
+      raf = requestAnimationFrame(replayTick);
     };
     const armResponse = (now: number) => {
       if (responseArmed) return;
@@ -217,6 +238,9 @@ export default class BellReachabilityV3Plugin {
         pausedTotalMs += pause;
         previousFrameMs = now;
         raf = requestAnimationFrame(tick);
+      } else if (phase === "feedback" && replayOriginMs !== null) {
+        replayOriginMs += pause;
+        raf = requestAnimationFrame(replayTick);
       }
     }
     window.addEventListener("keydown", onKey);

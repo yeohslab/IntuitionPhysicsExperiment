@@ -1,15 +1,13 @@
 import type { Training1MasteryResult } from "./mastery";
-import {
-  TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC,
-  TRAINING_1_MASTERY_SINGLE_THRESHOLD,
-} from "./protocol";
+import { TRAINING_1_MASTERY_SINGLE_THRESHOLD } from "./protocol";
 
 export function training1WelcomeText(): string {
   return `<h1>训练一：速度与颜色</h1>
-<p class="instr-summary">学习匀速小球的速度大小与色带位置、颜色之间的对应关系。</p>
+<p class="instr-summary">请观察小球运动得有多快，并在色带上标出它的速度。</p>
 <div class="instr-left">
-<p>色带左端表示<strong>静止</strong>，右端表示<strong>最高速</strong>（约 ${TRAINING_1_LINEAR_SPEED_SCALE_M_PER_SEC.toFixed(2)} m/s，对应 60° 静止释放的单摆在最低点的速度）。颜色沿 Turbo 标尺连续变化：深蓝紫 → 亮蓝 → 青绿 → 亮黄 → 橙红 → 深红。</p>
-<p>小球只沿水平直线做匀速运动。本训练不包含单摆、圆弧、摆杆、光栅、遮挡或角度判断。</p>
+<p>屏幕上会出现一个小球，它沿着水平直线来回运动，快慢保持不变。请先看清它的速度。</p>
+<p>接着会出现一条色带。左端是<strong>静止</strong>，右端是<strong>最高速</strong>。小球越快，就要点得越靠右；同一速度始终对应色带上的同一位置和颜色。请点选你看到的速度，然后按「确认速度」。</p>
+<p>点选时小球仍会继续运动。可以慢慢看，没有时间限制。</p>
 </div>
 <p>按空格键继续</p>`;
 }

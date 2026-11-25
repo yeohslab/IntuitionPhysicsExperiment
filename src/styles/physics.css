@@ -19,6 +19,15 @@
   box-sizing: border-box;
 }
 
+/* 速度练习反馈有四句说明。缩短画布，让说明和色带同时留在视口里。 */
+.physics-trial--speed-feedback .physics-canvas-frame {
+  width: min(1000px, 100%, calc((100dvh - 18rem) * 1000 / 560));
+}
+
+.physics-trial--speed-feedback .physics-hint {
+  line-height: 1.45;
+}
+
 /* 实验四：色带和确认按钮的位置从运动阶段就留好，出现时不把画布顶上去。 */
 .physics-trial--grating .physics-footer {
   height: 12.75rem;

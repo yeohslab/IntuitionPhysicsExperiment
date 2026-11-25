@@ -36,6 +36,8 @@ import {
   EXPERIMENT_4_V2_FORMAL_TRIALS_PER_BLOCK,
   EXPERIMENT_4_V2_GRAVITY,
   EXPERIMENT_4_V2_PRACTICE_AMPLITUDE_DEG,
+  EXPERIMENT_4_V2_PRACTICE_ANGLE_TRIALS,
+  EXPERIMENT_4_V2_PRACTICE_SPEED_TRIALS,
   EXPERIMENT_4_V2_PRACTICE_TRIALS,
   type Experiment4V2ReportTarget,
   EXPERIMENT_4_V2_ROD_LENGTH_M,
@@ -43,9 +45,10 @@ import {
   EXPERIMENT_4_V2_TOTAL_RUNTIME_TRIALS,
 } from "./protocol";
 import {
+  experiment4V2AnglePracticeText,
   experiment4V2BlockText,
   experiment4V2InitialCueText,
-  experiment4V2PracticeText,
+  experiment4V2SpeedPracticeText,
   experiment4V2StructureText,
   experiment4V2WelcomeText,
 } from "./instructions";
@@ -145,35 +148,110 @@ function formalBlock(
   return { kind: "block", id: newId(), children: trials };
 }
 
-function practiceBlock(
-  participant: Experiment4ParticipantInfo,
+const PRACTICE_ANGLE_TARGET_DEG = EXPERIMENT_4_V2_PRACTICE_AMPLITUDE_DEG / 2;
+
+function linearSpeed(plan: Protocol2MotionPlan): number {
+  return EXPERIMENT_4_V2_ROD_LENGTH_M * Math.abs(plan.queryOmegaRadPerSec);
+}
+
+function unitLinearSpeed(unit: TrackingPendulumV2StimulusUnit): number {
+  return unit.rodLengthM * Math.abs(unit.queryOmegaRadPerSec);
+}
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1]! + sorted[mid]!) / 2
+    : sorted[mid]!;
+}
+
+function feasiblePracticePlans(
+  gratingId: (typeof PROTOCOL_2_GRATING_ORDER)[number],
+): Protocol2MotionPlan[] {
+  const sites = protocol2UniformEllipseSites(EXPERIMENT_4_V2_PRACTICE_AMPLITUDE_DEG, 32);
+  const geometry = PROTOCOL_2_GRATING_CONDITIONS[gratingId];
+  return sites.flatMap((site) => {
+    try {
+      return [planProtocol2Motion(EXPERIMENT_4_V2_PRACTICE_AMPLITUDE_DEG, site, geometry)];
+    } catch {
+      return [];
+    }
+  });
+}
+
+function closestBy(
+  plans: Protocol2MotionPlan[],
+  distance: (plan: Protocol2MotionPlan) => number,
+): Protocol2MotionPlan {
+  return plans.reduce((best, plan) => {
+    const bestDistance = distance(best);
+    const nextDistance = distance(plan);
+    if (nextDistance < bestDistance - 1e-12) return plan;
+    if (nextDistance > bestDistance + 1e-12) return best;
+    return plan.stateSiteId < best.stateSiteId ? plan : best;
+  });
+}
+
+function practiceChoice(gratingId: (typeof PROTOCOL_2_GRATING_ORDER)[number]) {
+  const feasible = feasiblePracticePlans(gratingId);
+  if (feasible.length < 4) throw new Error(`${gratingId} 练习缺少四个可播放终点`);
+  const bySpeed = [...feasible].sort((a, b) => {
+    const delta = linearSpeed(a) - linearSpeed(b);
+    if (Math.abs(delta) > 1e-12) return delta;
+    return a.stateSiteId < b.stateSiteId ? -1 : 1;
+  });
+  const slow = bySpeed[0]!;
+  const fast = bySpeed[bySpeed.length - 1]!;
+  if (slow.stateSiteId === fast.stateSiteId) {
+    throw new Error(`${gratingId} 练习速度终点无法分开`);
+  }
+  const speedTarget = median(feasible.map(linearSpeed));
+  const medium = closestBy(
+    feasible.filter((plan) =>
+      plan.stateSiteId !== slow.stateSiteId && plan.stateSiteId !== fast.stateSiteId),
+    (plan) => Math.abs(linearSpeed(plan) - speedTarget),
+  );
+  const used = new Set([slow.stateSiteId, medium.stateSiteId, fast.stateSiteId]);
+  const anglePool = feasible.filter((plan) => !used.has(plan.stateSiteId));
+  if (anglePool.length === 0) throw new Error(`${gratingId} 练习缺少角度终点`);
+  const angle = closestBy(
+    anglePool,
+    (plan) => Math.abs(Math.abs(plan.queryThetaDeg) - PRACTICE_ANGLE_TARGET_DEG),
+  );
+  return { angle, slow, medium, fast };
+}
+
+function practiceSegment(
+  plans: Protocol2MotionPlan[],
+  reportTarget: Experiment4V2ReportTarget,
   rng: () => number,
   onTrial: () => void,
 ): PracticeSegment {
-  const parity = (subjectNumber(participant.subject_id) - 1) % 2;
-  const sites = protocol2UniformEllipseSites(EXPERIMENT_4_V2_PRACTICE_AMPLITUDE_DEG, 32);
-  const children = PROTOCOL_2_GRATING_ORDER.flatMap((gratingId, index) => {
-    const geometry = PROTOCOL_2_GRATING_CONDITIONS[gratingId];
-    const feasible = sites.flatMap((site) => {
-      try {
-        return [planProtocol2Motion(EXPERIMENT_4_V2_PRACTICE_AMPLITUDE_DEG, site, geometry)];
-      } catch {
-        return [];
-      }
-    });
-    if (feasible.length < 2) throw new Error(`${gratingId} 练习缺少两个可播放终点`);
-    const first = feasible[0]!;
-    const second = feasible[Math.floor(feasible.length / 2)] ?? feasible[1]!;
-    const angleFirst = (index + parity) % 2 === 0;
+  const children = plans.map((plan) => {
     onTrial();
-    onTrial();
-    return [
-      asTrial(trackingUnit(first, angleFirst ? "angle" : "speed")),
-      asTrial(trackingUnit(second, angleFirst ? "speed" : "angle")),
-    ];
+    return asTrial(trackingUnit(plan, reportTarget));
   });
   shuffleInPlace(children, rng);
   return { kind: "practice", id: newId(), children };
+}
+
+function practiceBlocks(rng: () => number, onTrial: () => void) {
+  const choices = PROTOCOL_2_GRATING_ORDER.map((gratingId) => practiceChoice(gratingId));
+  return {
+    angle: practiceSegment(
+      choices.map((choice) => choice.angle),
+      "angle",
+      rng,
+      onTrial,
+    ),
+    speed: practiceSegment(
+      choices.flatMap((choice) => [choice.slow, choice.medium, choice.fast]),
+      "speed",
+      rng,
+      onTrial,
+    ),
+  };
 }
 
 export function generateExperiment4V2RuntimeStimulusSet(
@@ -193,11 +271,14 @@ export function generateExperiment4V2RuntimeStimulusSet(
     (subjectNumber(participant.subject_id) - 1) % THREE_CONDITION_PERMUTATIONS.length
   ]!;
   const formalBlocks = permutation.map((index) => blocksByGrating[index]!);
+  const practice = practiceBlocks(rng, report);
   const sequence: TopLevelSequenceItem[] = [
     rest(experiment4V2WelcomeText()),
     rest(experiment4V2StructureText()),
-    rest(experiment4V2PracticeText()),
-    practiceBlock(participant, rng, report),
+    rest(experiment4V2AnglePracticeText()),
+    practice.angle,
+    rest(experiment4V2SpeedPracticeText()),
+    practice.speed,
   ];
   formalBlocks.forEach((block, index) => {
     sequence.push(
@@ -285,9 +366,36 @@ export function assertExperiment4V2RuntimeStimulusSet(
   })) {
     throw new Error("实验四V2试次顺序必须是方向提示、注视点、摆球演示");
   }
-  if (practices.length !== EXPERIMENT_4_V2_PRACTICE_TRIALS) {
-    throw new Error("实验四V2练习试次数错误");
+  const practiceSegments = set.sequence.filter(
+    (item): item is PracticeSegment => item.kind === "practice",
+  );
+  if (practiceSegments.length !== 2) throw new Error("实验四V2练习应分为两段");
+  const [angleSegment, speedSegment] = practiceSegments as [PracticeSegment, PracticeSegment];
+  const segmentUnits = (segment: PracticeSegment) => trackingUnits(
+    { ...set, sequence: [segment] },
+    "practice",
+  );
+  const anglePractice = segmentUnits(angleSegment);
+  const speedPractice = segmentUnits(speedSegment);
+  const leadingText = (segment: PracticeSegment) => {
+    const previous = set.sequence[set.sequence.indexOf(segment) - 1];
+    const unit = previous?.kind === "rest" ? previous.units[0] : undefined;
+    if (unit?.type !== "textControl") throw new Error("练习段前应有说明页");
+    return unit.text;
+  };
+  if (leadingText(angleSegment) !== experiment4V2AnglePracticeText()) {
+    throw new Error("位置练习说明不正确");
   }
+  if (leadingText(speedSegment) !== experiment4V2SpeedPracticeText()) {
+    throw new Error("速度练习说明不正确");
+  }
+  if (
+    practices.length !== EXPERIMENT_4_V2_PRACTICE_TRIALS ||
+    anglePractice.length !== EXPERIMENT_4_V2_PRACTICE_ANGLE_TRIALS ||
+    speedPractice.length !== EXPERIMENT_4_V2_PRACTICE_SPEED_TRIALS ||
+    anglePractice.some((unit) => unit.reportTarget !== "angle") ||
+    speedPractice.some((unit) => unit.reportTarget !== "speed")
+  ) throw new Error("实验四V2练习试次数或汇报类型错误");
   if (
     blocks.length !== EXPERIMENT_4_V2_FORMAL_BLOCKS ||
     blocks.some((block) => block.children.length !== EXPERIMENT_4_V2_FORMAL_TRIALS_PER_BLOCK) ||
@@ -305,17 +413,49 @@ export function assertExperiment4V2RuntimeStimulusSet(
       throw new Error("空白时长错误");
     }
   }
-  if (practices.filter((unit) => unit.reportTarget === "angle").length !== 3 ||
-    practices.filter((unit) => unit.reportTarget === "speed").length !== 3) {
-    throw new Error("实验四V2练习角度与速度汇报未各半");
-  }
   for (const grating of PROTOCOL_2_GRATING_ORDER) {
-    const group = practices.filter((unit) => unit.gratingCondition === grating);
-    if (group.length !== 2 || new Set(group.map((unit) => unit.reportTarget)).size !== 2) {
-      throw new Error(`${grating} 练习未同时包含两种汇报`);
+    const angleUnits = anglePractice.filter((unit) => unit.gratingCondition === grating);
+    const speedUnits = speedPractice.filter((unit) => unit.gratingCondition === grating);
+    if (angleUnits.length !== 1) throw new Error(`${grating} 位置练习应为1条`);
+    if (speedUnits.length !== 3) throw new Error(`${grating} 速度练习应为3条`);
+    const angle = angleUnits[0]!;
+    const speedIds = speedUnits.map((unit) => unit.stateSiteId);
+    if (new Set(speedIds).size !== 3 || speedIds.includes(angle.stateSiteId)) {
+      throw new Error(`${grating} 练习终点必须各不相同`);
     }
-    if (new Set(group.map((unit) => unit.stateSiteId)).size !== 2) {
-      throw new Error(`${grating} 练习终点必须不同`);
+    const feasible = feasiblePracticePlans(grating);
+    const speeds = feasible.map(linearSpeed);
+    const minSpeed = Math.min(...speeds);
+    const maxSpeed = Math.max(...speeds);
+    const byChosenSpeed = [...speedUnits].sort((a, b) => {
+      const delta = unitLinearSpeed(a) - unitLinearSpeed(b);
+      if (Math.abs(delta) > 1e-9) return delta;
+      return a.stateSiteId < b.stateSiteId ? -1 : 1;
+    });
+    const slow = byChosenSpeed[0]!;
+    const medium = byChosenSpeed[1]!;
+    const fast = byChosenSpeed[2]!;
+    if (Math.abs(unitLinearSpeed(slow) - minSpeed) > 1e-6) {
+      throw new Error(`${grating} 速度练习未包含最慢终点`);
+    }
+    if (Math.abs(unitLinearSpeed(fast) - maxSpeed) > 1e-6) {
+      throw new Error(`${grating} 速度练习未包含最快终点`);
+    }
+    const speedTarget = median(speeds);
+    const mediumPool = feasible.filter((plan) =>
+      plan.stateSiteId !== slow.stateSiteId && plan.stateSiteId !== fast.stateSiteId);
+    const bestMedium = Math.min(
+      ...mediumPool.map((plan) => Math.abs(linearSpeed(plan) - speedTarget)),
+    );
+    if (Math.abs(Math.abs(unitLinearSpeed(medium) - speedTarget) - bestMedium) > 1e-6) {
+      throw new Error(`${grating} 速度练习的中间终点不是最接近中位数的终点`);
+    }
+    const anglePool = feasible.filter((plan) => !speedIds.includes(plan.stateSiteId));
+    const bestAngle = Math.min(...anglePool.map((plan) =>
+      Math.abs(Math.abs(plan.queryThetaDeg) - PRACTICE_ANGLE_TARGET_DEG)));
+    const angleDistance = Math.abs(Math.abs(angle.queryThetaDeg) - PRACTICE_ANGLE_TARGET_DEG);
+    if (Math.abs(angleDistance - bestAngle) > 1e-6) {
+      throw new Error(`${grating} 角度练习终点不是最接近25°的剩余终点`);
     }
   }
   const formalSites = protocol2UniformEllipseSites(

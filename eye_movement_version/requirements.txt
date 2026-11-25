@@ -1,0 +1,6 @@
+# Target: Windows x64 / CPython 3.11; install in a dedicated environment.
+PsychoPy==2026.2.5
+numpy>=1.26,<3
+scipy>=1.12,<2
+sr-research-pylink==2.2.596.0
+psychopy-eyelink-coregraphics==2.2.1.1

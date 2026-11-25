@@ -1,0 +1,104 @@
+{
+  "fixtures": [
+    {
+      "name": "oscillation",
+      "params": {
+        "theta0Rad": 0.8,
+        "omega0RadPerSec": -0.3,
+        "rodLengthM": 4,
+        "gravity": 9.8
+      },
+      "analysis": {
+        "E": 12.609096993591118,
+        "T": 4.192043602185293,
+        "regime": "oscillation",
+        "alpha": 1.5652475842498528,
+        "kOsc": 0.401036555435792,
+        "psiOsc": 1.903318416233452
+      },
+      "samples": [
+        {
+          "t_sec": 0,
+          "theta": 0.7999999999999998,
+          "omega": -0.30000000000000177
+        },
+        {
+          "t_sec": 0.1,
+          "theta": 0.761311058670255,
+          "omega": -0.4726571327204422
+        },
+        {
+          "t_sec": 1.37,
+          "theta": -0.5575435074447416,
+          "omega": -0.9132734667036628
+        }
+      ]
+    },
+    {
+      "name": "oscillation_rest",
+      "params": {
+        "theta0Rad": 1.0471975511965976,
+        "omega0RadPerSec": 0,
+        "rodLengthM": 4,
+        "gravity": 9.8
+      },
+      "analysis": {
+        "E": 19.599999999999998,
+        "T": 4.307945584520405,
+        "regime": "oscillation",
+        "alpha": 1.5652475842498528,
+        "kOsc": 0.49999999999999994,
+        "psiOsc": 1.6857503548126087
+      },
+      "samples": [
+        {
+          "t_sec": 0,
+          "theta": 1.0471975511965976,
+          "omega": -1.6934340519080054e-14
+        },
+        {
+          "t_sec": 0.1,
+          "theta": 1.0365996051108683,
+          "omega": -0.21174091575131063
+        },
+        {
+          "t_sec": 2.1,
+          "theta": -1.0441080582832727,
+          "omega": -0.11444922617950008
+        }
+      ]
+    },
+    {
+      "name": "rotation",
+      "params": {
+        "theta0Rad": 0,
+        "omega0RadPerSec": 3.5,
+        "rodLengthM": 4,
+        "gravity": 9.8
+      },
+      "analysis": {
+        "E": 98,
+        "T": 2.579663230652404,
+        "regime": "rotation",
+        "alpha": 1.5652475842498528
+      },
+      "samples": [
+        {
+          "t_sec": 0,
+          "theta": 0,
+          "omega": 3.5
+        },
+        {
+          "t_sec": 0.1,
+          "theta": 0.3485812644851638,
+          "omega": 3.457644494105696
+        },
+        {
+          "t_sec": 1.37,
+          "theta": 3.267405406619489,
+          "omega": 1.577570894850468
+        }
+      ]
+    }
+  ]
+}

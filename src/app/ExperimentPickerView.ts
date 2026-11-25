@@ -18,7 +18,6 @@ export function mountExperimentPicker(container: HTMLElement): void {
         : "当前没有待处理记录";
       return `<div class="experiment-card__version">
         <p><strong>协议 ${definition.protocolVersion}</strong></p>
-        <p>${definition.summary.replace(/^协议 [^：]+：/, "")}</p>
         <p class="experiment-card__recovery ${recovery ? "" : "experiment-card__recovery--empty"}">${recoveryText}</p>
         <a class="btn btn-primary" href="${definition.startHash}">进入协议 ${definition.protocolVersion}</a>
       </div>`;

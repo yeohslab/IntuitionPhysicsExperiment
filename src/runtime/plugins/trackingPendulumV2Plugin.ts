@@ -198,6 +198,7 @@ export default class TrackingPendulumV2Plugin {
         hint.innerHTML =
           "练习反馈：<strong>橙色</strong>为您的选择，<strong>蓝色</strong>为真实角度。按空格继续。";
       } else {
+        root.classList.add("physics-trial--speed-feedback");
         fillBlank();
         const scale = u.speedScaleLinearMPerSec;
         const truthLevel = scale > 0
@@ -206,7 +207,7 @@ export default class TrackingPendulumV2Plugin {
         speedStrip?.lock();
         speedStrip?.showTruth(truthLevel);
         hint.innerHTML =
-          "练习反馈：<strong>橙色</strong>为您的选择，<strong>蓝色</strong>为真实速度。按空格继续。";
+          "练习反馈：<strong>橙色</strong>是您的选择，<strong>蓝色</strong>是空白结束瞬间的真实速度。<br>色带只表示快慢，不表示方向。左端是<strong>静止</strong>，右端是<strong>最高速</strong>，越靠右越快。右端是这套实验里摆球能达到的最快速度，经过下方时也不一定顶到最右端。<br>蓝线靠近左端，表示当时几乎停住，多在较高处、快要转向；越靠右表示越快。蓝线在橙线右边，说明当时比您判断的更快；在左边，说明更慢。<br>按空格继续。";
       }
       const onKey = (event: KeyboardEvent) => {
         if (event.code !== "Space" || event.repeat) return;

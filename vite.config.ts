@@ -9,8 +9,13 @@ export default defineConfig({
   base: "./",
   server: {
     watch: {
-      // 数据收集目录含被其他程序占用的 PDF，Windows 监视会抛 EBUSY 并退出开发服务器。
-      ignored: ["**/数据收集/**"],
+      // 数据收集中的 PDF、眼动实验和验证脚本的临时目录可能被占用，Windows 监视会抛 EBUSY。
+      ignored: [
+        "**/数据收集/**",
+        "**/eye_movement_version/**",
+        "**/*.tmpdir/**",
+        "**/.*.tmpdir/**",
+      ],
     },
   },
 });

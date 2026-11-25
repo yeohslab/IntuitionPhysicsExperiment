@@ -1,0 +1,24 @@
+---
+description: 启动本仓库网站前如何确认依赖和开发服务器，避免误删 node_modules
+alwaysApply: true
+---
+
+# 启动网站，不要重装依赖
+
+`node_modules/` 在 `.gitignore` 里。Glob、Grep 和文件搜索会跳过它。搜索结果为 0 **不能**当成依赖未安装。
+
+确认依赖是否存在，只用 Shell 检查这些路径：
+
+- `node_modules/vite/package.json`
+- `node_modules/vite/bin/vite.js`
+
+同时用进程命令行确认有没有本仓库的 `npm run dev`、`vite` 或 `esbuild.exe`。已在监听就直接使用现有地址，不要安装、不要重启。
+
+`npm ci` 会先清空 `node_modules`。本仓库的 node、vite 或 esbuild 还在运行时，禁止执行 `npm ci`、`npm install`，也禁止删除 `node_modules`。
+
+只有 Shell 确认 `node_modules/vite/package.json` 不存在，且没有本仓库开发服务器进程时，才允许安装。先确认没有进程锁住 `node_modules`，再执行一次 `npm ci`。
+
+```text
+错误：搜索不到 node_modules/vite/package.json → 执行 npm ci
+正确：Shell 看到该文件或已有 vite 进程 → 打开现有地址，不安装
+```
