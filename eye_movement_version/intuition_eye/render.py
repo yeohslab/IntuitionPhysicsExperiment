@@ -489,6 +489,8 @@ class SceneRenderer:
         layout = _layout(unit, d)
         self.content_top = 20.0 if scene == "e2" else CONTENT_TOP
         self.canvas_top = self.frame_top + self.content_top * self.scale
+        speed_replay = (scene == "e4" and phase == "feedback" and bool(state.get("replay"))
+                        and state.get("response_mode") == "speed")
         if phase == "blank" and scene != "e2":
             self.bg.draw()
             self._draw_footer(state.get("footer"))
@@ -500,7 +502,6 @@ class SceneRenderer:
             self._draw_e2(state, d, layout, theta, alpha, phase)
         else:
             self._draw_e4e5(state, d, layout, theta, alpha, phase, scene == "e5")
-        speed_replay = scene == "e4" and phase == "feedback" and state.get("replay") and state.get("response_mode") == "speed"
         if (phase in ("estimate", "feedback") and not state.get("replay") and scene != "e5") or speed_replay:
             if state.get("response_mode") == "speed":
                 self._draw_speed_report(state, phase)
@@ -508,7 +509,10 @@ class SceneRenderer:
                 self._draw_controls(bool(state.get("show_skip")), training=scene == "training")
         if scene == "training" and phase in ("motion", "feedback") and state.get("show_skip"):
             self._draw_controls(True, show_confirm=False, training=True)
-        self._draw_footer(state.get("footer"))
+        if speed_replay and state.get("footer"):
+            self._draw_speed_feedback_caption(str(state.get("footer")))
+        else:
+            self._draw_footer(state.get("footer"))
 
     def _draw_footer(self, text: Any) -> None:
         if not text:
@@ -520,6 +524,45 @@ class SceneRenderer:
         self.text.wrapWidth = 940 * self.scale
         self.text.text = _wrap_text_for_width(str(text), self.text.wrapWidth, self.text.height)
         self.text.pos = (0, self.text_layout["footer_y"])
+        self.text.color = DARK
+        self.text.draw()
+        self.text.alignText = "left"
+        self.text.anchorHoriz = "left"
+        self.text.anchorVert = "top"
+        self.text.height = 30 * self.text_layout["scale"]
+
+    def _draw_speed_feedback_caption(self, text: str) -> None:
+        """Draw the speed-practice caption in the margin under the full-size canvas.
+
+        The speed strip stays on the same canvas row as the formal report.
+        Only the type size shrinks, and only far enough for the caption to
+        remain below that row.
+        """
+        source = str(text)
+        gap = 8.0 * self.scale
+        side = 28.0 * self.scale
+        bottom = 8.0 * self.scale
+        band_top = self.frame_top + (self.content_top + CANVAS_H) * self.scale + gap
+        avail = max(1.0, self.height - bottom - band_top)
+        font_logical = 18.0
+        wrapped = source
+        font_h = font_logical * self.scale
+        wrap = max(8.0 * font_h, self.width - 2.0 * side)
+        while True:
+            font_h = font_logical * self.scale
+            wrap = max(8.0 * font_h, self.width - 2.0 * side)
+            wrapped = _wrap_text_for_width(source, wrap, font_h)
+            lines = max(1, wrapped.count("\n") + 1)
+            if lines * font_h * 1.35 <= avail or font_logical <= 12.0:
+                break
+            font_logical -= 1.0
+        self.text.alignText = "center"
+        self.text.anchorHoriz = "center"
+        self.text.anchorVert = "top"
+        self.text.height = font_h
+        self.text.wrapWidth = wrap + font_h
+        self.text.text = wrapped
+        self.text.pos = (0.0, self.height / 2.0 - band_top)
         self.text.color = DARK
         self.text.draw()
         self.text.alignText = "left"

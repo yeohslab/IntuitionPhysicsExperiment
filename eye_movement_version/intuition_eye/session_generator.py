@@ -15,9 +15,17 @@ ROOT = Path(__file__).resolve().parent.parent
 PROJECT = ROOT.parent
 
 
+def node_executable():
+    """Prefer the Node shipped beside a standalone release, then PATH."""
+    bundled = PROJECT / 'runtime' / 'node' / 'node.exe'
+    if bundled.is_file():
+        return str(bundled)
+    return shutil.which('node')
+
+
 def generate_session(selection, seed=None, sessions_root=None):
     """Validate a temporary export, then publish it exclusively in the archive."""
-    node = shutil.which('node')
+    node = node_executable()
     tsx = PROJECT / 'node_modules' / 'tsx' / 'dist' / 'cli.mjs'
     exporter = ROOT / 'tools' / 'exportSession.ts'
     if not node or not tsx.is_file() or not exporter.is_file():

@@ -3,7 +3,16 @@ import math
 import unittest
 
 import test_geometry
-from eye_movement_version.intuition_eye.render import BAR_FILL, ORANGE, _turbo, frame_geometry
+from eye_movement_version.intuition_eye.render import (
+    BAR_FILL, BLUE, CANVAS_H, ORANGE, _turbo, frame_geometry,
+)
+
+SPEED_PRACTICE_FOOTER = (
+    "练习反馈：蓝线跟随摆球真实速度，遮挡和消失都是半透明的。"
+    "结束后蓝线停住，橙色是您的选择。"
+    "色带只表示快慢，不表示方向：左端静止，右端为本实验最高速，过最低点也不一定到达。"
+    "蓝线靠近左端表示几乎停住；在橙线右边表示当时更快，在左边表示更慢。按空格继续。"
+)
 
 
 class BrowserParityTests(unittest.TestCase):
@@ -49,6 +58,38 @@ class BrowserParityTests(unittest.TestCase):
         self.assertTrue(any(abs(y - pivot_y) < 1e-8 and width > 0
                             for (x, y), (width, height) in
                             zip(renderer.guide_dashes.xys, renderer.guide_dashes.sizes)))
+
+    def test_e4_speed_practice_keeps_report_strip_and_full_pendulum(self):
+        for size in ((1219, 762), (1600, 1000), (1920, 1080), (1280, 720)):
+            with self.subTest(size=size):
+                report = self.renderer(size)
+                report.draw({"unit": "E4", "phase": "estimate", "response_mode": "speed", "selected": .4})
+                replay = self.renderer(size)
+                replay.draw({
+                    "unit": "E4", "phase": "feedback", "replay": True, "hide_choice": True,
+                    "response_mode": "speed", "alpha": 0, "theta_rad": .2,
+                    "selected": .4, "truth": .8, "footer": SPEED_PRACTICE_FOOTER,
+                    "descriptor": {"grating_period_m": .4, "bar_width_m": .1, "bob_radius_m": .08},
+                })
+                fade = replay.fade_overlay.drawn[-1]
+                self.assertAlmostEqual(fade["height"], CANVAS_H * replay.scale)
+                self.assertAlmostEqual(fade["width"], 1000 * replay.scale)
+                canvas_bottom = fade["pos"][1] - fade["height"] / 2
+                for reported, replayed in zip(report.bars[:50], replay.bars[:50]):
+                    self.assertEqual(reported.drawn[-1]["pos"], replayed.drawn[-1]["pos"])
+                    self.assertEqual(reported.drawn[-1]["width"], replayed.drawn[-1]["width"])
+                    self.assertEqual(reported.drawn[-1]["height"], replayed.drawn[-1]["height"])
+                strip_bottom = replay.bars[0].drawn[-1]["pos"][1] - replay.bars[0].drawn[-1]["height"] / 2
+                caption = replay.text.drawn[-1]
+                self.assertEqual(caption["anchorVert"], "top")
+                self.assertLess(caption["height"], 22 * replay.scale)
+                self.assertLessEqual(caption["pos"][1], min(canvas_bottom, strip_bottom))
+                self.assertEqual("".join(caption["text"].splitlines()), SPEED_PRACTICE_FOOTER)
+                self.assertLessEqual(caption["text"].count("\n") + 1, 3)
+                self.assertTrue(replay.bob.drawn)
+                self.assertGreater(replay.bob.pos[1], canvas_bottom)
+                self.assertTrue(any(draw["lineColor"] == BLUE for draw in replay.marker.drawn))
+                self.assertFalse(any(draw["lineColor"] == ORANGE for draw in replay.marker.drawn))
 
     def test_e4_speed_replay_keeps_bob_behind_translucent_grating(self):
         renderer = self.renderer()
