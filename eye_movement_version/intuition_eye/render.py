@@ -28,6 +28,10 @@ TEXT_MAX_WIDTH = 880.0
 TEXT_MARGIN = 48.0
 TEXT_TOP_MARGIN = 48.0
 TEXT_FOOTER_MARGIN = 28.0
+# Training keeps its strip on the canvas. Experiment 4 uses the margin under
+# the 560px simulation, clear of the confirm button at frame x 760–980.
+TRAINING_STRIP_BOUNDS = (150.0, 850.0, 500.0, 540.0)
+E4_STRIP_BOUNDS = (150.0, 740.0, 590.0, 630.0)
 
 
 def instruction_text_layout(window_size: tuple[float, float]) -> dict[str, float]:
@@ -195,12 +199,24 @@ def _strip_rect(unit: Any, descriptor: Any) -> tuple[float, float, float, float]
     return ax - rod, y1, ax + rod, y2 + 28.0
 
 
+def speed_strip_bounds(unit: Any = "E2", descriptor: Any = None) -> tuple[float, float, float, float] | None:
+    """Canvas-local (left, right, top, bottom) of the clickable speed strip."""
+    kind = _classification(unit, descriptor)
+    if kind == "e4":
+        return E4_STRIP_BOUNDS
+    if kind == "training":
+        return TRAINING_STRIP_BOUNDS
+    return None
+
+
 def strip_value(x: float, y: float, unit: Any = "E2", descriptor: Any = None) -> float | None:
     """Return normalized horizontal position within either E2 speed color strip."""
     lx, ly, geom = _pointer_logical(unit, descriptor, x, y)
-    if _classification(unit, descriptor) in ("training", "e4"):
-        if 150.0 <= lx <= 850.0 and 500.0 <= ly <= 540.0:
-            return (lx - 150.0) / 700.0
+    bounds = speed_strip_bounds(unit, descriptor)
+    if bounds is not None:
+        left, right, top, bottom = bounds
+        if left <= lx <= right and top <= ly <= bottom:
+            return (lx - left) / (right - left)
         return None
     rect = _strip_rect(unit, descriptor)
     if rect is None:
@@ -532,18 +548,12 @@ class SceneRenderer:
         self.text.height = 30 * self.text_layout["scale"]
 
     def _draw_speed_feedback_caption(self, text: str) -> None:
-        """Draw the speed-practice caption in the margin under the full-size canvas.
-
-        The speed strip stays on the same canvas row as the formal report.
-        Only the type size shrinks, and only far enough for the caption to
-        remain below that row.
-        """
+        """Draw the speed-practice caption in the margin above the canvas."""
         source = str(text)
-        gap = 8.0 * self.scale
         side = 28.0 * self.scale
-        bottom = 8.0 * self.scale
-        band_top = self.frame_top + (self.content_top + CANVAS_H) * self.scale + gap
-        avail = max(1.0, self.height - bottom - band_top)
+        band_top = self.frame_top + 10.0 * self.scale
+        band_bottom = self.frame_top + self.content_top * self.scale - 8.0 * self.scale
+        avail = max(1.0, band_bottom - band_top)
         font_logical = 18.0
         wrapped = source
         font_h = font_logical * self.scale
@@ -590,9 +600,14 @@ class SceneRenderer:
 
     def _draw_speed_report(self, state: dict[str, Any], phase: str) -> None:
         # Cache the bars and change only their colours and positions per frame.
+        bounds = speed_strip_bounds(state.get("unit", "E2"), state.get("descriptor")) or TRAINING_STRIP_BOUNDS
+        left, right, top, bottom = bounds
+        span = right - left
+        bar_w = span / 50.0
+        center_y = (top + bottom) / 2.0
         for i, stim in enumerate(self.bars[:50]):
-            stim.width, stim.height = 14 * self.scale, 40 * self.scale
-            stim.pos = self._pix(150 + (i + .5) * 14, 520)
+            stim.width, stim.height = bar_w * self.scale, (bottom - top) * self.scale
+            stim.pos = self._pix(left + (i + .5) * bar_w, center_y)
             stim.fillColor = _turbo((i + .5) / 50)
             stim.lineColor = stim.fillColor
             stim.opacity = 1
@@ -603,9 +618,9 @@ class SceneRenderer:
                 continue
             if key == "selected" and state.get("hide_choice"):
                 continue
-            x = 150 + 700 * max(0.0, min(1.0, float(value)))
+            x = left + span * max(0.0, min(1.0, float(value)))
             self.marker.lineColor = color
-            self._set_line(self.marker, (x, 490), (x, 548))
+            self._set_line(self.marker, (x, top - 8.0), (x, bottom + 8.0))
             self.marker.draw()
 
     def _draw_e2(self, state: dict[str, Any], d: Any, layout: dict[str, float], theta: float,

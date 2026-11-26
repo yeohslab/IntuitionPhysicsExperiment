@@ -13,6 +13,7 @@ from eye_movement_version.intuition_eye.render import (
     _wrap_text_for_width,
     hit_confirm,
     hit_skip,
+    speed_strip_bounds,
     strip_value,
     text_pages,
 )
@@ -70,11 +71,17 @@ class FrameGeometryTests(unittest.TestCase):
         self.assertIsNone(strip_value(x, first_row_y - 20, "E2", descriptor))
         self.assertIsNone(strip_value(x, first_row_y, "E4", descriptor))
         e4 = frame_geometry({"unit": "E4", "descriptor": descriptor})
-        sx = e4["canvas_left"] + 500 * e4["scale"]
-        sy = e4["canvas_top"] + 520 * e4["scale"]
+        left, right, top, bottom = speed_strip_bounds("E4", descriptor)
+        sx = e4["canvas_left"] + (left + right) / 2 * e4["scale"]
+        sy = e4["canvas_top"] + (top + bottom) / 2 * e4["scale"]
         self.assertAlmostEqual(strip_value(sx, sy, "E4", descriptor), 0.5)
-        self.assertAlmostEqual(strip_value(sx, sy, "training", descriptor), 0.5)
-        self.assertIsNone(strip_value(sx, sy + 30 * e4["scale"], "E4", descriptor))
+        self.assertGreater(top, 560)
+        self.assertIsNone(strip_value(sx, e4["canvas_top"] + 520 * e4["scale"], "E4", descriptor))
+        training = frame_geometry({"unit": "training", "descriptor": descriptor, "window_size": (1000, 760)})
+        tx = training["canvas_left"] + 500 * training["scale"]
+        ty = training["canvas_top"] + 520 * training["scale"]
+        self.assertAlmostEqual(strip_value(tx, ty, "training", descriptor), 0.5)
+        self.assertIsNone(strip_value(sx, sy + 40 * e4["scale"], "E4", descriptor))
 
     def test_footer_hit_regions_use_reserved_frame_area(self):
         descriptor = {"screen_width": 1000, "screen_height": 760}

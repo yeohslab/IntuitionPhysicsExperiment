@@ -74,16 +74,17 @@ class BrowserParityTests(unittest.TestCase):
                 fade = replay.fade_overlay.drawn[-1]
                 self.assertAlmostEqual(fade["height"], CANVAS_H * replay.scale)
                 self.assertAlmostEqual(fade["width"], 1000 * replay.scale)
+                canvas_top = fade["pos"][1] + fade["height"] / 2
                 canvas_bottom = fade["pos"][1] - fade["height"] / 2
                 for reported, replayed in zip(report.bars[:50], replay.bars[:50]):
                     self.assertEqual(reported.drawn[-1]["pos"], replayed.drawn[-1]["pos"])
                     self.assertEqual(reported.drawn[-1]["width"], replayed.drawn[-1]["width"])
                     self.assertEqual(reported.drawn[-1]["height"], replayed.drawn[-1]["height"])
-                strip_bottom = replay.bars[0].drawn[-1]["pos"][1] - replay.bars[0].drawn[-1]["height"] / 2
+                strip_top = replay.bars[0].drawn[-1]["pos"][1] + replay.bars[0].drawn[-1]["height"] / 2
+                self.assertLess(strip_top, canvas_bottom)
                 caption = replay.text.drawn[-1]
                 self.assertEqual(caption["anchorVert"], "top")
-                self.assertLess(caption["height"], 22 * replay.scale)
-                self.assertLessEqual(caption["pos"][1], min(canvas_bottom, strip_bottom))
+                self.assertGreater(caption["pos"][1], canvas_top)
                 self.assertEqual("".join(caption["text"].splitlines()), SPEED_PRACTICE_FOOTER)
                 self.assertLessEqual(caption["text"].count("\n") + 1, 3)
                 self.assertTrue(replay.bob.drawn)

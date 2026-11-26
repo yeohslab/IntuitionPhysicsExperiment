@@ -45,7 +45,14 @@ class InputDisplay(HeadlessDisplay):
             return (0., 0., False)
         g = frame_geometry({'unit': self.scene, 'descriptor': self.descriptor})
         if self.strip is not None:
-            x, y = 150 + 700 * self.strip, 520
+            from intuition_eye.render import speed_strip_bounds
+            bounds = speed_strip_bounds(self.scene, self.descriptor)
+            if bounds is None:
+                x, y = 150 + 700 * self.strip, 520
+            else:
+                left, right, top, bottom = bounds
+                x = left + (right - left) * self.strip
+                y = (top + bottom) / 2
         else:
             x = g['anchor_x'] + 100 * math.sin(self.angle)
             y = g['anchor_y'] + 100 * math.cos(self.angle)

@@ -238,7 +238,10 @@ class ScriptedDisplay:
             self.response_started = True
             geometry = frame_geometry({"unit": self.scene, "descriptor": self.descriptor})
             if self.response[0] == "speed":
-                x, y = 150 + 700 * self.response[1], 520
+                from intuition_eye.render import speed_strip_bounds
+                left, right, top, bottom = speed_strip_bounds(self.scene, self.descriptor)
+                x = left + (right - left) * self.response[1]
+                y = (top + bottom) / 2
             else:
                 angle = self.response[1]
                 x = geometry["anchor_x"] + 100 * math.sin(angle)
